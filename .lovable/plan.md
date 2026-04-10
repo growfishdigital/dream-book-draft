@@ -1,51 +1,41 @@
 
 
-## Step 9: "Generating" — Magical Loading Experience
+## Step 10: "Preview" — Book Preview & CTA
 
 ### What we're building
-A full-screen takeover generating screen with an animated book SVG, cycling status messages, a progress bar, and a reveal button after ~8 seconds. No WizardShell — this step owns the entire viewport.
+A full-screen preview step (no WizardShell) showing a swipeable carousel of 5 simulated book pages, with personalized content from wizard answers, and two CTAs at the bottom. A custom progress indicator shows "100% complete".
 
 ### Implementation
 
-**New file: `src/pages/steps/Step9.tsx`**
+**New file: `src/pages/steps/Step10.tsx`**
 
-- **No WizardShell wrapper** — renders its own full-screen layout with `min-h-[100dvh]` and the wizard background color. No header, no back button, no continue button.
+- Full-screen layout (like Step 9 — no WizardShell)
+- Heading: "[Name]'s book is ready. ✨" / Subheading: "Here's a sneak peek before you make it official."
 
-- **Animated book (CSS + SVG)**:
-  - A book shape built from SVG: two "cover" rectangles that rotate open, with page shapes fanning out
-  - CSS keyframe animations: book slowly opens over ~4s, pages gently flutter
-  - Sparkle particles: 6-8 small dots/stars with randomized float-up animations using CSS (`@keyframes float-sparkle`)
-  - After 8s, a checkmark fades in over the book
+**Carousel (using Embla via existing `Carousel` components):**
 
-- **Progress stages** — cycle through 5 messages with crossfade transitions (opacity + translateY), each lasting ~1.6s:
-  1. ✍️ "Crafting [name]'s story..."
-  2. 🎨 "Illustrating the pages..."
-  3. 🌟 "Adding the magic touches..."
-  4. 📖 "Putting it all together..."
-  5. 💌 "Almost ready..."
+5 book-shaped cards in a horizontal carousel with dots indicator:
 
-  Use `useState` + `useEffect` with `setInterval` to advance the stage index.
+1. **Cover page** — uses `answers.coverLayout` to render either full-illustration or bold-title layout with `answers.bookTitle`, child's name, and art style color
+2. **Story page 1** — placeholder illustration block + 2-3 lines of whimsical lorem text, children's book style
+3. **Story page 2** — different layout (illustration on side, text wrapping)
+4. **Dedication page** — shows `answers.dedication` text centered in elegant serif
+5. **Locked page** — blurred/obscured content with a lock icon overlay + "Unlock the full story" message
 
-- **Progress bar** — thin bar beneath the messages, fills from 0% to 100% over 8 seconds using CSS `transition: width 8s linear`.
+Each page is a styled card with book aspect ratio (~2:3), consistent rounded corners and shadow.
 
-- **Completion (after ~8s)**:
-  - Book animation settles, checkmark appears (fade-in)
-  - Button fades in: "✨ Your book is ready — take a look"
-  - Clicking navigates to `/step/10` via `useNavigate`
+**Below carousel:**
+- Primary CTA: "Get [name]'s book →" — large green pill button, navigates to `/step/11`
+- Secondary: "← Make changes" text link, navigates to `/step/1`
 
-- **Static copy** (visible from start): "Every word, every illustration — made just for [name]." in small warm gray italic text below the animation.
+**Top area:**
+- Custom progress bar showing all dots filled + "100% complete ✓" text
+- Back button to return to step 9
 
-- Child's name from `answers.childName` via `useWizard()`.
-
-**Updated file: `src/App.tsx`** — Import Step9, add `/step/9` route.
-
-### Technical details
-- All animations are pure CSS keyframes defined in the component via inline `<style>` tag or Tailwind config additions
-- No external animation libraries needed
-- Timer-based state: `useEffect` manages stage cycling and the 8s completion trigger
-- Cleanup: all intervals/timeouts cleared on unmount
+**Data used from WizardContext:**
+- `childName`, `bookTitle`, `coverLayout`, `artStyle`, `dedication`
 
 ### Files changed
-- `src/pages/steps/Step9.tsx` — new
-- `src/App.tsx` — add route
+- `src/pages/steps/Step10.tsx` — new
+- `src/App.tsx` — add Step10 import and `/step/10` route
 
