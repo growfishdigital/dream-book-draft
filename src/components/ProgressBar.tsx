@@ -35,12 +35,12 @@ export default function ProgressBar({ currentStep }: { currentStep: number }) {
             const isClickable = stepNum < currentStep;
             return (
               <Tooltip key={i}>
-                <TooltipTrigger asChild>
+              <TooltipTrigger asChild>
                   <div
-                    role={isClickable ? "button" : undefined}
-                    tabIndex={isClickable ? 0 : undefined}
-                    onClick={() => isClickable && navigate(`/step/${stepNum}`)}
-                    className={`h-2 rounded-full transition-all duration-300 ${isClickable ? "cursor-pointer hover:scale-y-150" : ""}`}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => navigate(`/step/${stepNum}`)}
+                    className="h-2 rounded-full transition-all duration-300 cursor-pointer hover:scale-y-150"
                     style={{
                       width: 24,
                       backgroundColor: i < currentStep ? "hsl(var(--wizard-primary))" : "hsl(var(--wizard-primary) / 0.15)",
