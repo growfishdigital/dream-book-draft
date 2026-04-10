@@ -51,7 +51,7 @@ export default function WizardShell({ children }: { children: ReactNode }) {
         <button
           type="button"
           onClick={goNext}
-          disabled={!canContinue}
+          disabled={false}
           className="w-full sm:w-auto sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "hsl(var(--wizard-primary))",
