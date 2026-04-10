@@ -186,8 +186,7 @@ export default function Step10() {
       {/* CTAs */}
       <button
         onClick={() => navigate("/step/11")}
-        className="px-10 py-4 rounded-full text-base font-semibold mb-3"
-        style={{ backgroundColor: "#22c55e", color: "#fff" }}
+        className="px-10 py-4 rounded-full text-base font-semibold mb-3 bg-[#2b4e18] text-white"
       >
         Get {name}'s book →
       </button>
