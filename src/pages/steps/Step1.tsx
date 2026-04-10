@@ -18,6 +18,14 @@ const GENDERS = [
   { value: "surprise", label: "Surprise me" },
 ];
 
+const BUYER_ROLES = [
+  { value: "parent", emoji: "👨‍👩‍👧", label: "Parent" },
+  { value: "grandparent", emoji: "👴", label: "Grandparent" },
+  { value: "teacher", emoji: "🎓", label: "Teacher" },
+  { value: "friend", emoji: "👫", label: "Friend" },
+  { value: "other", emoji: "🎁", label: "Other" },
+];
+
 const OCCASIONS = [
   { value: "birthday", emoji: "🎂", label: "Birthday" },
   { value: "christmas", emoji: "🎄", label: "Christmas" },
