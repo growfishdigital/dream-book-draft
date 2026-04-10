@@ -167,6 +167,21 @@ export default function Step1() {
           </div>
         </div>
 
+        {/* Who are you? */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            Who are you in the child's life?
+          </label>
+          <div className="flex flex-wrap justify-center gap-3">
+            {BUYER_ROLES.map((r) => (
+              <button key={r.value} type="button" onClick={() => setAnswer("buyerRole", r.value)} className={pillClass(buyerRole === r.value)}>
+                <span className="block text-lg">{r.emoji}</span>
+                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>{r.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Occasion */}
         <div className="space-y-3">
           <label className="block text-sm font-medium text-muted-foreground text-center">
