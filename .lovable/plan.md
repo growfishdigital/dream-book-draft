@@ -1,37 +1,76 @@
 
 
-## Plan: Rewrite Step 5 Categories
+## Plan: "The Spotlight" Character Creator — Step 6 Rewrite
 
-Replace the current 20 categories in `src/pages/steps/Step5.tsx` with the 10 new categories from the table. Each category gets updated follow-up fields with dropdowns where specified and a "Photo" upload field where indicated.
+Complete rewrite of `src/pages/steps/Step6.tsx` (~700 lines) to implement a mini-wizard-within-the-wizard with a horizontal pill bar and focused single-character editing.
 
-### New Categories & Fields
+### Data Model
 
-1. **Stuffed Animal 🧸** — Animal type (dropdown: Bear, Bunny, Dog, Cat, Elephant, Monkey, Dinosaur, Unicorn, Other) · Color(s) (text) · Name (text) · Photo
-2. **Pet 🐕** — Animal type (dropdown: Dog, Cat, Fish, Bird, Hamster, Rabbit, Turtle, Horse, Other) · Breed/description (text) · Color (text) · Name (text) · Photo
-3. **Doll or Action Figure 🧍** — Type (dropdown: Baby doll, Fashion doll, Action figure, Figurine, Toy animal, Other) · Hair/outfit description (text) · Name (text) · Photo
-4. **Toy Vehicle 🚗** — Type (dropdown: Car, Truck, Train, Plane, Rocket, Boat, Bike, Scooter, Skateboard, Other) · Color (text) · Name (text) · Photo
-5. **Blanket or Comfort Item 🛏️** — Color(s) (text) · Pattern (dropdown: Solid, Striped, Polka dot, Patchwork, Stars) · Name (text) · Photo
-6. **Clothing or Accessory 👑** — Type (dropdown: Cape, Costume, Hat, Boots, Jewelry, Backpack, Tutu, Crown, Other) · Color (text) · Description (text) · Photo
-7. **Sports or Outdoor Gear ⚽** — Sport/activity (dropdown: Soccer, Basketball, Baseball, Football, Tennis, Swimming, Gymnastics, Camping, Other) · Color if non-standard (text)
-8. **Musical Instrument 🎸** — Type (dropdown: Guitar, Piano, Drums, Ukulele, Violin, Trumpet, Flute, Other) · Color if non-standard (text)
-9. **Food 🍕** — What food (text, short)
-10. **Something Else 🎁** — Description (text, 80 char max) · Photo (strongly encouraged)
+New interfaces stored in wizard context under keys `protagonist`, `supportingCharacters`, `companion`:
 
-### Technical Changes
+```text
+Protagonist: {
+  photos: string[] (base64, max 3),
+  name, age, gender, special (200 chars),
+  appearance: { hairColor, hairStyle, skinTone, glasses: bool, features (100 chars) }
+}
 
-**File: `src/pages/steps/Step5.tsx`**
+SupportingCharacter: {
+  id, mode: "ai" | "real",
+  // AI mode: name, surpriseName: bool, relationship, gender, ageRange
+  // Real mode: above + photos (max 3), appearance (same as protagonist)
+}
 
-- Replace the `CATEGORIES` array with the 10 new entries above
-- Add `maxLength?: number` to the `FieldDef` interface
-- Add `"photo"` to the `FieldDef.type` union
-- For photo fields, render a file input (`<input type="file" accept="image/*">`) styled consistently
-- Store photo as a base64 data URL in wizard answers via `FileReader`
-- For "Something Else" description, set `maxLength: 80` on the input
-- Show a small photo preview thumbnail when a photo is uploaded
+Companion: {
+  id, name, type (Dog/Cat/Stuffed Animal/Imaginary Friend/Other + writeIn), description (100 chars)
+}
+```
 
-### UI Notes
-- Category grid stays as-is (2-column grid of cards with emoji + label)
-- Follow-up fields appear below selected category with smooth scroll
-- Photo fields show a simple styled file picker with preview
-- Card shadows and styling remain consistent with other steps
+### Component Breakdown (all in Step6.tsx)
+
+1. **PillBar** — horizontal scrollable row of character pills
+   - Protagonist pill: star icon + name from Step 1 (or "Main Character"), no X button
+   - Supporting character pills: avatar placeholder (or photo thumbnail), name, X to remove
+   - Companion pill: paw icon, name, X to remove
+   - "+ Character" pill (hidden when 2 supporting exist, shows tooltip at limit)
+   - "+ Companion" pill (hidden when 1 companion exists)
+   - Active pill highlighted with wizard-primary color
+   - Subtle slide-in animation on add
+
+2. **ProtagonistForm** — always "real person" mode
+   - Photo upload zone (drag-drop or click, up to 3, base64 via FileReader, thumbnails with X)
+   - Name (pre-filled from `answers.childName`), Age (pre-filled from `answers.ageRange`), Gender (pre-filled)
+   - "What makes [Name] special?" textarea (200 char limit + counter, optional)
+   - "Refine appearance" collapsible accordion (expanded if no photos, collapsed if photos exist)
+     - Hair color pills, hair style pills, skin tone color swatches (6-8 circles), glasses toggle, features text (100 chars)
+
+3. **SupportingCharacterForm** — starts with path choice cards
+   - Two large cards: "Let AI create" (sparkles icon) vs "Based on a real person" (camera icon)
+   - After choosing, show appropriate form with "Switch to..." link at top
+   - AI mode: name + "Surprise me" checkbox, relationship picker, gender picker, age range (auto-suggested from relationship)
+   - Real mode: full form with photos, name, relationship, age range, gender, appearance accordion
+
+4. **CompanionForm**
+   - Name, type picker (with "Other" write-in), brief description (100 chars)
+
+5. **Paid character upsell** — when user has 2 supporting characters and taps "+ Character", show a simulated $3 paywall dialog before adding the 3rd
+
+### Validation & Navigation
+
+- On "Continue" click: check protagonist has name + age + gender, each supporting char has name + relationship, each companion has name + type
+- If invalid: add red dot badge to incomplete pill, switch to first incomplete character, highlight missing fields
+- All data persists when switching pills (stored in wizard context)
+- Remove character: confirmation toast/dialog, then remove and focus previous pill
+
+### Files Changed
+
+- **`src/pages/steps/Step6.tsx`** — full rewrite with all components above
+- **`src/contexts/WizardContext.tsx`** — no changes needed (generic `answers` record handles new shape)
+
+### Visual Notes
+
+- Consistent with existing wizard styling (wizard-primary color, rounded-2xl cards, pill selectors)
+- Skin tone picker: 8 colored circles (light to dark), no text labels
+- Photo upload: dashed border zone with camera icon, prominent placement at top of form
+- Path choice cards: equal visual weight, sparkles vs camera icons, subtle hover shadow
 
