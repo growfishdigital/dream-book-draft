@@ -25,14 +25,7 @@ export default function WizardShell({ children }: { children: ReactNode }) {
     <div className="flex flex-col min-h-[100dvh]" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
       {/* Top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
-        <button
-          onClick={goBack}
-          disabled={currentStep <= 1}
-          className="p-2 rounded-xl transition-colors disabled:opacity-30 hover:bg-black/5"
-          aria-label="Go back"
-        >
-          <ChevronLeft className="w-5 h-5" style={{ color: "hsl(var(--wizard-primary))" }} />
-        </button>
+        <div className="w-[70px]" />
 
         <ProgressBar currentStep={currentStep} />
 
