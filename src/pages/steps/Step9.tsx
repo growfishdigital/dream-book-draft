@@ -47,9 +47,16 @@ export default function Step9() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-[100dvh] px-4"
+      className="flex flex-col items-center justify-center min-h-[100dvh] px-4 relative"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
+      <button
+        onClick={() => navigate("/step/8")}
+        className="absolute top-4 left-4 p-2 rounded-xl transition-colors hover:bg-black/5 z-10"
+        aria-label="Go back"
+      >
+        <ChevronLeft className="w-5 h-5" style={{ color: "hsl(var(--wizard-primary))" }} />
+      </button>
       <style>{`
         @keyframes book-open {
           0% { transform: rotateY(0deg); }

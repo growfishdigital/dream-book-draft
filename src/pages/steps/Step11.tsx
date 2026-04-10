@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 
 type Plan = "digital" | "hardcover";
 
