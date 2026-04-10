@@ -286,7 +286,7 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
       </div>
 
       <AppearanceAccordion appearance={data.appearance} onChange={(a) => upd({ appearance: a })}
-        name={displayName} defaultExpanded={data.photos.length === 0} />
+        name={displayName} defaultExpanded={false} />
     </div>
   );
 }
@@ -377,7 +377,7 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
 
       {data.mode === "real" && (
         <AppearanceAccordion appearance={data.appearance} onChange={(a) => upd({ appearance: a })}
-          name={data.name || "this character"} defaultExpanded={data.photos.length === 0} />
+          name={data.name || "this character"} defaultExpanded={false} />
       )}
     </div>
   );
