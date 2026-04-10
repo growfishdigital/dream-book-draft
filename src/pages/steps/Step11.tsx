@@ -3,7 +3,7 @@ import { useWizard } from "@/contexts/WizardContext";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { ChevronLeft, Lock } from "lucide-react";
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 12;
 
 const ART_COLORS: Record<string, string> = {
   watercolor: "210 60% 70%",
@@ -130,7 +130,7 @@ export default function Step10() {
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
       <button
-        onClick={() => navigate("/step/9")}
+        onClick={() => navigate("/step/10")}
         className="absolute top-4 left-4 p-2 rounded-xl transition-colors hover:bg-black/5 z-10"
         aria-label="Go back"
       >
@@ -185,7 +185,7 @@ export default function Step10() {
 
       {/* CTAs */}
       <button
-        onClick={() => navigate("/step/11")}
+        onClick={() => navigate("/step/12")}
         className="px-10 py-4 rounded-full text-base font-semibold mb-3 bg-[#2b4e18] text-white"
       >
         Get {name}'s book →

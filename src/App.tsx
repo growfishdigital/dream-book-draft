@@ -15,6 +15,7 @@ import Step8 from "./pages/steps/Step8";
 import Step9 from "./pages/steps/Step9";
 import Step10 from "./pages/steps/Step10";
 import Step11 from "./pages/steps/Step11";
+import Step12 from "./pages/steps/Step12";
 import StepPlaceholder from "./pages/steps/StepPlaceholder";
 import NotFound from "./pages/NotFound";
 
@@ -40,6 +41,7 @@ const App = () => (
             <Route path="/step/9" element={<Step9 />} />
             <Route path="/step/10" element={<Step10 />} />
             <Route path="/step/11" element={<Step11 />} />
+            <Route path="/step/12" element={<Step12 />} />
             <Route path="/step/:step" element={<StepPlaceholder />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
