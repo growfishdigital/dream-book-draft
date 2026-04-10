@@ -16,7 +16,7 @@ const WizardContext = createContext<WizardContextType | null>(null);
 
 export function WizardProvider({ children }: { children: ReactNode }) {
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [canContinue, setCanContinue] = useState(true);
+  const [canContinue, setCanContinue] = useState(false);
 
   const setAnswer = useCallback((key: string, value: any) => {
     setAnswers((prev) => ({ ...prev, [key]: value }));
