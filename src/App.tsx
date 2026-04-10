@@ -23,6 +23,7 @@ const App = () => (
             <Route path="/" element={<Navigate to="/step/1" replace />} />
             <Route path="/step/1" element={<Step1 />} />
             <Route path="/step/2" element={<Step2 />} />
+            <Route path="/step/3" element={<Step3 />} />
             <Route path="/step/:step" element={<StepPlaceholder />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
