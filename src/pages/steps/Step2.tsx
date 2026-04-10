@@ -95,9 +95,9 @@ export default function Step2() {
         {/* Mood pills */}
         <div className="space-y-3">
           <label className="block text-sm font-medium text-muted-foreground text-center">
-            Mood / tone
+            Mood
           </label>
-          <div className="flex flex-wrap justify-center gap-3">
+          <div className="flex justify-center gap-2 overflow-x-auto">
             {MOODS.map((m) => (
               <button
                 key={m.value}
