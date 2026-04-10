@@ -36,7 +36,7 @@ export default function WizardShell({ children }: { children: ReactNode }) {
 
       {/* Content */}
       <main className="flex-1 flex items-center justify-center px-4 py-8">
-        <div className="w-full max-w-[600px]">{children}</div>
+        <div className="w-full max-w-[700px]">{children}</div>
       </main>
 
       {/* Bottom bar */}
