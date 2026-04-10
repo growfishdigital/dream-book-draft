@@ -25,14 +25,7 @@ export default function WizardShell({ children }: { children: ReactNode }) {
     <div className="flex flex-col min-h-[100dvh]" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
       {/* Top bar */}
       <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
-        <button
-          onClick={goBack}
-          disabled={currentStep <= 1}
-          className="p-2 rounded-xl transition-colors disabled:opacity-30 hover:bg-black/5"
-          aria-label="Go back"
-        >
-          <ChevronLeft className="w-5 h-5" style={{ color: "hsl(var(--wizard-primary))" }} />
-        </button>
+        <div className="w-[70px]" />
 
         <ProgressBar currentStep={currentStep} />
 
@@ -47,12 +40,26 @@ export default function WizardShell({ children }: { children: ReactNode }) {
       </main>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 z-30 px-4 py-4 sm:flex sm:justify-center" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+      <div className="sticky bottom-0 z-30 px-4 py-4 flex justify-center gap-3" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+        {currentStep > 1 && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="py-4 px-8 rounded-full text-base font-semibold transition-all border-2"
+            style={{
+              borderColor: "hsl(var(--wizard-primary))",
+              color: "hsl(var(--wizard-primary))",
+              backgroundColor: "transparent",
+            }}
+          >
+            Back
+          </button>
+        )}
         <button
           type="button"
           onClick={goNext}
           disabled={false}
-          className="w-full sm:w-auto sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "hsl(var(--wizard-primary))",
             color: "#fff",
