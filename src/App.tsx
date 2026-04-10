@@ -10,6 +10,7 @@ import Step3 from "./pages/steps/Step3";
 import Step4 from "./pages/steps/Step4";
 import Step5 from "./pages/steps/Step5";
 import Step6 from "./pages/steps/Step6";
+import Step7 from "./pages/steps/Step7";
 import StepPlaceholder from "./pages/steps/StepPlaceholder";
 import NotFound from "./pages/NotFound";
 
