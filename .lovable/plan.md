@@ -1,39 +1,25 @@
 
 
-## Step 11: "Buy" — Product Selection & Checkout
+## Make Hero Character Editable
 
 ### What we're building
-A full-screen checkout step (no WizardShell) with two product option cards, trust signals, and a placeholder order form with a success state.
+Replace the static hero card (lines 248-260 in Step6.tsx) with a `CharacterCard` that uses the same expandable editor as other characters, but with a 👑 crown indicator, no delete button, and pre-filled name from `answers.childName`. The hero's data will be stored in `answers.heroCharacter`.
 
 ### Implementation
 
-**New file: `src/pages/steps/Step11.tsx`**
+**File: `src/pages/steps/Step6.tsx`**
 
-Full-screen layout like Steps 9/10 — no WizardShell wrapper.
+1. Add a `heroCharacter` state sourced from `answers.heroCharacter`, initialized with `{ id: "hero", name: name, relationship: "Hero", gender: answers.childGender || "", age: answers.childAge || "", notable: "" }`.
 
-- Custom progress bar showing 100% + "Final step" label
-- Heading: "Choose how you'd like [name]'s book." / Subheading: "Both options include the full story and all illustrations."
+2. Replace the static hero card div (lines 248-260) with a `CharacterCard` component:
+   - Pass `onRemove` as undefined/no-op — add an `isHero` prop to `CharacterCard` that hides the delete button and adds the 👑 badge + primary border styling.
+   - `defaultExpanded={false}` since the hero info is pre-filled.
+   - On change, call `setAnswer("heroCharacter", updatedChar)`.
 
-**Two product cards (stacked vertically):**
-
-1. **Digital Book** — standard border card with price $9.99, bullet list (PDF, instant delivery, shareable link, print yourself), CTA button
-2. **Printed Hardcover + Digital** — visually prominent: warm amber border (`border-amber-400`), "⭐ Most popular" badge positioned top-right, price $44.99, bullet list (everything in digital + hardcover + ships 5-7 days + free digital), CTA button. Default-selected via `useState`.
-
-Selection state: clicking either card or its CTA selects that option (radio-style). Selected card gets a ring/highlight.
-
-**Trust signals block** below cards:
-- 🔒 Secure checkout
-- 💳 All major cards accepted
-- 📦 Free shipping on hardcovers over $35
-
-**Placeholder order form** below trust signals:
-- Email input field
-- "Place Order" button
-- On click: sets `orderPlaced` state to true, shows success view: "🎉 Your book is on its way!" with the selected plan details and a "← Back to start" link
-
-**Data from WizardContext:** `childName` for personalization.
+3. Update `CharacterCard` to accept an optional `isHero?: boolean` prop:
+   - When true: hide the trash icon, show 👑 emoji next to the name, use the primary border/background styling from the old hero card.
+   - The relationship field can be hidden or locked to "Hero" for the hero card.
 
 ### Files changed
-- `src/pages/steps/Step11.tsx` — new
-- `src/App.tsx` — add Step11 import and `/step/11` route
+- `src/pages/steps/Step6.tsx` — modify `CharacterCard` and replace static hero card
 
