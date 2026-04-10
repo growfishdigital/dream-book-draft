@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/step/6" element={<Step6 />} />
             <Route path="/step/7" element={<Step7 />} />
             <Route path="/step/8" element={<Step8 />} />
+            <Route path="/step/9" element={<Step9 />} />
             <Route path="/step/:step" element={<StepPlaceholder />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
