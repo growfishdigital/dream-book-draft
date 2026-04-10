@@ -3,6 +3,7 @@ import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const AGE_RANGES = [
   { value: "0-2", label: "0–2", sub: "Board book" },
@@ -143,46 +144,41 @@ export default function Step1() {
           </label>
         </div>
 
-        {/* Age range */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Age range
-          </label>
-          <div className="flex flex-wrap justify-center gap-3">
-            {AGE_RANGES.map((a) => (
-              <button
-                key={a.value}
-                type="button"
-                onClick={() => setAnswer("ageRange", a.value)}
-                className={pillClass(age === a.value)}
-              >
-                <span className="block text-base font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
-                  {a.label}
-                </span>
-                <span className="block text-xs text-muted-foreground mt-0.5">{a.sub}</span>
-              </button>
-            ))}
+        {/* Age range & Gender side by side */}
+        <div className="grid grid-cols-2 gap-4 max-w-[420px] mx-auto">
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-muted-foreground">
+              Age range
+            </label>
+            <Select value={age} onValueChange={(v) => setAnswer("ageRange", v)}>
+              <SelectTrigger className="rounded-xl bg-white">
+                <SelectValue placeholder="Select age" />
+              </SelectTrigger>
+              <SelectContent>
+                {AGE_RANGES.map((a) => (
+                  <SelectItem key={a.value} value={a.value}>
+                    {a.label} — {a.sub}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-
-        {/* Gender */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Gender
-          </label>
-          <div className="flex flex-wrap justify-center gap-3">
-            {GENDERS.map((g) => (
-              <button
-                key={g.value}
-                type="button"
-                onClick={() => setAnswer("gender", g.value)}
-                className={pillClass(gender === g.value)}
-              >
-                <span className="block text-base font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
-                  {g.label}
-                </span>
-              </button>
-            ))}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-muted-foreground">
+              Gender
+            </label>
+            <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
+              <SelectTrigger className="rounded-xl bg-white">
+                <SelectValue placeholder="Select gender" />
+              </SelectTrigger>
+              <SelectContent>
+                {GENDERS.map((g) => (
+                  <SelectItem key={g.value} value={g.value}>
+                    {g.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
