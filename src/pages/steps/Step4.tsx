@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import WizardShell from "@/components/WizardShell";
+import { Input } from "@/components/ui/input";
 import { useWizard } from "@/contexts/WizardContext";
 
 const CATEGORIES = [
@@ -174,6 +175,20 @@ export default function Step4() {
               </div>
             </div>
           ))}
+        </div>
+
+        {/* Write-in interest */}
+        <div className="space-y-2">
+          <h2 className="text-sm font-medium text-muted-foreground">✍️ Or write your own</h2>
+          <Input
+            placeholder='e.g. "volcanoes" or "making friendship bracelets"'
+            value={(answers.customInterest as string) || ""}
+            onChange={(e) => setAnswer("customInterest", e.target.value)}
+            className="bg-white"
+          />
+          <p className="text-xs text-muted-foreground">
+            ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
+          </p>
         </div>
 
         {preview && (
