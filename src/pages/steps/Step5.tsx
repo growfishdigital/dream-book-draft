@@ -13,9 +13,10 @@ import {
 interface FieldDef {
   key: string;
   label: string;
-  type: "text" | "dropdown";
+  type: "text" | "dropdown" | "photo";
   options?: string[];
   placeholder?: string;
+  maxLength?: number;
 }
 
 interface CategoryDef {
@@ -29,95 +30,70 @@ const CATEGORIES: CategoryDef[] = [
   {
     value: "stuffed-animal", emoji: "🧸", label: "Stuffed Animal",
     fields: [
-      { key: "name", label: "What's its name?", type: "text", placeholder: "e.g. Flopsy" },
-      { key: "animalType", label: "What kind of animal?", type: "text", placeholder: "e.g. Bunny" },
-      { key: "color", label: "Color", type: "text", placeholder: "e.g. Purple" },
+      { key: "animalType", label: "Animal type", type: "dropdown", options: ["Bear", "Bunny", "Dog", "Cat", "Elephant", "Monkey", "Dinosaur", "Unicorn", "Other"] },
+      { key: "color", label: "Color(s)", type: "text", placeholder: "e.g. Purple with a pink belly" },
+      { key: "name", label: "Name", type: "text", placeholder: "e.g. Flopsy" },
+      { key: "photo", label: "Photo", type: "photo" },
     ],
   },
   {
     value: "pet", emoji: "🐕", label: "Pet",
     fields: [
-      { key: "name", label: "Pet's name", type: "text", placeholder: "e.g. Max" },
-      { key: "petType", label: "Type of pet", type: "dropdown", options: ["Dog", "Cat", "Fish", "Bird", "Hamster", "Rabbit", "Other"] },
-      { key: "color", label: "Color / markings", type: "text", placeholder: "e.g. Golden with white paws" },
+      { key: "animalType", label: "Animal type", type: "dropdown", options: ["Dog", "Cat", "Fish", "Bird", "Hamster", "Rabbit", "Turtle", "Horse", "Other"] },
+      { key: "breed", label: "Breed / description", type: "text", placeholder: "e.g. Golden Retriever" },
+      { key: "color", label: "Color", type: "text", placeholder: "e.g. Golden with white paws" },
+      { key: "name", label: "Name", type: "text", placeholder: "e.g. Max" },
+      { key: "photo", label: "Photo", type: "photo" },
     ],
   },
   {
     value: "doll", emoji: "🧍", label: "Doll or Action Figure",
     fields: [
+      { key: "dollType", label: "Type", type: "dropdown", options: ["Baby doll", "Fashion doll", "Action figure", "Figurine", "Toy animal", "Other"] },
+      { key: "description", label: "Hair / outfit description", type: "text", placeholder: "e.g. Blonde hair with a sparkly dress" },
       { key: "name", label: "Name", type: "text", placeholder: "e.g. Captain Zoom" },
-      { key: "description", label: "What does it look like?", type: "text", placeholder: "e.g. A space ranger with a silver helmet" },
+      { key: "photo", label: "Photo", type: "photo" },
     ],
   },
   {
     value: "toy-vehicle", emoji: "🚗", label: "Toy Vehicle",
     fields: [
-      { key: "type", label: "Type of vehicle", type: "text", placeholder: "e.g. Fire truck" },
+      { key: "vehicleType", label: "Type", type: "dropdown", options: ["Car", "Truck", "Train", "Plane", "Rocket", "Boat", "Bike", "Scooter", "Skateboard", "Other"] },
       { key: "color", label: "Color", type: "text", placeholder: "e.g. Red" },
-    ],
-  },
-  {
-    value: "ball-sports", emoji: "⚽", label: "Ball / Sports Item",
-    fields: [
-      { key: "type", label: "What sport / type?", type: "text", placeholder: "e.g. Soccer ball" },
+      { key: "name", label: "Name", type: "text", placeholder: "e.g. Lightning" },
+      { key: "photo", label: "Photo", type: "photo" },
     ],
   },
   {
     value: "blanket", emoji: "🛏️", label: "Blanket or Comfort Item",
     fields: [
-      { key: "name", label: "Does it have a name?", type: "text", placeholder: "e.g. Blankie" },
-      { key: "color", label: "Color / pattern", type: "text", placeholder: "e.g. Blue with stars" },
+      { key: "color", label: "Color(s)", type: "text", placeholder: "e.g. Blue with white trim" },
+      { key: "pattern", label: "Pattern", type: "dropdown", options: ["Solid", "Striped", "Polka dot", "Patchwork", "Stars"] },
+      { key: "name", label: "Name", type: "text", placeholder: "e.g. Blankie" },
+      { key: "photo", label: "Photo", type: "photo" },
     ],
   },
   {
-    value: "bike-scooter", emoji: "🛴", label: "Bike, Scooter, or Skateboard",
+    value: "clothing", emoji: "👑", label: "Clothing or Accessory",
     fields: [
-      { key: "type", label: "Which one?", type: "text", placeholder: "e.g. Pink scooter" },
-      { key: "color", label: "Color", type: "text", placeholder: "e.g. Pink with streamers" },
+      { key: "clothingType", label: "Type", type: "dropdown", options: ["Cape", "Costume", "Hat", "Boots", "Jewelry", "Backpack", "Tutu", "Crown", "Other"] },
+      { key: "color", label: "Color", type: "text", placeholder: "e.g. Red and gold" },
+      { key: "description", label: "Description", type: "text", placeholder: "e.g. A sparkly superhero cape" },
+      { key: "photo", label: "Photo", type: "photo" },
+    ],
+  },
+  {
+    value: "sports", emoji: "⚽", label: "Sports or Outdoor Gear",
+    fields: [
+      { key: "sport", label: "Sport / activity", type: "dropdown", options: ["Soccer", "Basketball", "Baseball", "Football", "Tennis", "Swimming", "Gymnastics", "Camping", "Other"] },
+      { key: "color", label: "Color (if non-standard)", type: "text", placeholder: "e.g. Neon green" },
     ],
   },
   {
     value: "instrument", emoji: "🎸", label: "Musical Instrument",
     fields: [
-      { key: "type", label: "What instrument?", type: "text", placeholder: "e.g. Ukulele" },
-    ],
-  },
-  {
-    value: "book", emoji: "📖", label: "Book",
-    fields: [
-      { key: "title", label: "Title or topic", type: "text", placeholder: "e.g. A book about dinosaurs" },
-    ],
-  },
-  {
-    value: "cape-costume", emoji: "👑", label: "Superhero Cape or Costume",
-    fields: [
-      { key: "character", label: "What character / type?", type: "text", placeholder: "e.g. A dragon knight" },
-      { key: "color", label: "Color", type: "text", placeholder: "e.g. Red and gold" },
-    ],
-  },
-  {
-    value: "backpack", emoji: "🎒", label: "Backpack or Bag",
-    fields: [
-      { key: "color", label: "Color / design", type: "text", placeholder: "e.g. Blue with rockets" },
-    ],
-  },
-  {
-    value: "hat-clothing", emoji: "🧢", label: "Hat or Clothing Item",
-    fields: [
-      { key: "type", label: "What is it?", type: "text", placeholder: "e.g. A rainbow tutu" },
-      { key: "color", label: "Color", type: "text", placeholder: "e.g. Rainbow" },
-    ],
-  },
-  {
-    value: "building-toy", emoji: "🧩", label: "Building Toy / Playset",
-    fields: [
-      { key: "description", label: "What do they build?", type: "text", placeholder: "e.g. A castle made of blocks" },
-    ],
-  },
-  {
-    value: "art-supplies", emoji: "🎨", label: "Art Supplies",
-    fields: [
-      { key: "type", label: "What kind?", type: "text", placeholder: "e.g. Crayons and a sketchbook" },
+      { key: "instrumentType", label: "Type", type: "dropdown", options: ["Guitar", "Piano", "Drums", "Ukulele", "Violin", "Trumpet", "Flute", "Other"] },
+      { key: "color", label: "Color (if non-standard)", type: "text", placeholder: "e.g. Blue sparkle" },
     ],
   },
   {
@@ -127,36 +103,10 @@ const CATEGORIES: CategoryDef[] = [
     ],
   },
   {
-    value: "plant", emoji: "🪴", label: "Plant or Flower",
+    value: "other", emoji: "🎁", label: "Something Else",
     fields: [
-      { key: "type", label: "What kind?", type: "text", placeholder: "e.g. Sunflower" },
-    ],
-  },
-  {
-    value: "jewelry", emoji: "💎", label: "Jewelry or Accessory",
-    fields: [
-      { key: "type", label: "What is it?", type: "text", placeholder: "e.g. A sparkly bracelet" },
-      { key: "color", label: "Color", type: "text", placeholder: "e.g. Silver" },
-    ],
-  },
-  {
-    value: "night-light", emoji: "🌙", label: "Night Light or Lamp",
-    fields: [
-      { key: "description", label: "What does it look like?", type: "text", placeholder: "e.g. A glowing moon" },
-    ],
-  },
-  {
-    value: "toy-animal", emoji: "🦕", label: "Toy Animal / Figurine",
-    fields: [
-      { key: "name", label: "Does it have a name?", type: "text", placeholder: "e.g. Rex" },
-      { key: "type", label: "What kind?", type: "text", placeholder: "e.g. T-Rex" },
-      { key: "color", label: "Color", type: "text", placeholder: "e.g. Green" },
-    ],
-  },
-  {
-    value: "other-toy", emoji: "🎁", label: "Other Toy",
-    fields: [
-      { key: "description", label: "Describe it", type: "text", placeholder: "e.g. A kaleidoscope" },
+      { key: "description", label: "Describe it", type: "text", placeholder: "e.g. A kaleidoscope", maxLength: 80 },
+      { key: "photo", label: "Photo (strongly encouraged)", type: "photo" },
     ],
   },
 ];
@@ -190,6 +140,18 @@ export default function Step5() {
     });
   };
 
+  const handlePhoto = (key: string, file: File | null) => {
+    if (!file) {
+      setDetail(key, "");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDetail(key, reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const activeCategoryDef = CATEGORIES.find((c) => c.value === selectedCategory);
 
   const cardClass = (selected: boolean) =>
@@ -202,7 +164,6 @@ export default function Step5() {
   return (
     <WizardShell>
       <div className="space-y-8">
-        {/* Heading */}
         <div className="text-center space-y-2">
           <h1
             className="font-heading text-3xl sm:text-4xl font-bold"
@@ -215,7 +176,6 @@ export default function Step5() {
           </p>
         </div>
 
-        {/* Category grid */}
         <div className="grid grid-cols-2 gap-3">
           {CATEGORIES.map((cat) => (
             <button
@@ -235,7 +195,6 @@ export default function Step5() {
           ))}
         </div>
 
-        {/* Follow-up fields */}
         {activeCategoryDef && (
           <div ref={followUpRef} className="space-y-4 animate-fade-in">
             <h2
@@ -265,10 +224,27 @@ export default function Step5() {
                       ))}
                     </SelectContent>
                   </Select>
+                ) : field.type === "photo" ? (
+                  <div className="space-y-2">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handlePhoto(field.key, e.target.files?.[0] ?? null)}
+                      className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-[hsl(var(--wizard-primary)/0.1)] file:px-4 file:py-2 file:text-sm file:font-medium file:text-[hsl(var(--wizard-primary))] hover:file:bg-[hsl(var(--wizard-primary)/0.15)] cursor-pointer"
+                    />
+                    {details[field.key] && (
+                      <img
+                        src={details[field.key]}
+                        alt="Preview"
+                        className="h-20 w-20 rounded-xl object-cover border-2 border-[hsl(var(--wizard-primary)/0.2)]"
+                      />
+                    )}
+                  </div>
                 ) : (
                   <Input
                     className="rounded-xl"
                     placeholder={field.placeholder}
+                    maxLength={field.maxLength}
                     value={details[field.key] || ""}
                     onChange={(e) => setDetail(field.key, e.target.value)}
                   />
@@ -278,7 +254,6 @@ export default function Step5() {
           </div>
         )}
 
-        {/* Note */}
         <p className="text-center text-sm text-muted-foreground italic">
           This becomes a cameo in the story — a moment that only {name}'s book will have.
         </p>
