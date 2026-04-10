@@ -136,6 +136,9 @@ export default function Step10() {
       >
         <ChevronLeft className="w-5 h-5" style={{ color: "hsl(var(--wizard-primary))" }} />
       </button>
+      <button className="absolute top-4 right-4 text-sm font-medium px-3 py-1.5 rounded-xl transition-colors hover:bg-black/5 z-10" style={{ color: "hsl(var(--wizard-primary))" }}>
+        Save &amp; exit
+      </button>
       {/* Progress */}
       <div className="flex flex-col items-center gap-1.5 mb-6">
         <div className="flex gap-1.5">
