@@ -156,7 +156,7 @@ export default function Step4() {
                       key={item.value}
                       type="button"
                       onClick={() => toggle(item.value)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all border-2 ${
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all border-2 shadow-sm ${
                         selected
                           ? "text-white border-transparent"
                           : "border-transparent bg-white hover:shadow-md"
