@@ -1,37 +1,37 @@
 
 
-## Step 6: "The Characters" — Character Builder
+## Step 7: "Make it yours" — Customization
 
 ### What we're building
-A character management step with a pre-filled hero card (the child from Step 1) and the ability to add up to 4 additional characters via expandable cards with structured fields.
+A multi-section customization step with art style picker, buyer relationship, title page name, dedication textarea, and language selector. All fields have smart defaults so Continue is enabled immediately.
 
 ### Implementation
 
-**New file: `src/pages/steps/Step6.tsx`**
+**New file: `src/pages/steps/Step7.tsx`**
 
-- Heading: "Who's in [name]'s story?" (from `answers.childName`)
-- Subheading: "[Name] is always the hero. Who else should join the adventure?"
-- **Hero card** (always visible, not removable, not editable):
-  - Shows "👑 Hero" badge, child's name from Step 1, collapsed style
-- **Additional character cards** (up to 4):
-  - Each card is collapsible (using local state, not Radix — just a simple toggle)
-  - Collapsed view: name + relationship pill, expand chevron, trash icon
-  - Expanded view shows fields:
-    - Name (text input, required)
-    - Relationship (pill selector): Parent, Grandparent, Sibling, Best friend, Teacher, Pet, Other
-    - Gender (pill selector): Girl, Boy, Non-binary
-    - Age (optional short text input)
-    - Something notable (optional textarea, max 100 chars, placeholder text)
-    - Photo button: camera icon + "Coming soon" toast on click
-    - Trash icon to remove
-  - New cards start expanded
-- "+ Add a character" button below cards, hidden when 4 additional characters exist
-- `setCanContinue(true)` on mount — always enabled
-- Stores `characters` array in WizardContext
+Five vertically stacked sections separated by `<Separator />`:
 
-**Updated file: `src/App.tsx`** — Add Step6 import and `/step/6` route
+1. **Art style** — 2x2 card grid (same card style as Step 2). Each card: colored rectangle placeholder, title, description. Pre-select based on `answers.genre`:
+   - adventure/superhero/sports → "bold-bright"
+   - bedtime/everyday → "dreamy-pastel"
+   - fantasy/fairy-tale → "watercolor"
+   - default → "cozy-sketch"
+   
+   Store as `answers.artStyle`.
+
+2. **Buyer relationship** — horizontal pill selector (same pill style as Step 2 mood pills). Options: Parent, Grandparent, Teacher, Friend, Other. Store as `answers.buyerRole`. Default: "parent".
+
+3. **Title page name** — text input pre-filled with `answers.childName`. Store as `answers.titlePageName`.
+
+4. **Dedication** — textarea, max 200 chars with character counter. Pre-fill dynamically based on `buyerRole`. Store as `answers.dedication`.
+
+5. **Language** — pill selector: English, Español, Français, Deutsch, + a disabled "More coming soon" pill. Default: "english". Store as `answers.language`.
+
+`setCanContinue(true)` on mount. All defaults set via `useEffect` on mount (only if not already set).
+
+**Updated file: `src/App.tsx`** — Add Step7 import and `/step/7` route.
 
 ### Files changed
-- `src/pages/steps/Step6.tsx` — new
+- `src/pages/steps/Step7.tsx` — new
 - `src/App.tsx` — add route
 
