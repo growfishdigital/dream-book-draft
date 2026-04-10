@@ -106,7 +106,7 @@ export default function Step2() {
                 className={pillClass(mood === m.value)}
               >
                 <span
-                  className="block text-base font-semibold"
+                  className="block text-sm font-semibold"
                   style={{ color: "hsl(var(--wizard-primary))" }}
                 >
                   {m.label}
