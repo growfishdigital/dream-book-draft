@@ -1,4 +1,4 @@
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 12;
 
 export default function ProgressBar({ currentStep }: { currentStep: number }) {
   return (

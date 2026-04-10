@@ -1,132 +1,53 @@
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { ChevronLeft, Lock } from "lucide-react";
 
-const TOTAL_STEPS = 11;
+const STAGES = [
+  { emoji: "✍️", text: "Crafting {name}'s story..." },
+  { emoji: "🎨", text: "Illustrating the pages..." },
+  { emoji: "🌟", text: "Adding the magic touches..." },
+  { emoji: "📖", text: "Putting it all together..." },
+  { emoji: "💌", text: "Almost ready..." },
+];
 
-const ART_COLORS: Record<string, string> = {
-  watercolor: "210 60% 70%",
-  cartoon: "45 90% 60%",
-  pastel: "320 40% 75%",
-  realistic: "160 30% 45%",
-};
+const TOTAL_DURATION = 8000;
+const STAGE_INTERVAL = 1600;
 
-function CoverPage({ layout, title, name, artHsl }: { layout: string; title: string; name: string; artHsl: string }) {
-  const bg = `hsl(${artHsl} / 0.2)`;
-  const accent = `hsl(${artHsl})`;
-
-  if (layout === "bold-title") {
-    return (
-      <div className="flex h-full">
-        <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: bg }}>
-          <div className="w-16 h-20 rounded-lg" style={{ backgroundColor: accent, opacity: 0.5 }} />
-        </div>
-        <div className="w-1/2 flex flex-col items-center justify-center p-4 gap-2">
-          <p className="text-lg font-bold text-center font-serif leading-tight" style={{ color: accent }}>{title}</p>
-          <p className="text-xs" style={{ color: `hsl(${artHsl} / 0.6)` }}>A story for {name}</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: bg }}>
-        <div className="w-20 h-24 rounded-lg" style={{ backgroundColor: accent, opacity: 0.5 }} />
-      </div>
-      <div className="p-4 text-center">
-        <p className="text-base font-bold font-serif" style={{ color: accent }}>{title}</p>
-        <p className="text-xs mt-1" style={{ color: `hsl(${artHsl} / 0.6)` }}>A story for {name}</p>
-      </div>
-    </div>
-  );
-}
-
-function StoryPage1({ artHsl }: { artHsl: string }) {
-  return (
-    <div className="flex flex-col h-full p-5 gap-3">
-      <div className="h-2/5 rounded-lg flex items-center justify-center" style={{ backgroundColor: `hsl(${artHsl} / 0.15)` }}>
-        <div className="w-16 h-12 rounded" style={{ backgroundColor: `hsl(${artHsl} / 0.35)` }} />
-      </div>
-      <div className="flex-1 flex flex-col gap-2 pt-2">
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-11/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-9/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-      </div>
-    </div>
-  );
-}
-
-function StoryPage2({ artHsl }: { artHsl: string }) {
-  return (
-    <div className="flex h-full p-5 gap-3">
-      <div className="w-2/5 rounded-lg flex items-center justify-center" style={{ backgroundColor: `hsl(${artHsl} / 0.15)` }}>
-        <div className="w-10 h-14 rounded" style={{ backgroundColor: `hsl(${artHsl} / 0.35)` }} />
-      </div>
-      <div className="flex-1 flex flex-col gap-2 justify-center">
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-10/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-8/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-      </div>
-    </div>
-  );
-}
-
-function DedicationPage({ dedication, artHsl }: { dedication: string; artHsl: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full p-6 gap-4">
-      <p className="text-xs uppercase tracking-widest" style={{ color: `hsl(${artHsl} / 0.4)` }}>Dedication</p>
-      <p className="text-sm font-serif italic text-center leading-relaxed" style={{ color: `hsl(${artHsl} / 0.8)` }}>
-        "{dedication}"
-      </p>
-    </div>
-  );
-}
-
-function LockedPage({ name, artHsl }: { name: string; artHsl: string }) {
-  return (
-    <div className="relative flex flex-col h-full overflow-hidden">
-      {/* Blurred fake content */}
-      <div className="flex-1 p-5 flex flex-col gap-2 blur-sm opacity-50">
-        <div className="h-2/5 rounded-lg" style={{ backgroundColor: `hsl(${artHsl} / 0.15)` }} />
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-10/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-      </div>
-      {/* Overlay */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-5 gap-3 bg-white/70 backdrop-blur-sm">
-        <Lock className="w-8 h-8" style={{ color: `hsl(${artHsl} / 0.5)` }} />
-        <p className="text-sm font-semibold text-center" style={{ color: `hsl(${artHsl})` }}>Unlock the full story</p>
-        <p className="text-xs text-center leading-relaxed" style={{ color: `hsl(${artHsl} / 0.6)` }}>
-          The rest of {name}'s story awaits. Get the full book to read every page together.
-        </p>
-      </div>
-    </div>
-  );
-}
-
-export default function Step10() {
+export default function Step9() {
   const { answers } = useWizard();
   const navigate = useNavigate();
   const name = answers.childName || "your child";
-  const title = answers.bookTitle || `${name}'s Adventure`;
-  const layout = answers.coverLayout || "full-illustration";
-  const artStyle = answers.artStyle || "watercolor";
-  const dedication = answers.dedication || `For ${name}, with all my love.`;
-  const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
+  const [stageIndex, setStageIndex] = useState(0);
+  const [done, setDone] = useState(false);
+  const [barStarted, setBarStarted] = useState(false);
+  const intervRef = useRef<ReturnType<typeof setInterval>>();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const pages = [
-    <CoverPage key="cover" layout={layout} title={title} name={name} artHsl={artHsl} />,
-    <StoryPage1 key="s1" artHsl={artHsl} />,
-    <StoryPage2 key="s2" artHsl={artHsl} />,
-    <DedicationPage key="ded" dedication={dedication} artHsl={artHsl} />,
-    <LockedPage key="lock" name={name} artHsl={artHsl} />,
-  ];
+  useEffect(() => {
+    // kick off progress bar on next frame
+    requestAnimationFrame(() => setBarStarted(true));
+
+    intervRef.current = setInterval(() => {
+      setStageIndex((i) => (i < STAGES.length - 1 ? i + 1 : i));
+    }, STAGE_INTERVAL);
+
+    timeoutRef.current = setTimeout(() => {
+      setDone(true);
+      if (intervRef.current) clearInterval(intervRef.current);
+    }, TOTAL_DURATION);
+
+    return () => {
+      if (intervRef.current) clearInterval(intervRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
+
+  const stage = STAGES[stageIndex];
 
   return (
     <div
-      className="flex flex-col items-center min-h-[100dvh] px-4 py-8 relative"
+      className="flex flex-col items-center justify-center min-h-[100dvh] px-4 relative"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
       <button
@@ -139,64 +60,163 @@ export default function Step10() {
       <button className="absolute top-4 right-4 text-sm font-medium px-3 py-1.5 rounded-xl transition-colors hover:bg-black/5 z-10" style={{ color: "hsl(var(--wizard-primary))" }}>
         Save &amp; exit
       </button>
-      {/* Progress */}
-      <div className="flex flex-col items-center gap-1.5 mb-6">
-        <div className="flex gap-1.5">
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-            <div
+      <style>{`
+        @keyframes book-open {
+          0% { transform: rotateY(0deg); }
+          100% { transform: rotateY(-35deg); }
+        }
+        @keyframes page-flutter {
+          0%, 100% { transform: rotateY(0deg); }
+          50% { transform: rotateY(-8deg); }
+        }
+        @keyframes float-sparkle {
+          0% { opacity: 0; transform: translateY(0) scale(0); }
+          20% { opacity: 1; transform: translateY(-10px) scale(1); }
+          100% { opacity: 0; transform: translateY(-60px) scale(0.5); }
+        }
+        @keyframes check-pop {
+          0% { opacity: 0; transform: scale(0.5); }
+          60% { opacity: 1; transform: scale(1.15); }
+          100% { opacity: 1; transform: scale(1); }
+        }
+        @keyframes btn-fade {
+          0% { opacity: 0; transform: translateY(12px); }
+          100% { opacity: 1; transform: translateY(0); }
+        }
+        .sparkle {
+          position: absolute;
+          border-radius: 50%;
+          background: hsl(var(--wizard-primary));
+          animation: float-sparkle 2.4s ease-out infinite;
+        }
+      `}</style>
+
+      {/* Book animation */}
+      <div className="relative w-40 h-48 mb-8" style={{ perspective: "600px" }}>
+        {/* Sparkles */}
+        {[...Array(7)].map((_, i) => (
+          <div
+            key={i}
+            className="sparkle"
+            style={{
+              width: 4 + (i % 3) * 2,
+              height: 4 + (i % 3) * 2,
+              left: `${15 + i * 12}%`,
+              bottom: `${20 + (i % 4) * 15}%`,
+              animationDelay: `${i * 0.35}s`,
+              opacity: done ? 0 : undefined,
+            }}
+          />
+        ))}
+
+        <svg viewBox="0 0 160 200" className="w-full h-full" style={{ filter: "drop-shadow(0 8px 24px hsl(var(--wizard-primary) / 0.18))" }}>
+          {/* Back cover */}
+          <rect x="30" y="10" width="100" height="180" rx="4" fill="hsl(var(--wizard-primary) / 0.15)" stroke="hsl(var(--wizard-primary) / 0.3)" strokeWidth="1.5" />
+
+          {/* Pages */}
+          {[0, 1, 2].map((i) => (
+            <rect
               key={i}
-              className="h-2 w-6 rounded-full"
-              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+              x={34 + i * 2}
+              y={14 + i}
+              width="92"
+              height="172"
+              rx="2"
+              fill="#fff"
+              stroke="hsl(var(--wizard-primary) / 0.1)"
+              strokeWidth="0.5"
+              style={{
+                transformOrigin: "left center",
+                animation: done ? "none" : `page-flutter ${1.8 + i * 0.3}s ease-in-out ${i * 0.2}s infinite`,
+              }}
             />
           ))}
-        </div>
-        <span className="text-xs font-medium tracking-wide" style={{ color: "hsl(var(--wizard-primary))" }}>
-          100% complete ✓
-        </span>
+
+          {/* Front cover */}
+          <rect
+            x="30"
+            y="10"
+            width="100"
+            height="180"
+            rx="4"
+            fill="hsl(var(--wizard-primary))"
+            style={{
+              transformOrigin: "left center",
+              animation: done ? "none" : "book-open 3s ease-in-out infinite alternate",
+            }}
+          />
+
+          {/* Spine */}
+          <rect x="28" y="10" width="6" height="180" rx="2" fill="hsl(var(--wizard-primary) / 0.8)" />
+
+          {/* Title lines on cover */}
+          <rect x="50" y="60" width="60" height="6" rx="3" fill="hsl(var(--wizard-primary-foreground, 0 0% 100%) / 0.6)" style={{ transformOrigin: "left center", animation: done ? "none" : "book-open 3s ease-in-out infinite alternate" }} />
+          <rect x="55" y="74" width="40" height="4" rx="2" fill="hsl(var(--wizard-primary-foreground, 0 0% 100%) / 0.35)" style={{ transformOrigin: "left center", animation: done ? "none" : "book-open 3s ease-in-out infinite alternate" }} />
+        </svg>
+
+        {/* Checkmark overlay */}
+        {done && (
+          <div
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ animation: "check-pop 0.5s ease-out forwards" }}
+          >
+            <div
+              className="w-16 h-16 rounded-full flex items-center justify-center"
+              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+            >
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Heading */}
-      <h1 className="text-2xl md:text-3xl font-bold text-center mb-1" style={{ color: "hsl(var(--wizard-primary))" }}>
-        {name}'s book is ready. ✨
-      </h1>
-      <p className="text-sm text-center mb-6" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
-        Here's a sneak peek before you make it official.
+      {/* Stage message */}
+      <div className="h-10 flex items-center justify-center mb-4 overflow-hidden">
+        <p
+          key={stageIndex}
+          className="text-lg font-medium text-center"
+          style={{
+            color: "hsl(var(--wizard-primary))",
+            animation: "btn-fade 0.4s ease-out",
+          }}
+        >
+          {stage.emoji} {stage.text.replace("{name}", name)}
+        </p>
+      </div>
+
+      {/* Progress bar */}
+      <div className="w-full max-w-xs h-1.5 rounded-full overflow-hidden mb-6" style={{ backgroundColor: "hsl(var(--wizard-primary) / 0.12)" }}>
+        <div
+          className="h-full rounded-full"
+          style={{
+            backgroundColor: "hsl(var(--wizard-primary))",
+            width: done ? "100%" : barStarted ? "100%" : "0%",
+            transition: done ? "none" : `width ${TOTAL_DURATION}ms linear`,
+          }}
+        />
+      </div>
+
+      {/* Static copy */}
+      <p className="text-sm italic text-center mb-8" style={{ color: "hsl(var(--wizard-primary) / 0.45)" }}>
+        Every word, every illustration — made just for {name}.
       </p>
 
-      {/* Carousel */}
-      <div className="w-full max-w-sm mb-8">
-        <Carousel opts={{ align: "center", loop: false }} className="w-full">
-          <CarouselContent>
-            {pages.map((page, i) => (
-              <CarouselItem key={i}>
-                <div
-                  className="rounded-2xl overflow-hidden shadow-lg bg-white mx-auto"
-                  style={{ aspectRatio: "2/3", maxWidth: 260 }}
-                >
-                  {page}
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          <CarouselPrevious className="-left-4" />
-          <CarouselNext className="-right-4" />
-        </Carousel>
-      </div>
-
-      {/* CTAs */}
-      <button
-        onClick={() => navigate("/step/11")}
-        className="px-10 py-4 rounded-full text-base font-semibold mb-3 bg-[#2b4e18] text-white"
-      >
-        Get {name}'s book →
-      </button>
-      <button
-        onClick={() => navigate("/step/1")}
-        className="text-sm font-medium"
-        style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}
-      >
-        ← Make changes
-      </button>
+      {/* CTA button */}
+      {done && (
+        <button
+          onClick={() => navigate("/step/11")}
+          className="px-8 py-4 rounded-full text-base font-semibold"
+          style={{
+            backgroundColor: "hsl(var(--wizard-primary))",
+            color: "#fff",
+            animation: "btn-fade 0.6s ease-out",
+          }}
+        >
+          ✨ Your book is ready — take a look
+        </button>
+      )}
     </div>
   );
 }

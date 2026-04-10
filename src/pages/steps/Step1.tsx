@@ -18,6 +18,14 @@ const GENDERS = [
   { value: "surprise", label: "Surprise me" },
 ];
 
+const BUYER_ROLES = [
+  { value: "parent", emoji: "👨‍👩‍👧", label: "Parent" },
+  { value: "grandparent", emoji: "👴", label: "Grandparent" },
+  { value: "teacher", emoji: "🎓", label: "Teacher" },
+  { value: "friend", emoji: "👫", label: "Friend" },
+  { value: "other", emoji: "🎁", label: "Other" },
+];
+
 const OCCASIONS = [
   { value: "birthday", emoji: "🎂", label: "Birthday" },
   { value: "christmas", emoji: "🎄", label: "Christmas" },
@@ -37,6 +45,7 @@ export default function Step1() {
   const gender = (answers.gender as string) || "";
   const occasion = (answers.occasion as string) || "";
   const occasionOther = (answers.occasionOther as string) || "";
+  const buyerRole = (answers.buyerRole as string) || "";
   const bookBelongsTo = answers.bookBelongsTo !== false;
 
   const [headingVisible, setHeadingVisible] = useState(true);
@@ -59,6 +68,11 @@ export default function Step1() {
   }, [name]);
 
   // Validation
+  useEffect(() => {
+    if (!answers.buyerRole) setAnswer("buyerRole", "parent");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   useEffect(() => {
     setCanContinue(name.trim().length > 0 && age !== "" && gender !== "");
   }, [name, age, gender, setCanContinue]);
@@ -94,6 +108,21 @@ export default function Step1() {
           <p className="text-muted-foreground text-lg">
             Tell us a little about the child this book is for.
           </p>
+        </div>
+
+        {/* Who are you? */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            Who are you in the child's life?
+          </label>
+          <div className="flex flex-wrap justify-center gap-3">
+            {BUYER_ROLES.map((r) => (
+              <button key={r.value} type="button" onClick={() => setAnswer("buyerRole", r.value)} className={pillClass(buyerRole === r.value)}>
+                <span className="block text-lg">{r.emoji}</span>
+                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>{r.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Name input */}

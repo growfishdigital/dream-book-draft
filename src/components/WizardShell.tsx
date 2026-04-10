@@ -4,7 +4,7 @@ import ProgressBar from "./ProgressBar";
 import { useWizard } from "@/contexts/WizardContext";
 import type { ReactNode } from "react";
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 12;
 
 export default function WizardShell({ children }: { children: ReactNode }) {
   const { step } = useParams<{ step: string }>();
