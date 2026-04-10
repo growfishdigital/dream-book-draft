@@ -14,6 +14,7 @@ import Step7 from "./pages/steps/Step7";
 import Step8 from "./pages/steps/Step8";
 import Step9 from "./pages/steps/Step9";
 import Step10 from "./pages/steps/Step10";
+import Step11 from "./pages/steps/Step11";
 import StepPlaceholder from "./pages/steps/StepPlaceholder";
 import NotFound from "./pages/NotFound";
 
