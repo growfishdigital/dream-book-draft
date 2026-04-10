@@ -138,8 +138,6 @@ export default function Step7() {
 
         <Separator />
 
-        <Separator />
-
         {/* 4. Dedication */}
         <div className="space-y-2">
           <label className="block text-sm font-medium text-muted-foreground text-center">
