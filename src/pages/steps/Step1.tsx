@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const AGE_RANGES = [
   { value: "0-2", label: "0–2", sub: "Board book" },
@@ -36,6 +37,7 @@ export default function Step1() {
   const gender = (answers.gender as string) || "";
   const occasion = (answers.occasion as string) || "";
   const occasionOther = (answers.occasionOther as string) || "";
+  const bookBelongsTo = answers.bookBelongsTo !== false;
 
   const [headingVisible, setHeadingVisible] = useState(true);
   const [headingText, setHeadingText] = useState("Let's start with the star of the story.");
@@ -95,13 +97,21 @@ export default function Step1() {
         </div>
 
         {/* Name input */}
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-3">
           <Input
             value={name}
             onChange={(e) => setAnswer("childName", e.target.value)}
             placeholder="Their name..."
             className="text-center text-2xl font-medium h-14 max-w-[360px] rounded-2xl border-border bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
           />
+          <label className="flex items-center gap-2 cursor-pointer select-none">
+            <Checkbox
+              checked={bookBelongsTo}
+              onCheckedChange={(checked) => setAnswer("bookBelongsTo", !!checked)}
+              className="border-[hsl(var(--wizard-primary))] data-[state=checked]:bg-[hsl(var(--wizard-primary))]"
+            />
+            <span className="text-sm text-muted-foreground">Add "This book belongs to" page</span>
+          </label>
         </div>
 
         {/* Age range */}

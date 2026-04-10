@@ -140,19 +140,6 @@ export default function Step7() {
 
         <Separator />
 
-        {/* 3. Title Page Name */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Name on the title page
-          </label>
-          <Input
-            value={titlePageName}
-            onChange={(e) => setAnswer("titlePageName", e.target.value)}
-            className="text-center text-lg rounded-xl"
-            placeholder={name}
-          />
-        </div>
-
         <Separator />
 
         {/* 4. Dedication */}
