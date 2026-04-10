@@ -1,30 +1,50 @@
 
 
-## Step 4: "What is [name] into?"
+## Step 5: "Something special" — Favorite Thing Picker
 
 ### What we're building
-An interests/hobbies selection screen with categorized chip selectors, a 2-3 pick limit with auto-deselect behavior, and a fun preview sentence.
+A two-part optional step: first pick a category from a visual grid of 20 item types (Stuffed Animal, Pet, etc.), then fill in 2-4 category-specific follow-up fields (name, color, details). Continue is always enabled since the field is optional.
 
 ### Implementation
 
-**New file: `src/pages/steps/Step4.tsx`**
+**New file: `src/pages/steps/Step5.tsx`**
 
-- Heading: "What's [name]'s world like?" (dynamic from `answers.childName`)
-- Subheading: "Pick 2–3 things they're obsessed with. These flavor the whole story."
-- Categorized chip grid with 6 sections, each with a category header (emoji + label):
-  - 🐾 Animals & Nature (8 items), 🚀 Adventure & Fantasy (9), 🚗 Vehicles (3), ⚽ Sports (7), 🎨 Creative (7), 🌈 Vibes & Worlds (4)
-- Each chip: pill-shaped button with emoji + label
-- Selected state: `bg-[hsl(var(--wizard-primary))] text-white` (green bg, white text)
-- Selection logic: stores `interests` as `string[]` in WizardContext. Min 2, max 3. Selecting a 4th auto-deselects the oldest (FIFO queue). Add a brief CSS shake animation on the deselected chip.
-- After 2+ selected, fade in a fun preview line beneath the grid. Use a small map of hardcoded combo sentences keyed by interest values, with a fallback template like "[Name] discovers a world of [interest1] and [interest2]..."
-- Validation: `setCanContinue(interests.length >= 2)`
+- Heading: "Got a secret ingredient?"
+- Subheading with dynamic `[name]`: "Is there something specific — a toy, a pet, a person, a place — that we should weave into [name]'s story? This is optional, but it's where the real magic happens."
+- **Phase 1 — Category picker**: 2-column card grid (same card style as Step 2) with 20 items, each showing emoji + label. Single-select. Clicking a selected card deselects it (making it truly optional).
+- **Phase 2 — Follow-up fields** (appear below the grid when a category is selected, animated with `animate-fade-in`):
+  - Category-specific fields defined in a config map. Examples:
+    - Stuffed Animal: Name (text), What kind of animal? (text), Color (text)
+    - Pet: Name (text), Type of pet (dropdown: Dog, Cat, Fish, Bird, Hamster, Rabbit, Other), Color/markings (text)
+    - Food: What food? (text)
+    - Most categories: 2-3 fields (name/label, color, brief description)
+  - Fields use existing `Input` and `Select` components
+- Beneath everything, italic gray note: "This becomes a cameo in the story — a moment that only [name]'s book will have."
+- Stores in WizardContext as `specialThing: { category: string, details: Record<string, string> }` or `null`
+- `setCanContinue(true)` always — runs on mount
 
-**Updated file: `src/App.tsx`** — Add Step4 import and `/step/4` route
+**Updated file: `src/App.tsx`** — Add Step5 import and `/step/5` route
 
-**Updated file: `tailwind.config.ts`** — Add `shake` keyframe animation for the auto-deselect effect (quick horizontal wiggle)
+### Category follow-up field config (subset — all 20 defined similarly)
+
+| Category | Fields |
+|---|---|
+| Stuffed Animal | Name, Animal type, Color |
+| Pet | Name, Pet type (dropdown), Color/markings |
+| Doll/Action Figure | Name, Description |
+| Toy Vehicle | Type, Color |
+| Ball/Sports Item | Sport/type |
+| Blanket/Comfort Item | Name, Color/pattern |
+| Musical Instrument | Instrument type |
+| Book | Title or topic |
+| Superhero Cape/Costume | What character/type, Color |
+| Food | What food |
+| Other Toy | Description |
+| (remaining categories) | 1-3 fields each, similar pattern |
+
+No category exceeds 4 fields. Most need only 2-3.
 
 ### Files changed
-- `src/pages/steps/Step4.tsx` — new
+- `src/pages/steps/Step5.tsx` — new
 - `src/App.tsx` — add route
-- `tailwind.config.ts` — add shake animation keyframe
 
