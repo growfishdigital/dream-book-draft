@@ -119,7 +119,7 @@ export default function Step1() {
           <Input
             value={name}
             onChange={(e) => setAnswer("childName", e.target.value)}
-            placeholder="Their name..."
+            placeholder="e.g. Emma, John, etc."
             className="text-center text-2xl font-medium h-14 max-w-[360px] rounded-2xl border-border bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
           />
           <label className="flex items-center gap-2 cursor-pointer select-none">
