@@ -40,12 +40,26 @@ export default function WizardShell({ children }: { children: ReactNode }) {
       </main>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 z-30 px-4 py-4 sm:flex sm:justify-center" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+      <div className="sticky bottom-0 z-30 px-4 py-4 flex justify-center gap-3" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+        {currentStep > 1 && (
+          <button
+            type="button"
+            onClick={goBack}
+            className="py-4 px-8 rounded-full text-base font-semibold transition-all border-2"
+            style={{
+              borderColor: "hsl(var(--wizard-primary))",
+              color: "hsl(var(--wizard-primary))",
+              backgroundColor: "transparent",
+            }}
+          >
+            Back
+          </button>
+        )}
         <button
           type="button"
           onClick={goNext}
           disabled={false}
-          className="w-full sm:w-auto sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "hsl(var(--wizard-primary))",
             color: "#fff",
