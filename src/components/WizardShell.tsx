@@ -1,4 +1,4 @@
-import { useNavigate, useParams } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import ProgressBar from "./ProgressBar";
 import { useWizard } from "@/contexts/WizardContext";
@@ -8,7 +8,8 @@ const TOTAL_STEPS = 11;
 
 export default function WizardShell({ children }: { children: ReactNode }) {
   const { step } = useParams<{ step: string }>();
-  const currentStep = Number(step) || 1;
+  const location = useLocation();
+  const currentStep = Number(step ?? location.pathname.match(/^\/step\/(\d+)$/)?.[1]) || 1;
   const navigate = useNavigate();
   const { canContinue } = useWizard();
 
