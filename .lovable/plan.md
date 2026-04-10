@@ -1,47 +1,51 @@
 
 
-## Step 8: "The Cover" — Cover Designer
+## Step 9: "Generating" — Magical Loading Experience
 
 ### What we're building
-A cover design step with layout picker, title input with character count, and a live wireframe preview that updates in real-time.
+A full-screen takeover generating screen with an animated book SVG, cycling status messages, a progress bar, and a reveal button after ~8 seconds. No WizardShell — this step owns the entire viewport.
 
 ### Implementation
 
-**New file: `src/pages/steps/Step8.tsx`**
+**New file: `src/pages/steps/Step9.tsx`**
 
-- Heading: "Design [name]'s cover." / Subheading: "The first thing they'll see — make it theirs."
+- **No WizardShell wrapper** — renders its own full-screen layout with `min-h-[100dvh]` and the wizard background color. No header, no back button, no continue button.
 
-1. **Cover layout picker** — two large cards side-by-side (`grid-cols-2`, stacked on mobile via `grid-cols-1 sm:grid-cols-2`):
-   - "Full Illustration": colored rectangle top 2/3, text block bottom 1/3
-   - "Bold Title": split left illustration / right large title text
-   - Same `cardClass` pattern as other steps. Store as `answers.coverLayout`.
+- **Animated book (CSS + SVG)**:
+  - A book shape built from SVG: two "cover" rectangles that rotate open, with page shapes fanning out
+  - CSS keyframe animations: book slowly opens over ~4s, pages gently flutter
+  - Sparkle particles: 6-8 small dots/stars with randomized float-up animations using CSS (`@keyframes float-sparkle`)
+  - After 8s, a checkmark fades in over the book
 
-2. **Book title input** — text input, max 40 chars, live char counter (`{title.length}/40`).
-   - Pre-fill with a generated suggestion based on `answers.genre` + `answers.childName` (e.g., fantasy → "[Name] and the Dragon's Secret", adventure → "[Name] and the Lost Treasure", etc.)
-   - Store as `answers.bookTitle`.
+- **Progress stages** — cycle through 5 messages with crossfade transitions (opacity + translateY), each lasting ~1.6s:
+  1. ✍️ "Crafting [name]'s story..."
+  2. 🎨 "Illustrating the pages..."
+  3. 🌟 "Adding the magic touches..."
+  4. 📖 "Putting it all together..."
+  5. 💌 "Almost ready..."
 
-3. **Live mini cover preview** — a styled div with book-cover aspect ratio (~2:3), centered below the input:
-   - Renders differently based on selected layout:
-     - Full Illustration: colored rectangle placeholder on top, title in serif font below
-     - Bold Title: side-by-side split, illustration left, title right
-   - Shows the typed title in real-time + child's name as author
-   - Simple wireframe style: light background, placeholder blocks, `font-serif` for title
+  Use `useState` + `useEffect` with `setInterval` to advance the stage index.
 
-- `setCanContinue` enabled when both `coverLayout` and `bookTitle` (trimmed, non-empty) are set.
+- **Progress bar** — thin bar beneath the messages, fills from 0% to 100% over 8 seconds using CSS `transition: width 8s linear`.
 
-**Title suggestion helper** — a function mapping genre to a fun default title:
-```
-fantasy → "[Name] and the Dragon's Secret"
-adventure → "[Name] and the Lost Treasure"  
-sci-fi → "[Name] and the Star Beyond"
-bedtime → "[Name]'s Dreamland Journey"
-mystery → "[Name] and the Hidden Clue"
-(etc., with a fallback)
-```
+- **Completion (after ~8s)**:
+  - Book animation settles, checkmark appears (fade-in)
+  - Button fades in: "✨ Your book is ready — take a look"
+  - Clicking navigates to `/step/10` via `useNavigate`
 
-**Updated file: `src/App.tsx`** — Add Step8 import and `/step/8` route.
+- **Static copy** (visible from start): "Every word, every illustration — made just for [name]." in small warm gray italic text below the animation.
+
+- Child's name from `answers.childName` via `useWizard()`.
+
+**Updated file: `src/App.tsx`** — Import Step9, add `/step/9` route.
+
+### Technical details
+- All animations are pure CSS keyframes defined in the component via inline `<style>` tag or Tailwind config additions
+- No external animation libraries needed
+- Timer-based state: `useEffect` manages stage cycling and the 8s completion trigger
+- Cleanup: all intervals/timeouts cleared on unmount
 
 ### Files changed
-- `src/pages/steps/Step8.tsx` — new
+- `src/pages/steps/Step9.tsx` — new
 - `src/App.tsx` — add route
 
