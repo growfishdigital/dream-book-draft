@@ -97,7 +97,7 @@ export default function Step2() {
           <label className="block text-sm font-medium text-muted-foreground text-center">
             Mood
           </label>
-          <div className="flex justify-center gap-2 overflow-x-auto">
+          <div className="flex justify-center gap-2 pb-1">
             {MOODS.map((m) => (
               <button
                 key={m.value}
