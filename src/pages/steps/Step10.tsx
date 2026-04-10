@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { Lock } from "lucide-react";
+import { ChevronLeft, Lock } from "lucide-react";
 
 const TOTAL_STEPS = 11;
 
