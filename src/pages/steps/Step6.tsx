@@ -271,8 +271,6 @@ export default function Step6() {
           childName={name}
           isHero
         />
-          </div>
-        </div>
 
         {/* Additional characters */}
         <div className="space-y-3">
