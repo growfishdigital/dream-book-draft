@@ -72,12 +72,14 @@ function CharacterCard({
   onRemove,
   defaultExpanded,
   childName,
+  isHero,
 }: {
   character: Character;
   onChange: (c: Character) => void;
-  onRemove: () => void;
+  onRemove?: () => void;
   defaultExpanded: boolean;
   childName: string;
+  isHero?: boolean;
 }) {
   const [expanded, setExpanded] = useState(defaultExpanded);
 
@@ -88,8 +90,12 @@ function CharacterCard({
 
   return (
     <div
-      className="rounded-2xl border border-border bg-card overflow-hidden transition-shadow"
-      style={{ boxShadow: expanded ? "0 4px 24px 0 hsl(var(--wizard-primary) / 0.08)" : undefined }}
+      className="rounded-2xl border overflow-hidden transition-shadow"
+      style={{
+        borderColor: isHero ? "hsl(var(--wizard-primary) / 0.3)" : undefined,
+        backgroundColor: isHero && !expanded ? "hsl(var(--wizard-primary) / 0.06)" : undefined,
+        boxShadow: expanded ? "0 4px 24px 0 hsl(var(--wizard-primary) / 0.08)" : undefined,
+      }}
     >
       {/* Collapsed header */}
       <button
@@ -97,6 +103,7 @@ function CharacterCard({
         onClick={() => setExpanded((p) => !p)}
         className="w-full flex items-center gap-3 px-4 py-3 text-left"
       >
+        {isHero && <span className="text-xl">👑</span>}
         <div className="flex-1 min-w-0">
           <span className="font-semibold text-sm truncate block" style={{ color: "hsl(var(--wizard-primary))" }}>
             {displayName}
@@ -105,7 +112,7 @@ function CharacterCard({
             <span className="text-xs text-muted-foreground">{displayRelationship}</span>
           )}
         </div>
-        <button
+        {!isHero && onRemove && <button
           type="button"
           onClick={(e) => {
             e.stopPropagation();
@@ -115,7 +122,7 @@ function CharacterCard({
           aria-label="Remove character"
         >
           <Trash2 className="w-4 h-4" />
-        </button>
+        </button>}
         {expanded ? (
           <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
         ) : (
