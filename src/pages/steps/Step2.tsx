@@ -42,7 +42,7 @@ export default function Step2() {
     }`;
 
   const pillClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl px-5 py-3 text-center transition-all border-2 shadow-sm ${
+    `cursor-pointer rounded-xl px-3 py-2 text-center transition-all border-2 shadow-sm ${
       selected
         ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
         : "border-transparent bg-white hover:shadow-md"
