@@ -61,9 +61,16 @@ export default function Step11() {
 
   return (
     <div
-      className="flex flex-col items-center min-h-[100dvh] px-4 py-10 overflow-y-auto"
+      className="flex flex-col items-center min-h-[100dvh] px-4 py-10 overflow-y-auto relative"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
+      <button
+        onClick={() => navigate("/step/10")}
+        className="absolute top-4 left-4 p-2 rounded-xl transition-colors hover:bg-black/5 z-10"
+        aria-label="Go back"
+      >
+        <ChevronLeft className="w-5 h-5" style={{ color: "hsl(var(--wizard-primary))" }} />
+      </button>
       {/* Progress */}
       <div className="flex flex-col items-center gap-1.5 mb-8">
         <div className="flex gap-1.5">
