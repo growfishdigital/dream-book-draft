@@ -3,7 +3,6 @@ import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
-import { Textarea } from "@/components/ui/textarea";
 
 const ART_STYLES = [
   { value: "watercolor", emoji: "🖼️", label: "Watercolor Storybook", desc: "Soft, painterly, classic", color: "hsl(200 60% 75%)" },
