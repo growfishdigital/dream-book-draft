@@ -1,41 +1,39 @@
 
 
-## Step 10: "Preview" — Book Preview & CTA
+## Step 11: "Buy" — Product Selection & Checkout
 
 ### What we're building
-A full-screen preview step (no WizardShell) showing a swipeable carousel of 5 simulated book pages, with personalized content from wizard answers, and two CTAs at the bottom. A custom progress indicator shows "100% complete".
+A full-screen checkout step (no WizardShell) with two product option cards, trust signals, and a placeholder order form with a success state.
 
 ### Implementation
 
-**New file: `src/pages/steps/Step10.tsx`**
+**New file: `src/pages/steps/Step11.tsx`**
 
-- Full-screen layout (like Step 9 — no WizardShell)
-- Heading: "[Name]'s book is ready. ✨" / Subheading: "Here's a sneak peek before you make it official."
+Full-screen layout like Steps 9/10 — no WizardShell wrapper.
 
-**Carousel (using Embla via existing `Carousel` components):**
+- Custom progress bar showing 100% + "Final step" label
+- Heading: "Choose how you'd like [name]'s book." / Subheading: "Both options include the full story and all illustrations."
 
-5 book-shaped cards in a horizontal carousel with dots indicator:
+**Two product cards (stacked vertically):**
 
-1. **Cover page** — uses `answers.coverLayout` to render either full-illustration or bold-title layout with `answers.bookTitle`, child's name, and art style color
-2. **Story page 1** — placeholder illustration block + 2-3 lines of whimsical lorem text, children's book style
-3. **Story page 2** — different layout (illustration on side, text wrapping)
-4. **Dedication page** — shows `answers.dedication` text centered in elegant serif
-5. **Locked page** — blurred/obscured content with a lock icon overlay + "Unlock the full story" message
+1. **Digital Book** — standard border card with price $9.99, bullet list (PDF, instant delivery, shareable link, print yourself), CTA button
+2. **Printed Hardcover + Digital** — visually prominent: warm amber border (`border-amber-400`), "⭐ Most popular" badge positioned top-right, price $44.99, bullet list (everything in digital + hardcover + ships 5-7 days + free digital), CTA button. Default-selected via `useState`.
 
-Each page is a styled card with book aspect ratio (~2:3), consistent rounded corners and shadow.
+Selection state: clicking either card or its CTA selects that option (radio-style). Selected card gets a ring/highlight.
 
-**Below carousel:**
-- Primary CTA: "Get [name]'s book →" — large green pill button, navigates to `/step/11`
-- Secondary: "← Make changes" text link, navigates to `/step/1`
+**Trust signals block** below cards:
+- 🔒 Secure checkout
+- 💳 All major cards accepted
+- 📦 Free shipping on hardcovers over $35
 
-**Top area:**
-- Custom progress bar showing all dots filled + "100% complete ✓" text
-- Back button to return to step 9
+**Placeholder order form** below trust signals:
+- Email input field
+- "Place Order" button
+- On click: sets `orderPlaced` state to true, shows success view: "🎉 Your book is on its way!" with the selected plan details and a "← Back to start" link
 
-**Data used from WizardContext:**
-- `childName`, `bookTitle`, `coverLayout`, `artStyle`, `dedication`
+**Data from WizardContext:** `childName` for personalization.
 
 ### Files changed
-- `src/pages/steps/Step10.tsx` — new
-- `src/App.tsx` — add Step10 import and `/step/10` route
+- `src/pages/steps/Step11.tsx` — new
+- `src/App.tsx` — add Step11 import and `/step/11` route
 
