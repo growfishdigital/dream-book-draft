@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { Separator } from "@/components/ui/separator";
-import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Textarea } from "@/components/ui/textarea";
 
 const ART_STYLES = [
@@ -49,7 +49,6 @@ export default function Step7() {
   const name = (answers.childName as string) || "your child";
   const artStyle = (answers.artStyle as string) || "";
   const buyerRole = (answers.buyerRole as string) || "parent";
-  const titlePageName = (answers.titlePageName as string) ?? "";
   const dedication = (answers.dedication as string) ?? "";
   const language = (answers.language as string) || "english";
 
