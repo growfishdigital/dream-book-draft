@@ -1,34 +1,28 @@
 
 
-## Step 1: "Who's this for?"
+## Step 2: "What kind of story?"
 
 ### What we're building
-A fully interactive first step with name input, age range pills, gender pills, occasion chips, and dynamic heading that updates with the child's name.
+An interactive genre and mood selection screen with a 2-column card grid for genres and horizontal pill selector for mood/tone.
 
 ### Implementation
 
-**File: `src/pages/steps/Step1.tsx`** — Complete rewrite with:
+**New file: `src/pages/steps/Step2.tsx`**
 
-1. **Dynamic heading** — Shows "Let's start with the star of the story." initially, fades to "Let's make a book for [Name]." once name is entered (CSS transition on opacity/transform)
+- Dynamic heading using `answers.childName` from WizardContext: "What kind of story does [Name] need right now?"
+- Subheading: "Pick the vibe — this shapes the whole adventure."
+- **Genre cards** — 2-column grid (`grid grid-cols-2 gap-3`), each card with emoji, bold label, one-line description. 10 genres:
+  - 🗺️ Adventure, 🐉 Fantasy, 🚀 Sci-Fi / Space, 🔍 Mystery, 🏡 Everyday Life, 🌙 Bedtime, ⚽ Sports, 👑 Fairy Tale, 🐾 Animals / Nature, 🦸 Superhero
+  - Selected state: green border + light green bg (same pill style as Step 1)
+  - Stores `genre` in WizardContext
+- **Mood pills** — horizontal wrap of pills below genre grid: Funny, Heartwarming, Calm, Whimsical, Brave, Mysterious
+  - Same pill styling as Step 1's age/gender pills
+  - Stores `mood` in WizardContext
+- **Validation** — `setCanContinue(genre && mood)` via useEffect
 
-2. **Name input** — Large centered text input, stores as `childName` in WizardContext
-
-3. **Age range pills** — Horizontal row of pill buttons, each with main label and gray sublabel:
-   - 0–2 / Board book, 3–5 / Picture book, 6–8 / Early reader, 9–12 / Chapter book
-   - Selected state: green border + light green bg, unselected: white with shadow
-
-4. **Gender pills** — Same style: Girl, Boy, Non-binary, Surprise me
-
-5. **Occasion chips** — 3-column grid of emoji+label chips, single select, optional. "Other" reveals a text input below.
-
-6. **Validation** — `setCanContinue(true)` when name + age + gender all filled, false otherwise (via useEffect)
-
-**File: `src/contexts/WizardContext.tsx`** — No changes needed; already supports arbitrary key/value answers.
-
-**Styling approach**: Reusable pill/chip components inline in Step1 using Tailwind classes matching the design language (rounded-2xl, green border on select, soft shadow, warm bg).
-
-**Animation**: The heading swap uses a CSS transition — opacity fades out, text changes, fades back in. Implemented with a simple state toggle + `transition-opacity duration-300`.
+**Updated file: `src/App.tsx`** — Add route for `/step/2` pointing to `Step2`
 
 ### Files changed
-- `src/pages/steps/Step1.tsx` — full rewrite
+- `src/pages/steps/Step2.tsx` — new
+- `src/App.tsx` — add Step2 import and route
 
