@@ -145,16 +145,18 @@ function CharacterCard({
           </div>
 
           {/* Relationship */}
-          <div className="space-y-1.5">
-            <label className="block text-sm font-medium text-muted-foreground">
-              Relationship to {childName}
-            </label>
-            <PillSelector
-              options={RELATIONSHIPS}
-              value={character.relationship}
-              onChange={(v) => update({ relationship: v })}
-            />
-          </div>
+          {!isHero && (
+            <div className="space-y-1.5">
+              <label className="block text-sm font-medium text-muted-foreground">
+                Relationship to {childName}
+              </label>
+              <PillSelector
+                options={RELATIONSHIPS}
+                value={character.relationship}
+                onChange={(v) => update({ relationship: v })}
+              />
+            </div>
+          )}
 
           {/* Gender */}
           <div className="space-y-1.5">
@@ -212,6 +214,15 @@ export default function Step6() {
   const { answers, setAnswer, setCanContinue } = useWizard();
   const name = (answers.childName as string) || "your child";
 
+  const heroCharacter: Character = (answers.heroCharacter as Character) || {
+    id: "hero",
+    name: name,
+    relationship: "Hero",
+    gender: (answers.childGender as string) || "",
+    age: (answers.childAge as string) || "",
+    notable: "",
+  };
+
   const characters: Character[] = (answers.characters as Character[]) || [];
 
   const setCharacters = useCallback(
@@ -252,17 +263,14 @@ export default function Step6() {
           </p>
         </div>
 
-        {/* Hero card */}
-        <div
-          className="rounded-2xl border-2 px-4 py-3 flex items-center gap-3"
-          style={{ borderColor: "hsl(var(--wizard-primary) / 0.3)", backgroundColor: "hsl(var(--wizard-primary) / 0.06)" }}
-        >
-          <span className="text-xl">👑</span>
-          <div className="flex-1 min-w-0">
-            <span className="font-semibold text-sm block" style={{ color: "hsl(var(--wizard-primary))" }}>
-              {name}
-            </span>
-            <span className="text-xs text-muted-foreground">Hero</span>
+        {/* Hero card — editable */}
+        <CharacterCard
+          character={heroCharacter}
+          onChange={(c) => setAnswer("heroCharacter", c)}
+          defaultExpanded={false}
+          childName={name}
+          isHero
+        />
           </div>
         </div>
 
