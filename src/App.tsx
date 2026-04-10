@@ -5,6 +5,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WizardProvider } from "@/contexts/WizardContext";
 import Step1 from "./pages/steps/Step1";
+import Step2 from "./pages/steps/Step2";
 import StepPlaceholder from "./pages/steps/StepPlaceholder";
 import NotFound from "./pages/NotFound";
 
