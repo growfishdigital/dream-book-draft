@@ -1,28 +1,24 @@
 
 
-## Step 2: "What kind of story?"
+## Step 3: "What should the story teach?"
 
 ### What we're building
-An interactive genre and mood selection screen with a 2-column card grid for genres and horizontal pill selector for mood/tone.
+A lesson/theme selection screen with a 2-column card grid and a dynamic preview line that appears after selection.
 
 ### Implementation
 
-**New file: `src/pages/steps/Step2.tsx`**
+**New file: `src/pages/steps/Step3.tsx`**
 
-- Dynamic heading using `answers.childName` from WizardContext: "What kind of story does [Name] need right now?"
-- Subheading: "Pick the vibe — this shapes the whole adventure."
-- **Genre cards** — 2-column grid (`grid grid-cols-2 gap-3`), each card with emoji, bold label, one-line description. 10 genres:
-  - 🗺️ Adventure, 🐉 Fantasy, 🚀 Sci-Fi / Space, 🔍 Mystery, 🏡 Everyday Life, 🌙 Bedtime, ⚽ Sports, 👑 Fairy Tale, 🐾 Animals / Nature, 🦸 Superhero
-  - Selected state: green border + light green bg (same pill style as Step 1)
-  - Stores `genre` in WizardContext
-- **Mood pills** — horizontal wrap of pills below genre grid: Funny, Heartwarming, Calm, Whimsical, Brave, Mysterious
-  - Same pill styling as Step 1's age/gender pills
-  - Stores `mood` in WizardContext
-- **Validation** — `setCanContinue(genre && mood)` via useEffect
+- Heading: "Every great story has a heart."
+- Subheading using `answers.childName`: "What do you want [name] to carry with them after the last page?"
+- 2-column card grid with 10 lesson options (same card styling as Step 2 genre cards): emoji, bold label, gray description
+- Stores `lesson` in WizardContext
+- Validation: `setCanContinue(lesson !== "")`
+- After selection, an animated line fades in below the grid: "[Name]'s story will be about [lesson label]." using `animate-fade-in`
 
-**Updated file: `src/App.tsx`** — Add route for `/step/2` pointing to `Step2`
+**Updated file: `src/App.tsx`** — Add Step3 import and `/step/3` route
 
 ### Files changed
-- `src/pages/steps/Step2.tsx` — new
-- `src/App.tsx` — add Step2 import and route
+- `src/pages/steps/Step3.tsx` — new
+- `src/App.tsx` — add route
 
