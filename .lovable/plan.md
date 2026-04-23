@@ -1,76 +1,55 @@
 
 
-## Plan: "The Spotlight" Character Creator — Step 6 Rewrite
+## Plan: Combine Preview + Checkout into One Page
 
-Complete rewrite of `src/pages/steps/Step6.tsx` (~700 lines) to implement a mini-wizard-within-the-wizard with a horizontal pill bar and focused single-character editing.
+Merge Step 11 (preview carousel) and Step 12 (plan picker / checkout) into a single side-by-side page. Reduce the wizard from 12 steps to 11 total.
 
-### Data Model
+### Layout
 
-New interfaces stored in wizard context under keys `protagonist`, `supportingCharacters`, `companion`:
+Single page at `/step/11` with two columns on desktop, stacked on mobile:
 
 ```text
-Protagonist: {
-  photos: string[] (base64, max 3),
-  name, age, gender, special (200 chars),
-  appearance: { hairColor, hairStyle, skinTone, glasses: bool, features (100 chars) }
-}
-
-SupportingCharacter: {
-  id, mode: "ai" | "real",
-  // AI mode: name, surpriseName: bool, relationship, gender, ageRange
-  // Real mode: above + photos (max 3), appearance (same as protagonist)
-}
-
-Companion: {
-  id, name, type (Dog/Cat/Stuffed Animal/Imaginary Friend/Other + writeIn), description (100 chars)
-}
+┌──────────────────────────────────────────────────┐
+│  Header: progress bar + "100% complete ✓"        │
+│  Heading: "[Name]'s book is ready ✨"            │
+│  Subtitle: "Preview the book and choose how      │
+│             you'd like it delivered."            │
+├──────────────────────┬───────────────────────────┤
+│                      │                           │
+│   PREVIEW CAROUSEL   │   PLAN PICKER + CHECKOUT  │
+│   (from old Step11)  │   (from old Step12)       │
+│                      │                           │
+│   - 5-page carousel  │   - Digital card          │
+│   - Cover, story x2, │   - Hardcover card        │
+│     dedication,      │   - Trust signals         │
+│     locked page      │   - Email input           │
+│                      │   - Place Order button    │
+│                      │                           │
+└──────────────────────┴───────────────────────────┘
 ```
 
-### Component Breakdown (all in Step6.tsx)
-
-1. **PillBar** — horizontal scrollable row of character pills
-   - Protagonist pill: star icon + name from Step 1 (or "Main Character"), no X button
-   - Supporting character pills: avatar placeholder (or photo thumbnail), name, X to remove
-   - Companion pill: paw icon, name, X to remove
-   - "+ Character" pill (hidden when 2 supporting exist, shows tooltip at limit)
-   - "+ Companion" pill (hidden when 1 companion exists)
-   - Active pill highlighted with wizard-primary color
-   - Subtle slide-in animation on add
-
-2. **ProtagonistForm** — always "real person" mode
-   - Photo upload zone (drag-drop or click, up to 3, base64 via FileReader, thumbnails with X)
-   - Name (pre-filled from `answers.childName`), Age (pre-filled from `answers.ageRange`), Gender (pre-filled)
-   - "What makes [Name] special?" textarea (200 char limit + counter, optional)
-   - "Refine appearance" collapsible accordion (expanded if no photos, collapsed if photos exist)
-     - Hair color pills, hair style pills, skin tone color swatches (6-8 circles), glasses toggle, features text (100 chars)
-
-3. **SupportingCharacterForm** — starts with path choice cards
-   - Two large cards: "Let AI create" (sparkles icon) vs "Based on a real person" (camera icon)
-   - After choosing, show appropriate form with "Switch to..." link at top
-   - AI mode: name + "Surprise me" checkbox, relationship picker, gender picker, age range (auto-suggested from relationship)
-   - Real mode: full form with photos, name, relationship, age range, gender, appearance accordion
-
-4. **CompanionForm**
-   - Name, type picker (with "Other" write-in), brief description (100 chars)
-
-5. **Paid character upsell** — when user has 2 supporting characters and taps "+ Character", show a simulated $3 paywall dialog before adding the 3rd
-
-### Validation & Navigation
-
-- On "Continue" click: check protagonist has name + age + gender, each supporting char has name + relationship, each companion has name + type
-- If invalid: add red dot badge to incomplete pill, switch to first incomplete character, highlight missing fields
-- All data persists when switching pills (stored in wizard context)
-- Remove character: confirmation toast/dialog, then remove and focus previous pill
+- Desktop (≥768px): two columns, `grid-cols-2`, gap-8, max-width ~1100px centered
+- Mobile (<768px): stacked, preview on top, checkout below
+- Order success state remains the same (full-screen confirmation with 🎉)
 
 ### Files Changed
 
-- **`src/pages/steps/Step6.tsx`** — full rewrite with all components above
-- **`src/contexts/WizardContext.tsx`** — no changes needed (generic `answers` record handles new shape)
+1. **`src/pages/steps/Step11.tsx`** — Full rewrite. Combines the carousel rendering (CoverPage, StoryPage1, StoryPage2, DedicationPage, LockedPage helpers) with the plan selection cards, email input, place-order button, and order success state. Back button goes to `/step/10`. Remove the standalone "Get [Name]'s book" CTA and "Make changes" link — checkout lives directly on the page.
 
-### Visual Notes
+2. **`src/pages/steps/Step12.tsx`** — Delete (or repurpose to redirect to `/step/11`). Simplest: replace contents with a `<Navigate to="/step/11" replace />`.
 
-- Consistent with existing wizard styling (wizard-primary color, rounded-2xl cards, pill selectors)
-- Skin tone picker: 8 colored circles (light to dark), no text labels
-- Photo upload: dashed border zone with camera icon, prominent placement at top of form
-- Path choice cards: equal visual weight, sparkles vs camera icons, subtle hover shadow
+3. **`src/App.tsx`** — Remove the `Step12` import and the `/step/12` route (or keep redirect route). Simpler: drop the route entirely.
+
+4. **`src/components/WizardShell.tsx`** — Change `TOTAL_STEPS = 12` to `TOTAL_STEPS = 11`.
+
+5. **`src/components/ProgressBar.tsx`** — If it has its own `TOTAL_STEPS` constant or step titles array, update from 12 → 11 and remove the Step 12 entry from the titles map (Step 11 title becomes "Preview & Buy" or similar).
+
+6. **`src/pages/steps/Step10.tsx`** — Update the "100% complete" / final progress copy if it references step 12; navigation forward from Step 10's generation animation goes to `/step/11` (already does).
+
+### Behavior Notes
+
+- Preview carousel keeps all 5 pages including the locked teaser page — the lock now sits next to the actual checkout, reinforcing the unlock CTA.
+- Plan selection (Digital $9.99 / Hardcover $44.99) defaults to Hardcover with the "Most popular" badge, identical to current Step 12.
+- "Place Order" button still requires a valid email and shows the same success screen on click.
+- Wizard progress bar shows 11 segments, all filled at this final step.
 
