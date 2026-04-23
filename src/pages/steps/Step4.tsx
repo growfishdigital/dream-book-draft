@@ -202,23 +202,7 @@ export default function Step4() {
     setAnswer("interests", interests.filter((v) => v !== value));
   };
 
-  // Age-filtered visible categories
-  const visibleCategories = useMemo(() => {
-    if (!ageRange) return CATEGORIES;
-    return CATEGORIES
-      .map((cat) => ({
-        ...cat,
-        items: cat.items.filter((i) => i.ages.includes(ageRange)),
-      }))
-      .filter((cat) => cat.items.length > 0);
-  }, [ageRange]);
-
-  const popularItems = useMemo(() => {
-    if (!ageRange) return [];
-    return POPULAR_BY_AGE[ageRange]
-      .map((v) => findItem(v))
-      .filter((x): x is InterestItem => Boolean(x));
-  }, [ageRange]);
+  const visibleCategories = CATEGORIES;
 
   const preview = getPreviewSentence(name, interests);
   const count = interests.length;
@@ -236,25 +220,6 @@ export default function Step4() {
           </p>
         </div>
 
-        {/* Popular picks */}
-        {ageRange && popularItems.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="font-medium text-muted-foreground text-base">
-              ⭐ Popular picks for ages {AGE_LABEL[ageRange]}
-            </h2>
-            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
-              {popularItems.map((item) => (
-                <InterestTile
-                  key={`pop-${item.value}`}
-                  item={item}
-                  selected={interests.includes(item.value)}
-                  shaking={shaking === item.value}
-                  onClick={() => toggle(item.value)}
-                />
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Categories */}
         <div className="space-y-6">
