@@ -547,23 +547,62 @@ export default function Step6() {
           )}
         </div>
 
-        {/* form area */}
-        <div className="rounded-2xl border p-5 sm:p-6" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
-          {activeTab.kind === "protagonist" && (
-            <ProtagonistForm data={protagonist} onChange={setProtagonist} />
-          )}
+        {/* form area + live preview */}
+        {(() => {
+          const activeSupporting = activeTab.kind === "supporting"
+            ? supportingCharacters.find((c) => c.id === activeTab.id)
+            : null;
 
-          {activeTab.kind === "supporting" && (() => {
-            const sc = supportingCharacters.find((c) => c.id === activeTab.id);
-            if (!sc) return null;
-            return (
-              <SupportingCharacterForm data={sc}
-                onChange={(d) => updateSupporting(sc.id, d)}
-                protagonistName={protagonist.name}
-              />
-            );
-          })()}
-        </div>
+          const snapshot: PreviewSnapshot = activeTab.kind === "protagonist"
+            ? {
+                hairColor: protagonist.appearance.hairColor,
+                hairStyle: protagonist.appearance.hairStyle,
+                skinTone: protagonist.appearance.skinTone,
+                glasses: protagonist.appearance.glasses,
+                features: protagonist.appearance.features,
+                gender: protagonist.gender,
+                photo: protagonist.photos[0] || "",
+                name: protagonist.name,
+              }
+            : activeSupporting
+            ? {
+                hairColor: activeSupporting.appearance.hairColor,
+                hairStyle: activeSupporting.appearance.hairStyle,
+                skinTone: activeSupporting.appearance.skinTone,
+                glasses: activeSupporting.appearance.glasses,
+                features: activeSupporting.appearance.features,
+                gender: activeSupporting.gender,
+                photo: activeSupporting.photos[0] || "",
+                name: activeSupporting.name,
+              }
+            : { hairColor: "", hairStyle: "", skinTone: "", glasses: false, features: "", gender: "", photo: "", name: "" };
+
+          const characterKey = activeTab.kind === "protagonist" ? "protagonist" : `supporting-${activeTab.id}`;
+          const showPreview = activeTab.kind === "protagonist" || (activeSupporting && activeSupporting.mode);
+
+          return (
+            <div className={`grid grid-cols-1 ${showPreview ? "lg:grid-cols-[1fr_240px]" : ""} gap-5`}>
+              <div className="rounded-2xl border p-5 sm:p-6" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
+                {activeTab.kind === "protagonist" && (
+                  <ProtagonistForm data={protagonist} onChange={setProtagonist} />
+                )}
+
+                {activeTab.kind === "supporting" && activeSupporting && (
+                  <SupportingCharacterForm data={activeSupporting}
+                    onChange={(d) => updateSupporting(activeSupporting.id, d)}
+                    protagonistName={protagonist.name}
+                  />
+                )}
+              </div>
+
+              {showPreview && (
+                <div className="lg:sticky lg:top-20 lg:self-start">
+                  <CharacterHeadPreview current={snapshot} characterKey={characterKey} />
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </div>
 
       {/* Remove confirmation dialog */}
