@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
+import ProgressBar from "@/components/ProgressBar";
 
 const STAGES = [
   { emoji: "✍️", text: "Crafting {name}'s story..." },
@@ -60,6 +61,11 @@ export default function Step9() {
       <button className="absolute top-4 right-4 text-sm font-medium px-3 py-1.5 rounded-xl transition-colors hover:bg-black/5 z-10" style={{ color: "hsl(var(--wizard-primary))" }}>
         Save &amp; exit
       </button>
+
+      {/* Progress dots */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
+        <ProgressBar currentStep={10} />
+      </div>
       <style>{`
         @keyframes book-open {
           0% { transform: rotateY(0deg); }
