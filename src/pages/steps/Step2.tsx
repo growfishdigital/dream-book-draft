@@ -57,7 +57,7 @@ export default function Step2() {
             className="font-heading text-3xl sm:text-4xl font-bold"
             style={{ color: "hsl(var(--wizard-primary))" }}
           >
-            What kind of story does {name} need right now?
+            What kind of story should this be?
           </h1>
           <p className="text-muted-foreground text-lg">
             Pick the vibe — this shapes the whole adventure.
