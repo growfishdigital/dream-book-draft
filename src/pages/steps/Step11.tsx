@@ -300,7 +300,7 @@ export default function Step11() {
             >
               <span className="text-xl leading-none">✏️</span>
               <p className="text-sm leading-relaxed" style={{ color: "#2B4E18" }}>
-                <span className="font-semibold">You'll get to review your book first.</span> After checkout, preview every page and request edits or revisions before it's finalized.
+                <span className="font-semibold">You'll get to review your book before it's actually sent to you.</span> After checkout, preview every page and request edits or revisions before it's finalized.
               </p>
             </div>
           </div>
