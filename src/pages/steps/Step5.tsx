@@ -102,13 +102,6 @@ const CATEGORIES: CategoryDef[] = [
       { key: "food", label: "What food?", type: "text", placeholder: "e.g. Pizza" },
     ],
   },
-  {
-    value: "other", emoji: "🎁", label: "Something Else",
-    fields: [
-      { key: "description", label: "Describe it", type: "text", placeholder: "e.g. A kaleidoscope", maxLength: 80 },
-      { key: "photo", label: "Photo (strongly encouraged)", type: "photo" },
-    ],
-  },
 ];
 
 export default function Step5() {
@@ -169,14 +162,14 @@ export default function Step5() {
             className="font-heading text-3xl sm:text-4xl font-bold"
             style={{ color: "hsl(var(--wizard-primary))" }}
           >
-            Got a secret ingredient?
+            Sneak in a surprise
           </h1>
           <p className="text-muted-foreground text-lg">
-            Is there something specific — a toy, a pet, a person, a place — that we should weave into {name}'s story? This is optional, but it's where the real magic happens.
+            Add a favorite thing from {name}'s life — we'll give it a cameo in the story! Optional, but guaranteed to get a reaction.
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-3 gap-3">
           {CATEGORIES.map((cat) => (
             <button
               key={cat.value}
