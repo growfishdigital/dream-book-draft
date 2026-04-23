@@ -149,7 +149,7 @@ function InterestTile({ item, selected, shaking, onClick }: InterestTileProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`relative aspect-[4/3] rounded-2xl border-2 shadow-sm transition-all flex flex-col items-center justify-center gap-1.5 px-2 py-3 ${
+      className={`relative aspect-square rounded-xl border-2 shadow-sm transition-all flex flex-col items-center justify-center gap-0.5 px-1.5 py-2 ${
         selected
           ? "bg-[hsl(var(--wizard-primary)/0.08)]"
           : "bg-white border-transparent hover:shadow-md hover:-translate-y-0.5"
@@ -158,15 +158,15 @@ function InterestTile({ item, selected, shaking, onClick }: InterestTileProps) {
     >
       {selected && (
         <span
-          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+          className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center"
           style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
         >
-          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+          <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
         </span>
       )}
-      <span className="text-3xl leading-none">{item.emoji}</span>
+      <span className="text-xl leading-none">{item.emoji}</span>
       <span
-        className="text-xs sm:text-sm font-medium text-center leading-tight"
+        className="text-[10px] sm:text-xs font-medium text-center leading-tight"
         style={{ color: "hsl(var(--wizard-primary))" }}
       >
         {item.label}
