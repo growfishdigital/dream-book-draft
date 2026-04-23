@@ -1,55 +1,97 @@
 
 
-## Plan: Combine Preview + Checkout into One Page
+## Rework Step 4 — Interests
 
-Merge Step 11 (preview carousel) and Step 12 (plan picker / checkout) into a single side-by-side page. Reduce the wizard from 12 steps to 11 total.
+Make the interests page calmer and more guided: a visual grid, age-aware filtering, popular picks at the top, and a persistent selection bar at the bottom.
 
-### Layout
+### 1. Layout: visual grid (not pills)
 
-Single page at `/step/11` with two columns on desktop, stacked on mobile:
+Replace the wrapping pill list with a responsive tile grid inside each category:
+
+- 2 cols on mobile, 3 on `sm`, 4 on `md+`
+- Each tile: square-ish card (~`aspect-[4/3]`), white bg, rounded-2xl, soft shadow
+- Big emoji centered (text-3xl), label below (text-xs/sm, medium weight)
+- Selected state: primary-tinted bg + 2px primary border + small ✓ badge in top-right corner
+- Hover: lift shadow
+- Keep the existing FIFO replacement + shake animation on the displaced tile
+- Keep section headers (`🐾 Animals & Nature`, etc.) above each grid
+
+### 2. "Popular picks for age [X]" section at top
+
+A new first section above the categories:
+
+- Header: `⭐ Popular picks for ages {ageRange}` (pulled from `answers.ageRange` from Step 1)
+- Same tile style as the rest of the grid
+- Curated list of ~6 interests per age bracket:
+  - **0–2**: farm-animals, dogs, cats, bugs-butterflies, rainbows-colors, music
+  - **3–5**: dinosaurs, unicorns, princesses-castles, dogs, space-stars, cars-trucks
+  - **6–8**: superheroes, dragons, space-stars, soccer, art-drawing, science-experiments
+  - **9–12**: science-experiments, robots-machines, martial-arts, treasure-hunting, building-lego, cooking-baking
+- If no age is set, hide this section entirely (no fallback noise)
+- Selecting a tile here also reflects in its category section below (single source of truth)
+
+### 3. Age-based filtering (hide some tiles for ages 5–8 and surrounding brackets)
+
+Tag each interest with an age-suitability list, and filter the visible tiles based on `answers.ageRange`:
+
+- **0–2**: only show very-young-friendly (animals, vehicles, music, rainbows, gardening, snow, dancing)
+- **3–5**: hide overly-mature themes (martial-arts, ninjas, science-experiments, robots-machines)
+- **6–8**: hide baby-leaning (farm-animals stays, but drop e.g. rainbows-colors as a primary)
+- **9–12**: hide young-leaning (princesses-castles, unicorns, fairies-magic, rainbows-colors, bugs-butterflies)
+
+Filtering is a soft hide — if a category ends up empty for the selected age, hide that whole category section too. If no age is selected, show everything.
+
+### 4. Persistent bottom selection bar
+
+A new sticky bar that sits **above** the existing WizardShell footer (Back / Continue):
+
+- Position: `sticky bottom-[88px]` (clears the shell's footer), full-width, centered content
+- Surface: white card with soft shadow, rounded-2xl, slight border
+- Left: `2 of 3 selected` (live count)
+- Right: chosen interests rendered as small removable pills (emoji + label + ✕)
+- Empty state: subdued text `Pick 2–3 interests to bring the story to life`
+- When count = 3: subtle success tint on the bar (primary-tinted bg) + label changes to `Perfect — you're all set ✨`
+
+The combo "preview sentence" stays, but moves **inside** this bar (small italic line under the pills) so it feels like one cohesive status area instead of floating at page bottom.
+
+### 5. Write-in interest
+
+Stays as-is at the bottom of the scrollable content (under the grids), unchanged copy and disclaimer.
+
+### Technical notes
+
+- File: `src/pages/steps/Step4.tsx` only
+- Add two constants:
+  - `POPULAR_BY_AGE: Record<string, string[]>` keyed by `"0-2" | "3-5" | "6-8" | "9-12"`
+  - Extend each item with an optional `ages: string[]` (which age ranges may see it); compute a `visibleCategories` derived list
+- Keep existing `CATEGORIES`, `COMBO_SENTENCES`, `getPreviewSentence`, FIFO toggle logic, and `setCanContinue(interests.length >= 2)` behavior
+- Read `answers.ageRange` for both popular section and filtering
+- Tile component extracted locally (`InterestTile`) so the popular section and category sections share the same visual
+
+### Visual sketch
 
 ```text
-┌──────────────────────────────────────────────────┐
-│  Header: progress bar + "100% complete ✓"        │
-│  Heading: "[Name]'s book is ready ✨"            │
-│  Subtitle: "Preview the book and choose how      │
-│             you'd like it delivered."            │
-├──────────────────────┬───────────────────────────┤
-│                      │                           │
-│   PREVIEW CAROUSEL   │   PLAN PICKER + CHECKOUT  │
-│   (from old Step11)  │   (from old Step12)       │
-│                      │                           │
-│   - 5-page carousel  │   - Digital card          │
-│   - Cover, story x2, │   - Hardcover card        │
-│     dedication,      │   - Trust signals         │
-│     locked page      │   - Email input           │
-│                      │   - Place Order button    │
-│                      │                           │
-└──────────────────────┴───────────────────────────┘
+What is Emma interested in?
+Pick up to 3 — we'll weave these into the world…
+
+⭐ Popular picks for ages 3–5
+[🦕 Dino] [🦄 Uni] [👑 Princess] [🐶 Dogs] [🌟 Space] [🚗 Cars]
+
+🐾 Animals & Nature
+[🦕] [🐶] [🐱] [🐴]
+[🧜] [🐄] [🦁] [🦋]
+
+🚀 Adventure & Fantasy
+[🌟] [🏴‍☠️] [🦸] [👑]
+…
+
+✍️ Or write your own
+[__________________________]
+
+────── sticky bar ──────
+2 of 3 selected     [🦕 Dinosaurs ✕] [🌟 Space ✕]
+Emma zooms past the rings of Saturn…
+─────────────────────────
+[ Back ]        [ Continue ]
 ```
-
-- Desktop (≥768px): two columns, `grid-cols-2`, gap-8, max-width ~1100px centered
-- Mobile (<768px): stacked, preview on top, checkout below
-- Order success state remains the same (full-screen confirmation with 🎉)
-
-### Files Changed
-
-1. **`src/pages/steps/Step11.tsx`** — Full rewrite. Combines the carousel rendering (CoverPage, StoryPage1, StoryPage2, DedicationPage, LockedPage helpers) with the plan selection cards, email input, place-order button, and order success state. Back button goes to `/step/10`. Remove the standalone "Get [Name]'s book" CTA and "Make changes" link — checkout lives directly on the page.
-
-2. **`src/pages/steps/Step12.tsx`** — Delete (or repurpose to redirect to `/step/11`). Simplest: replace contents with a `<Navigate to="/step/11" replace />`.
-
-3. **`src/App.tsx`** — Remove the `Step12` import and the `/step/12` route (or keep redirect route). Simpler: drop the route entirely.
-
-4. **`src/components/WizardShell.tsx`** — Change `TOTAL_STEPS = 12` to `TOTAL_STEPS = 11`.
-
-5. **`src/components/ProgressBar.tsx`** — If it has its own `TOTAL_STEPS` constant or step titles array, update from 12 → 11 and remove the Step 12 entry from the titles map (Step 11 title becomes "Preview & Buy" or similar).
-
-6. **`src/pages/steps/Step10.tsx`** — Update the "100% complete" / final progress copy if it references step 12; navigation forward from Step 10's generation animation goes to `/step/11` (already does).
-
-### Behavior Notes
-
-- Preview carousel keeps all 5 pages including the locked teaser page — the lock now sits next to the actual checkout, reinforcing the unlock CTA.
-- Plan selection (Digital $9.99 / Hardcover $44.99) defaults to Hardcover with the "Most popular" badge, identical to current Step 12.
-- "Place Order" button still requires a valid email and shows the same success screen on click.
-- Wizard progress bar shows 11 segments, all filled at this final step.
 
