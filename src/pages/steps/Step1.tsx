@@ -78,7 +78,7 @@ export default function Step1() {
             {headingText}
           </h1>
           <p className="text-muted-foreground text-lg">
-            Tell us a little about the child this book is for.
+            Give us a few details so we can tailor the book to them.
           </p>
         </div>
 
