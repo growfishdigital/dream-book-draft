@@ -106,7 +106,6 @@ export default function Step11() {
   const pages = [
     <CoverPage key="cover" layout={layout} title={title} name={name} artHsl={artHsl} />,
     <StoryPage key="story" name={name} artHsl={artHsl} />,
-    <PlotPreviewPage key="plot" name={name} artHsl={artHsl} />,
   ];
 
   if (orderPlaced) {
@@ -168,7 +167,7 @@ export default function Step11() {
       {/* Two-column layout */}
       <div className="w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
         {/* Preview column */}
-        <div className="flex justify-center">
+        <div className="flex flex-col items-center gap-5">
           <div className="w-full max-w-sm">
             <Carousel opts={{ align: "center", loop: false }} className="w-full">
               <CarouselContent>
@@ -186,6 +185,28 @@ export default function Step11() {
               <CarouselPrevious className="-left-4" />
               <CarouselNext className="-right-4" />
             </Carousel>
+          </div>
+
+          {/* Plot preview box */}
+          <div
+            className="w-full max-w-sm rounded-2xl p-5 border"
+            style={{
+              backgroundColor: `hsl(${artHsl} / 0.08)`,
+              borderColor: `hsl(${artHsl} / 0.2)`,
+            }}
+          >
+            <p
+              className="text-[10px] uppercase tracking-widest mb-2 font-semibold"
+              style={{ color: `hsl(${artHsl})` }}
+            >
+              The Story
+            </p>
+            <p
+              className="text-sm font-serif leading-relaxed"
+              style={{ color: "hsl(var(--wizard-primary) / 0.85)" }}
+            >
+              When {name} discovers a mysterious glowing map hidden beneath the old oak tree, an unforgettable adventure begins. Together with new friends, {name} journeys through enchanted forests, solves clever riddles, and learns that the greatest magic of all is courage, kindness, and believing in yourself.
+            </p>
           </div>
         </div>
 
