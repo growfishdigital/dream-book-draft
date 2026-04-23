@@ -362,6 +362,117 @@ export default function Step11() {
               When {name} discovers a mysterious glowing map hidden beneath the old oak tree, an unforgettable adventure begins. Together with new friends, {name} journeys through enchanted forests, solves clever riddles, and learns that the greatest magic of all is courage, kindness, and believing in yourself.
             </p>
           </div>
+
+          {/* Your story details recap */}
+          {(() => {
+            const ageLabel = AGE_LABEL[answers.ageRange as string];
+            const genreLabel = GENRE_LABEL[answers.genre as string];
+            const moodLabel = MOOD_LABEL[answers.mood as string];
+            const lessonLabel = LESSON_LABEL[answers.lesson as string];
+            const interests = (answers.interests as string[]) || [];
+            const customInterest = (answers.customInterest as string)?.trim();
+            const specialThing = formatSpecialThing(answers.specialThing);
+            const charactersLine = formatCharacters(answers);
+
+            const storyTypeBits = [genreLabel, moodLabel].filter(Boolean);
+            const storyTypeLine = storyTypeBits.length ? storyTypeBits.join(" · ") : null;
+
+            const hasAnything =
+              ageLabel ||
+              storyTypeLine ||
+              lessonLabel ||
+              interests.length > 0 ||
+              customInterest ||
+              specialThing ||
+              charactersLine;
+
+            if (!hasAnything) return null;
+
+            return (
+              <div
+                className="w-full max-w-sm rounded-2xl p-5 border"
+                style={{
+                  backgroundColor: `hsl(${artHsl} / 0.08)`,
+                  borderColor: `hsl(${artHsl} / 0.2)`,
+                }}
+              >
+                <p
+                  className="text-[10px] uppercase tracking-widest mb-3 font-semibold"
+                  style={{ color: `hsl(${artHsl})` }}
+                >
+                  Your story details
+                </p>
+
+                <div className="divide-y" style={{ borderColor: `hsl(${artHsl} / 0.15)` }}>
+                  {ageLabel && (
+                    <SummaryRow label="Age range" artHsl={artHsl}>
+                      {ageLabel}
+                    </SummaryRow>
+                  )}
+
+                  {storyTypeLine && (
+                    <SummaryRow label="Story type" artHsl={artHsl}>
+                      {storyTypeLine}
+                    </SummaryRow>
+                  )}
+
+                  {lessonLabel && (
+                    <SummaryRow label="Life lesson" artHsl={artHsl}>
+                      {lessonLabel}
+                    </SummaryRow>
+                  )}
+
+                  {(interests.length > 0 || customInterest) && (
+                    <SummaryRow label="Interests" artHsl={artHsl}>
+                      <div className="flex flex-wrap gap-1.5">
+                        {interests.map((v) => {
+                          const info = INTEREST_INFO[v];
+                          if (!info) return null;
+                          return (
+                            <span
+                              key={v}
+                              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                              style={{
+                                backgroundColor: `hsl(${artHsl} / 0.18)`,
+                                color: "hsl(var(--wizard-primary))",
+                              }}
+                            >
+                              <span>{info.emoji}</span>
+                              <span>{info.label}</span>
+                            </span>
+                          );
+                        })}
+                        {customInterest && (
+                          <span
+                            className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+                            style={{
+                              backgroundColor: `hsl(${artHsl} / 0.18)`,
+                              color: "hsl(var(--wizard-primary))",
+                            }}
+                          >
+                            <span>✍️</span>
+                            <span>{customInterest}</span>
+                          </span>
+                        )}
+                      </div>
+                    </SummaryRow>
+                  )}
+
+                  {specialThing && (
+                    <SummaryRow label="Favorite thing" artHsl={artHsl}>
+                      {specialThing}
+                    </SummaryRow>
+                  )}
+
+                  {charactersLine && (
+                    <SummaryRow label="Characters" artHsl={artHsl}>
+                      {charactersLine}
+                    </SummaryRow>
+                  )}
+                </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Checkout column */}
