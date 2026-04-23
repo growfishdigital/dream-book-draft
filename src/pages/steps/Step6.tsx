@@ -180,7 +180,7 @@ function PhotoUploadZone({ photos, onChange, heroName, max = 3 }: {
           <Upload className="w-8 h-8" />
           <span className="text-sm font-medium">Tap or drag to upload photos</span>
           <span className="text-xs opacity-70">
-            Upload 1–{max} photos{heroName ? ` of ${heroName}` : ""} for best results
+            Upload 2–{max} photos{heroName ? ` of ${heroName}` : ""} from different angles for best results
           </span>
         </button>
       )}
