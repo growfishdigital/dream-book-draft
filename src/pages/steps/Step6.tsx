@@ -511,7 +511,7 @@ export default function Step6() {
         {/* heading */}
         <div className="text-center space-y-2">
           <h1 className="font-heading text-3xl sm:text-4xl font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>
-            Who's in the story?
+            Let's bring the characters to life
           </h1>
           <p className="text-muted-foreground text-lg">
             Build your cast — start with the star of the story, then add anyone else you'd like to include.
