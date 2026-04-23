@@ -153,29 +153,30 @@ export default function Step11() {
       <div className="w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
         {/* Preview column */}
         <div className="flex flex-col items-center gap-5">
-          {/* Cover */}
-          <div className="w-full max-w-sm flex flex-col items-center gap-2">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-              Cover
-            </p>
-            <div
-              className="rounded-2xl overflow-hidden shadow-lg bg-white"
-              style={{ aspectRatio: "2/3", width: 260 }}
-            >
-              <CoverPage layout={layout} title={title} name={name} artHsl={artHsl} />
+          {/* Cover + first page side-by-side */}
+          <div className="w-full flex flex-row items-start justify-center gap-4">
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                Cover
+              </p>
+              <div
+                className="rounded-2xl overflow-hidden shadow-lg bg-white"
+                style={{ aspectRatio: "2/3", width: 180 }}
+              >
+                <CoverPage layout={layout} title={title} name={name} artHsl={artHsl} />
+              </div>
             </div>
-          </div>
 
-          {/* First page */}
-          <div className="w-full max-w-sm flex flex-col items-center gap-2">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-              First page
-            </p>
-            <div
-              className="rounded-2xl overflow-hidden shadow-lg bg-white"
-              style={{ aspectRatio: "2/3", width: 260 }}
-            >
-              <StoryPage name={name} artHsl={artHsl} />
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                First page
+              </p>
+              <div
+                className="rounded-2xl overflow-hidden shadow-lg bg-white"
+                style={{ aspectRatio: "2/3", width: 180 }}
+              >
+                <StoryPage name={name} artHsl={artHsl} />
+              </div>
             </div>
           </div>
 
