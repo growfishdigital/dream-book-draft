@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
-import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
+
 
 import { Check, ChevronLeft } from "lucide-react";
 import ProgressBar from "@/components/ProgressBar";
@@ -76,16 +76,6 @@ function StoryPage({ name, artHsl }: { name: string; artHsl: string }) {
   );
 }
 
-function PlotPreviewPage({ name, artHsl }: { name: string; artHsl: string }) {
-  return (
-    <div className="flex flex-col h-full p-5 gap-3">
-      <p className="text-[10px] uppercase tracking-widest" style={{ color: `hsl(${artHsl} / 0.5)` }}>The Story</p>
-      <p className="text-[11px] font-serif leading-relaxed" style={{ color: `hsl(${artHsl} / 0.85)` }}>
-        When {name} discovers a mysterious glowing map hidden beneath the old oak tree, an unforgettable adventure begins. Together with new friends, {name} journeys through enchanted forests, solves clever riddles, and learns that the greatest magic of all is courage, kindness, and believing in yourself.
-      </p>
-    </div>
-  );
-}
 
 export default function Step11() {
   const { answers } = useWizard();
@@ -102,10 +92,6 @@ export default function Step11() {
   const price = selected === "digital" ? "$9.99" : "$44.99";
   const planLabel = selected === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
 
-  const pages = [
-    <CoverPage key="cover" layout={layout} title={title} name={name} artHsl={artHsl} />,
-    <StoryPage key="story" name={name} artHsl={artHsl} />,
-  ];
 
   if (orderPlaced) {
     return (
@@ -167,26 +153,33 @@ export default function Step11() {
       <div className="w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
         {/* Preview column */}
         <div className="flex flex-col items-center gap-5">
-          <div className="w-full max-w-sm">
-            <Carousel opts={{ align: "center", loop: false }} className="w-full">
-              <CarouselContent>
-                {pages.map((page, i) => (
-                  <CarouselItem key={i}>
-                    <div
-                      className="rounded-2xl overflow-hidden shadow-lg bg-white mx-auto"
-                      style={{ aspectRatio: "2/3", maxWidth: 260 }}
-                    >
-                      {page}
-                    </div>
-                  </CarouselItem>
-                ))}
-              </CarouselContent>
-              <CarouselPrevious className="-left-4" />
-              <CarouselNext className="-right-4" />
-            </Carousel>
+          {/* Cover */}
+          <div className="w-full max-w-sm flex flex-col items-center gap-2">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+              Cover
+            </p>
+            <div
+              className="rounded-2xl overflow-hidden shadow-lg bg-white"
+              style={{ aspectRatio: "2/3", width: 260 }}
+            >
+              <CoverPage layout={layout} title={title} name={name} artHsl={artHsl} />
+            </div>
           </div>
 
-          {/* Plot preview box */}
+          {/* First page */}
+          <div className="w-full max-w-sm flex flex-col items-center gap-2">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+              First page
+            </p>
+            <div
+              className="rounded-2xl overflow-hidden shadow-lg bg-white"
+              style={{ aspectRatio: "2/3", width: 260 }}
+            >
+              <StoryPage name={name} artHsl={artHsl} />
+            </div>
+          </div>
+
+          {/* Plot summary */}
           <div
             className="w-full max-w-sm rounded-2xl p-5 border"
             style={{
