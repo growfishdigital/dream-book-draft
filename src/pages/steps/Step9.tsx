@@ -105,6 +105,23 @@ export default function Step8() {
           </p>
         </div>
 
+        {/* Book title */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            What's {name}'s book called?
+          </label>
+          <Input
+            value={bookTitle}
+            onChange={(e) => {
+              if (e.target.value.length <= 40) setAnswer("bookTitle", e.target.value);
+            }}
+            maxLength={40}
+            className="text-center text-lg rounded-xl"
+            placeholder={`${name} and the [something amazing]`}
+          />
+          <p className="text-xs text-muted-foreground text-right">{bookTitle.length}/40</p>
+        </div>
+
         {/* Layout picker */}
         <div className="space-y-3">
           <label className="block text-sm font-medium text-muted-foreground text-center">
@@ -136,23 +153,6 @@ export default function Step8() {
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Book title */}
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            What's {name}'s book called?
-          </label>
-          <Input
-            value={bookTitle}
-            onChange={(e) => {
-              if (e.target.value.length <= 40) setAnswer("bookTitle", e.target.value);
-            }}
-            maxLength={40}
-            className="text-center text-lg rounded-xl"
-            placeholder={`${name} and the [something amazing]`}
-          />
-          <p className="text-xs text-muted-foreground text-right">{bookTitle.length}/40</p>
         </div>
 
         {/* Live preview */}
