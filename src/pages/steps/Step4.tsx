@@ -245,7 +245,7 @@ export default function Step4() {
             <h2 className="text-sm font-medium text-muted-foreground">
               ⭐ Popular picks for ages {AGE_LABEL[ageRange]}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
               {popularItems.map((item) => (
                 <InterestTile
                   key={`pop-${item.value}`}
