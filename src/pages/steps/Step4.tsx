@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import WizardShell from "@/components/WizardShell";
 import { Input } from "@/components/ui/input";
 import { useWizard } from "@/contexts/WizardContext";
@@ -175,7 +175,7 @@ function InterestTile({ item, selected, shaking, onClick }: InterestTileProps) {
 export default function Step4() {
   const { answers, setAnswer, setCanContinue } = useWizard();
   const name = (answers.childName as string) || "your little one";
-  const ageRange = (answers.ageRange as AgeRange | undefined) || undefined;
+  
   const interests = (answers.interests as string[]) || [];
   const [shaking, setShaking] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
