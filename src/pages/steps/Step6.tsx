@@ -564,19 +564,6 @@ export default function Step6() {
           })()}
         </div>
       </div>
-            return (
-              <SupportingCharacterForm data={sc}
-                onChange={(d) => updateSupporting(sc.id, d)}
-                protagonistName={protagonist.name}
-              />
-            );
-          })()}
-
-          {activeTab.kind === "companion" && companion && (
-            <CompanionForm data={companion} onChange={(d) => setCompanion(d)} />
-          )}
-        </div>
-      </div>
 
       {/* Remove confirmation dialog */}
       <Dialog open={!!showRemoveDialog} onOpenChange={() => setShowRemoveDialog(null)}>
