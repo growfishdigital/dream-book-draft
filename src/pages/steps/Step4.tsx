@@ -27,24 +27,19 @@ const CATEGORIES: Category[] = [
       { value: "dogs", label: "Dogs", emoji: "🐶", ages: ALL_AGES },
       { value: "cats", label: "Cats", emoji: "🐱", ages: ALL_AGES },
       { value: "horses", label: "Horses", emoji: "🐴", ages: ["3-5", "6-8", "9-12"] },
-      { value: "ocean-mermaids", label: "Ocean & Mermaids", emoji: "🧜", ages: ["3-5", "6-8"] },
       { value: "farm-animals", label: "Farm Animals", emoji: "🐄", ages: ["0-2", "3-5", "6-8"] },
-      { value: "zoo-animals", label: "Zoo Animals", emoji: "🦁", ages: ["0-2", "3-5", "6-8"] },
       { value: "bugs-butterflies", label: "Bugs & Butterflies", emoji: "🦋", ages: ["0-2", "3-5", "6-8"] },
     ],
   },
   {
     label: "🚀 Adventure & Fantasy",
     items: [
-      { value: "space-stars", label: "Space & Stars", emoji: "🌟", ages: ["3-5", "6-8", "9-12"] },
       { value: "pirates", label: "Pirates", emoji: "🏴‍☠️", ages: ["3-5", "6-8", "9-12"] },
       { value: "superheroes", label: "Superheroes", emoji: "🦸", ages: ["3-5", "6-8", "9-12"] },
       { value: "princesses-castles", label: "Princesses & Castles", emoji: "👑", ages: ["3-5", "6-8"] },
       { value: "unicorns", label: "Unicorns", emoji: "🦄", ages: ["3-5", "6-8"] },
       { value: "dragons", label: "Dragons", emoji: "🐉", ages: ["3-5", "6-8", "9-12"] },
-      { value: "fairies-magic", label: "Fairies & Magic", emoji: "🧚", ages: ["3-5", "6-8"] },
-      { value: "ninjas", label: "Ninjas", emoji: "🥷", ages: ["6-8", "9-12"] },
-      { value: "treasure-hunting", label: "Treasure Hunting", emoji: "💎", ages: ["3-5", "6-8", "9-12"] },
+      { value: "mermaids-magic", label: "Mermaids & Magic", emoji: "🧜", ages: ["3-5", "6-8"] },
     ],
   },
   {
@@ -53,6 +48,9 @@ const CATEGORIES: Category[] = [
       { value: "trains", label: "Trains", emoji: "🚂", ages: ["0-2", "3-5", "6-8"] },
       { value: "cars-trucks", label: "Cars & Trucks", emoji: "🚗", ages: ["0-2", "3-5", "6-8"] },
       { value: "bikes-scooters", label: "Bikes & Scooters", emoji: "🛴", ages: ["3-5", "6-8", "9-12"] },
+      { value: "planes", label: "Planes", emoji: "✈️", ages: ["0-2", "3-5", "6-8", "9-12"] },
+      { value: "boats-ships", label: "Boats & Ships", emoji: "⛵", ages: ["0-2", "3-5", "6-8", "9-12"] },
+      { value: "construction-trucks", label: "Construction Trucks", emoji: "🚜", ages: ["0-2", "3-5", "6-8"] },
     ],
   },
   {
@@ -63,7 +61,6 @@ const CATEGORIES: Category[] = [
       { value: "baseball", label: "Baseball", emoji: "⚾", ages: ["3-5", "6-8", "9-12"] },
       { value: "swimming", label: "Swimming", emoji: "🏊", ages: ["3-5", "6-8", "9-12"] },
       { value: "gymnastics", label: "Gymnastics", emoji: "🤸", ages: ["3-5", "6-8", "9-12"] },
-      { value: "martial-arts", label: "Martial Arts", emoji: "🥋", ages: ["6-8", "9-12"] },
       { value: "dancing-ballet", label: "Dancing/Ballet", emoji: "💃", ages: ALL_AGES },
     ],
   },
@@ -73,19 +70,20 @@ const CATEGORIES: Category[] = [
       { value: "art-drawing", label: "Art & Drawing", emoji: "🎨", ages: ["3-5", "6-8", "9-12"] },
       { value: "music", label: "Music", emoji: "🎵", ages: ALL_AGES },
       { value: "reading-books", label: "Reading & Books", emoji: "📚", ages: ["3-5", "6-8", "9-12"] },
-      { value: "science-experiments", label: "Science & Experiments", emoji: "🔬", ages: ["6-8", "9-12"] },
       { value: "cooking-baking", label: "Cooking & Baking", emoji: "🧁", ages: ["3-5", "6-8", "9-12"] },
       { value: "building-lego", label: "Building/LEGO", emoji: "🧱", ages: ["3-5", "6-8", "9-12"] },
-      { value: "robots-machines", label: "Robots & Machines", emoji: "🤖", ages: ["6-8", "9-12"] },
+      { value: "science-experiments", label: "Science & Experiments", emoji: "🔬", ages: ["6-8", "9-12"] },
     ],
   },
   {
-    label: "🌈 Vibes & Worlds",
+    label: "🌈 Worlds & Wonders",
     items: [
       { value: "camping-outdoors", label: "Camping & Outdoors", emoji: "🏕️", ages: ["3-5", "6-8", "9-12"] },
       { value: "gardening-flowers", label: "Gardening & Flowers", emoji: "🌸", ages: ["0-2", "3-5", "6-8"] },
       { value: "snow-winter", label: "Snow & Winter", emoji: "❄️", ages: ALL_AGES },
       { value: "rainbows-colors", label: "Rainbows & Colors", emoji: "🌈", ages: ["0-2", "3-5"] },
+      { value: "space-stars", label: "Space & Stars", emoji: "🌟", ages: ["3-5", "6-8", "9-12"] },
+      { value: "robots-machines", label: "Robots & Machines", emoji: "🤖", ages: ["6-8", "9-12"] },
     ],
   },
 ];
@@ -94,7 +92,7 @@ const POPULAR_BY_AGE: Record<AgeRange, string[]> = {
   "0-2": ["farm-animals", "dogs", "cats", "bugs-butterflies", "rainbows-colors", "music"],
   "3-5": ["dinosaurs", "unicorns", "princesses-castles", "dogs", "space-stars", "cars-trucks"],
   "6-8": ["superheroes", "dragons", "space-stars", "soccer", "art-drawing", "science-experiments"],
-  "9-12": ["science-experiments", "robots-machines", "martial-arts", "treasure-hunting", "building-lego", "cooking-baking"],
+  "9-12": ["building-lego", "cooking-baking", "science-experiments", "robots-machines", "reading-books", "art-drawing"],
 };
 
 const AGE_LABEL: Record<AgeRange, string> = {
@@ -107,14 +105,13 @@ const AGE_LABEL: Record<AgeRange, string> = {
 const COMBO_SENTENCES: Record<string, string> = {
   "dinosaurs+space-stars": "{name} zooms past the rings of Saturn on a dinosaur-back…",
   "pirates+dragons": "{name} sails the seven seas with a fire-breathing first mate…",
-  "unicorns+fairies-magic": "{name} gallops through an enchanted forest of shimmering spells…",
+  "unicorns+mermaids-magic": "{name} gallops through an enchanted forest of shimmering spells…",
   "superheroes+robots-machines": "{name} builds a mega-robot suit and saves the city before bedtime…",
   "dogs+camping-outdoors": "{name} and a loyal pup set up camp under a sky full of stars…",
   "cooking-baking+dragons": "{name} bakes a cake so good even a dragon wants the recipe…",
   "space-stars+robots-machines": "{name} pilots a robot spaceship to the edge of the galaxy…",
   "princesses-castles+horses": "{name} rides a royal horse through a kingdom of wildflowers…",
-  "ocean-mermaids+treasure-hunting": "{name} dives deep to find a sunken chest of glowing pearls…",
-  "ninjas+martial-arts": "{name} trains in a secret mountain dojo with the world's sneakiest sensei…",
+  "mermaids-magic+pirates": "{name} dives deep to find a sunken chest of glowing pearls…",
 };
 
 const ALL_ITEMS: InterestItem[] = CATEGORIES.flatMap((c) => c.items);
