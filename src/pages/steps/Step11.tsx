@@ -4,8 +4,8 @@ import { useWizard } from "@/contexts/WizardContext";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
 import { Check, ChevronLeft, Lock } from "lucide-react";
+import ProgressBar from "@/components/ProgressBar";
 
-const TOTAL_STEPS = 11;
 
 const ART_COLORS: Record<string, string> = {
   watercolor: "210 60% 70%",
@@ -191,19 +191,8 @@ export default function Step11() {
       </button>
 
       {/* Progress */}
-      <div className="flex flex-col items-center gap-1.5 mb-6">
-        <div className="flex gap-1.5">
-          {Array.from({ length: TOTAL_STEPS }, (_, i) => (
-            <div
-              key={i}
-              className="h-2 w-6 rounded-full"
-              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
-            />
-          ))}
-        </div>
-        <span className="text-xs font-medium tracking-wide" style={{ color: "hsl(var(--wizard-primary))" }}>
-          100% complete ✓
-        </span>
+      <div className="mb-6">
+        <ProgressBar currentStep={11} />
       </div>
 
       {/* Heading */}

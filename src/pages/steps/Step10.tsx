@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
+import ProgressBar from "@/components/ProgressBar";
 
 const STAGES = [
   { emoji: "✍️", text: "Crafting {name}'s story..." },
