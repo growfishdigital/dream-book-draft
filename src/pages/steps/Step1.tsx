@@ -149,6 +149,30 @@ export default function Step1() {
           </div>
         </div>
 
+        {/* Book language */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            What language do they speak?
+          </label>
+          <div className="flex flex-wrap justify-center gap-3">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.value}
+                type="button"
+                onClick={() => setAnswer("language", l.value)}
+                className={pillClass(language === l.value)}
+              >
+                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
+                  {l.label}
+                </span>
+              </button>
+            ))}
+            <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
+              <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
+            </div>
+          </div>
+        </div>
+
       </div>
     </WizardShell>
   );
