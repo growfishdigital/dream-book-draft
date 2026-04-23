@@ -137,10 +137,10 @@ export default function Step4() {
       <div className="space-y-8">
         <div className="text-center space-y-2">
           <h1 className="font-heading text-3xl sm:text-4xl font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>
-            What's {name}'s world like?
+            What is {name} interested in?
           </h1>
           <p className="text-muted-foreground text-lg">
-            Pick 2–3 things they're obsessed with. These flavor the whole story.
+            Pick up to 3 — we'll weave these into the world of the story to make it feel like theirs.
           </p>
         </div>
 
