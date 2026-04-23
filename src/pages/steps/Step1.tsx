@@ -19,6 +19,13 @@ const GENDERS = [
   { value: "surprise", label: "Surprise me" },
 ];
 
+const LANGUAGES = [
+  { value: "english", label: "English" },
+  { value: "español", label: "Español" },
+  { value: "français", label: "Français" },
+  { value: "deutsch", label: "Deutsch" },
+];
+
 export default function Step1() {
   const { answers, setAnswer, setCanContinue } = useWizard();
   const name = (answers.childName as string) || "";
