@@ -202,7 +202,7 @@ function AppearanceAccordion({ appearance, onChange, name, defaultExpanded }: {
     <div className="rounded-2xl border overflow-hidden">
       <button type="button" onClick={() => setOpen(!open)}
         className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium text-muted-foreground hover:bg-muted/50 transition-colors">
-        <span>Refine appearance</span>
+        <span>Manually adjust appearance</span>
         {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
       </button>
       {open && (
