@@ -264,7 +264,7 @@ export default function Step4() {
           {visibleCategories.map((cat) => (
             <div key={cat.label} className="space-y-3">
               <h2 className="text-sm font-medium text-muted-foreground">{cat.label}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
                 {cat.items.map((item) => (
                   <InterestTile
                     key={item.value}
