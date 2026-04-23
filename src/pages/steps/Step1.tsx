@@ -19,11 +19,19 @@ const GENDERS = [
   { value: "surprise", label: "Surprise me" },
 ];
 
+const LANGUAGES = [
+  { value: "english", label: "English" },
+  { value: "español", label: "Español" },
+  { value: "français", label: "Français" },
+  { value: "deutsch", label: "Deutsch" },
+];
+
 export default function Step1() {
   const { answers, setAnswer, setCanContinue } = useWizard();
   const name = (answers.childName as string) || "";
   const age = (answers.ageRange as string) || "";
   const gender = (answers.gender as string) || "";
+  const language = (answers.language as string) || "english";
   const bookBelongsTo = answers.bookBelongsTo !== false;
 
   const [headingVisible, setHeadingVisible] = useState(true);
@@ -138,6 +146,30 @@ export default function Step1() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+        </div>
+
+        {/* Book language */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            What language do they speak?
+          </label>
+          <div className="flex flex-wrap justify-center gap-3">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.value}
+                type="button"
+                onClick={() => setAnswer("language", l.value)}
+                className={pillClass(language === l.value)}
+              >
+                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
+                  {l.label}
+                </span>
+              </button>
+            ))}
+            <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
+              <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
+            </div>
           </div>
         </div>
 

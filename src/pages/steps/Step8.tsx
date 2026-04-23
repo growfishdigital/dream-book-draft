@@ -169,25 +169,6 @@ export default function Step8() {
             </div>
           )}
         </div>
-
-        <Separator />
-
-        {/* Language */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Book language
-          </label>
-          <div className="flex flex-wrap justify-center gap-3">
-            {LANGUAGES.map((l) => (
-              <button key={l.value} type="button" onClick={() => setAnswer("language", l.value)} className={pillClass(language === l.value)}>
-                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>{l.label}</span>
-              </button>
-            ))}
-            <div className={pillClass(false, true)}>
-              <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
-            </div>
-          </div>
-        </div>
       </div>
     </WizardShell>
   );
