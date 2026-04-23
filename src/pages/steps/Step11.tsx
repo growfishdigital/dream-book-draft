@@ -106,10 +106,8 @@ export default function Step11() {
 
   const pages = [
     <CoverPage key="cover" layout={layout} title={title} name={name} artHsl={artHsl} />,
-    <StoryPage1 key="s1" artHsl={artHsl} />,
-    <StoryPage2 key="s2" artHsl={artHsl} />,
-    <DedicationPage key="ded" dedication={dedication} artHsl={artHsl} />,
-    <LockedPage key="lock" name={name} artHsl={artHsl} />,
+    <StoryPage key="story" name={name} artHsl={artHsl} />,
+    <PlotPreviewPage key="plot" name={name} artHsl={artHsl} />,
   ];
 
   if (orderPlaced) {
