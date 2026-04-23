@@ -106,7 +106,7 @@ function getPreviewSentence(name: string, interests: string[]): string | null {
 
 export default function Step4() {
   const { answers, setAnswer, setCanContinue } = useWizard();
-  const name = (answers.childName as string) || "your child";
+  const name = (answers.childName as string) || "your little one";
   const interests = (answers.interests as string[]) || [];
   const [shaking, setShaking] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();

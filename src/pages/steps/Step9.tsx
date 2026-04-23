@@ -70,7 +70,7 @@ function CoverPreview({ layout, title, name }: { layout: string; title: string; 
 
 export default function Step8() {
   const { answers, setAnswer, setCanContinue } = useWizard();
-  const name = (answers.childName as string) || "your child";
+  const name = (answers.childName as string) || "your little one";
   const coverLayout = (answers.coverLayout as string) || "";
   const bookTitle = (answers.bookTitle as string) ?? "";
 

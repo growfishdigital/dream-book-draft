@@ -18,7 +18,7 @@ const STAGE_INTERVAL = 1600;
 export default function Step9() {
   const { answers } = useWizard();
   const navigate = useNavigate();
-  const name = answers.childName || "your child";
+  const name = answers.childName || "your little one";
   const [stageIndex, setStageIndex] = useState(0);
   const [done, setDone] = useState(false);
   const [barStarted, setBarStarted] = useState(false);

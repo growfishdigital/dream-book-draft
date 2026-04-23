@@ -113,7 +113,7 @@ const CATEGORIES: CategoryDef[] = [
 
 export default function Step5() {
   const { answers, setAnswer, setCanContinue } = useWizard();
-  const name = (answers.childName as string) || "your child";
+  const name = (answers.childName as string) || "your little one";
   const specialThing = (answers.specialThing as { category: string; details: Record<string, string> } | null) ?? null;
   const followUpRef = useRef<HTMLDivElement>(null);
 

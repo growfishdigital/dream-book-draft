@@ -90,7 +90,7 @@ function PlotPreviewPage({ name, artHsl }: { name: string; artHsl: string }) {
 export default function Step11() {
   const { answers } = useWizard();
   const navigate = useNavigate();
-  const name = answers.childName || "your child";
+  const name = answers.childName || "your little one";
   const title = answers.bookTitle || `${name}'s Adventure`;
   const layout = answers.coverLayout || "full-illustration";
   const artStyle = answers.artStyle || "watercolor";
