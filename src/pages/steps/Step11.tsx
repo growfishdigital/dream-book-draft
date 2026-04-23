@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { Input } from "@/components/ui/input";
+
 import { Check, ChevronLeft } from "lucide-react";
 import ProgressBar from "@/components/ProgressBar";
 
@@ -97,7 +97,6 @@ export default function Step11() {
   const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
 
   const [selected, setSelected] = useState<Plan>("hardcover");
-  const [email, setEmail] = useState("");
   const [orderPlaced, setOrderPlaced] = useState(false);
 
   const price = selected === "digital" ? "$9.99" : "$44.99";
@@ -122,7 +121,7 @@ export default function Step11() {
           {planLabel} — {price}
         </p>
         <p className="text-sm text-muted-foreground mb-8">
-          We'll send everything to <span className="font-medium">{email}</span>
+          We'll send everything to your inbox shortly.
         </p>
         <button
           onClick={() => navigate("/step/1")}
@@ -280,29 +279,30 @@ export default function Step11() {
           <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground mb-6">
             <span>🔒 Secure checkout</span>
             <span>💳 All major cards accepted</span>
-            <span>📦 Free shipping on hardcovers over $35</span>
+            <span>📦 Free shipping to the US</span>
           </div>
 
           {/* Order form */}
           <div className="flex flex-col gap-3">
-            <Input
-              type="email"
-              placeholder="Your email address"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="rounded-xl h-12"
-            />
             <button
-              disabled={!email.includes("@")}
               onClick={() => setOrderPlaced(true)}
-              className="w-full h-12 rounded-full text-base font-semibold transition-opacity disabled:opacity-40"
-              style={{ backgroundColor: "hsl(142 71% 45%)", color: "#fff" }}
+              className="w-full h-12 rounded-full text-base font-semibold transition-opacity"
+              style={{ backgroundColor: "#2B4E18", color: "#fff" }}
             >
-              Place Order — {price}
+              Place Order
             </button>
-            <p className="text-xs text-center text-muted-foreground mt-1 px-2 leading-relaxed">
-              ✏️ Don't worry — after checkout you'll be able to review your book and request edits or revisions before it's finalized.
-            </p>
+            <div
+              className="mt-2 rounded-2xl p-4 border flex gap-3 items-start"
+              style={{
+                backgroundColor: "#2B4E18" + "14",
+                borderColor: "#2B4E18" + "33",
+              }}
+            >
+              <span className="text-xl leading-none">✏️</span>
+              <p className="text-sm leading-relaxed" style={{ color: "#2B4E18" }}>
+                <span className="font-semibold">You'll get to review your book first.</span> After checkout, preview every page and request edits or revisions before it's finalized.
+              </p>
+            </div>
           </div>
         </div>
       </div>
