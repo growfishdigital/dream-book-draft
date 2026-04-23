@@ -146,7 +146,7 @@ function InterestTile({ item, selected, shaking, onClick }: InterestTileProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`relative aspect-[4/3] rounded-xl border-2 shadow-sm transition-all flex flex-col items-center justify-center gap-1 px-2 py-2 ${
+      className={`relative h-24 w-full rounded-xl border-2 shadow-sm transition-all flex flex-col items-center justify-center gap-1 px-2 py-2 ${
         selected
           ? "bg-[hsl(var(--wizard-primary)/0.08)]"
           : "bg-white border-transparent hover:shadow-md hover:-translate-y-0.5"
