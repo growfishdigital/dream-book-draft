@@ -19,26 +19,6 @@ const GENDERS = [
   { value: "surprise", label: "Surprise me" },
 ];
 
-const BUYER_ROLES = [
-  { value: "parent", emoji: "👨‍👩‍👧", label: "Parent" },
-  { value: "grandparent", emoji: "👴", label: "Grandparent" },
-  { value: "teacher", emoji: "🎓", label: "Teacher" },
-  { value: "friend", emoji: "👫", label: "Friend" },
-  { value: "other", emoji: "🎁", label: "Other" },
-];
-
-const OCCASIONS = [
-  { value: "birthday", emoji: "🎂", label: "Birthday" },
-  { value: "christmas", emoji: "🎄", label: "Christmas" },
-  { value: "easter", emoji: "🐣", label: "Easter" },
-  { value: "new-sibling", emoji: "👶", label: "New sibling" },
-  { value: "first-day-school", emoji: "🏫", label: "First day of school" },
-  { value: "graduation", emoji: "🎓", label: "Graduation" },
-  { value: "baptism", emoji: "💧", label: "Baptism" },
-  { value: "just-because", emoji: "❤️", label: "Just because" },
-  { value: "other", emoji: "✏️", label: "Other" },
-];
-
 export default function Step1() {
   const { answers, setAnswer, setCanContinue } = useWizard();
   const name = (answers.childName as string) || "";
