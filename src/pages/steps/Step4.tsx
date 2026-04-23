@@ -245,11 +245,41 @@ export default function Step4() {
             <h2 className="font-medium text-muted-foreground text-base">
               ⭐ Popular picks for ages {AGE_LABEL[ageRange]}
             </h2>
-// ... keep existing code
+            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
+              {popularItems.map((item) => (
+                <InterestTile
+                  key={`pop-${item.value}`}
+                  item={item}
+                  selected={interests.includes(item.value)}
+                  shaking={shaking === item.value}
+                  onClick={() => toggle(item.value)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Categories */}
+        <div className="space-y-6">
           {visibleCategories.map((cat) => (
             <div key={cat.label} className="space-y-3">
               <h2 className="font-medium text-muted-foreground text-base">{cat.label}</h2>
-// ... keep existing code
+              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
+                {cat.items.map((item) => (
+                  <InterestTile
+                    key={item.value}
+                    item={item}
+                    selected={interests.includes(item.value)}
+                    shaking={shaking === item.value}
+                    onClick={() => toggle(item.value)}
+                  />
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Write-in interest */}
         <div className="space-y-2">
           <h2 className="font-medium text-muted-foreground text-base">✍️ Or write your own</h2>
           <Input
