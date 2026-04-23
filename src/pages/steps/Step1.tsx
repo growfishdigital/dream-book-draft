@@ -27,13 +27,13 @@ export default function Step1() {
   const bookBelongsTo = answers.bookBelongsTo !== false;
 
   const [headingVisible, setHeadingVisible] = useState(true);
-  const [headingText, setHeadingText] = useState("Let's start with the star of the story.");
+  const [headingText, setHeadingText] = useState("Who is this book for?");
 
   // Update heading when name changes
   useEffect(() => {
     const target = name.trim()
       ? `Let's make a book for ${name.trim()}.`
-      : "Let's start with the star of the story.";
+      : "Who is this book for?";
 
     if (target !== headingText) {
       setHeadingVisible(false);
@@ -78,7 +78,7 @@ export default function Step1() {
             {headingText}
           </h1>
           <p className="text-muted-foreground text-lg">
-            Tell us a little about the child this book is for.
+            Give us a few details so we can tailor the book to them.
           </p>
         </div>
 
