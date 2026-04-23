@@ -61,63 +61,28 @@ function CoverPage({ layout, title, name, artHsl }: { layout: string; title: str
   );
 }
 
-function StoryPage1({ artHsl }: { artHsl: string }) {
+function StoryPage({ name, artHsl }: { name: string; artHsl: string }) {
   return (
     <div className="flex flex-col h-full p-5 gap-3">
       <div className="h-2/5 rounded-lg flex items-center justify-center" style={{ backgroundColor: `hsl(${artHsl} / 0.15)` }}>
         <div className="w-16 h-12 rounded" style={{ backgroundColor: `hsl(${artHsl} / 0.35)` }} />
       </div>
       <div className="flex-1 flex flex-col gap-2 pt-2">
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-11/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-9/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-      </div>
-    </div>
-  );
-}
-
-function StoryPage2({ artHsl }: { artHsl: string }) {
-  return (
-    <div className="flex h-full p-5 gap-3">
-      <div className="w-2/5 rounded-lg flex items-center justify-center" style={{ backgroundColor: `hsl(${artHsl} / 0.15)` }}>
-        <div className="w-10 h-14 rounded" style={{ backgroundColor: `hsl(${artHsl} / 0.35)` }} />
-      </div>
-      <div className="flex-1 flex flex-col gap-2 justify-center">
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-10/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-8/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-      </div>
-    </div>
-  );
-}
-
-function DedicationPage({ dedication, artHsl }: { dedication: string; artHsl: string }) {
-  return (
-    <div className="flex flex-col items-center justify-center h-full p-6 gap-4">
-      <p className="text-xs uppercase tracking-widest" style={{ color: `hsl(${artHsl} / 0.4)` }}>Dedication</p>
-      <p className="text-sm font-serif italic text-center leading-relaxed" style={{ color: `hsl(${artHsl} / 0.8)` }}>
-        "{dedication}"
-      </p>
-    </div>
-  );
-}
-
-function LockedPage({ name, artHsl }: { name: string; artHsl: string }) {
-  return (
-    <div className="relative flex flex-col h-full overflow-hidden">
-      <div className="flex-1 p-5 flex flex-col gap-2 blur-sm opacity-50">
-        <div className="h-2/5 rounded-lg" style={{ backgroundColor: `hsl(${artHsl} / 0.15)` }} />
-        <div className="h-2.5 rounded-full w-full" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-        <div className="h-2.5 rounded-full w-10/12" style={{ backgroundColor: `hsl(${artHsl} / 0.12)` }} />
-      </div>
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-5 gap-3 bg-white/70 backdrop-blur-sm">
-        <Lock className="w-8 h-8" style={{ color: `hsl(${artHsl} / 0.5)` }} />
-        <p className="text-sm font-semibold text-center" style={{ color: `hsl(${artHsl})` }}>Unlock the full story</p>
-        <p className="text-xs text-center leading-relaxed" style={{ color: `hsl(${artHsl} / 0.6)` }}>
-          The rest of {name}'s story awaits. Get the full book to read every page together.
+        <p className="text-[11px] font-serif leading-relaxed" style={{ color: `hsl(${artHsl} / 0.85)` }}>
+          {name} stepped softly into the clearing, eyes wide with wonder. The trees seemed to whisper a secret meant just for them — and somewhere deep in the woods, a tiny light began to glow…
         </p>
       </div>
+    </div>
+  );
+}
+
+function PlotPreviewPage({ name, artHsl }: { name: string; artHsl: string }) {
+  return (
+    <div className="flex flex-col h-full p-5 gap-3">
+      <p className="text-[10px] uppercase tracking-widest" style={{ color: `hsl(${artHsl} / 0.5)` }}>The Story</p>
+      <p className="text-[11px] font-serif leading-relaxed" style={{ color: `hsl(${artHsl} / 0.85)` }}>
+        When {name} discovers a mysterious glowing map hidden beneath the old oak tree, an unforgettable adventure begins. Together with new friends, {name} journeys through enchanted forests, solves clever riddles, and learns that the greatest magic of all is courage, kindness, and believing in yourself.
+      </p>
     </div>
   );
 }
