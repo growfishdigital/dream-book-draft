@@ -26,7 +26,6 @@ const CATEGORIES: Category[] = [
       { value: "dinosaurs", label: "Dinosaurs", emoji: "🦕", ages: ["3-5", "6-8", "9-12"] },
       { value: "dogs", label: "Dogs", emoji: "🐶", ages: ALL_AGES },
       { value: "cats", label: "Cats", emoji: "🐱", ages: ALL_AGES },
-      { value: "horses", label: "Horses", emoji: "🐴", ages: ["3-5", "6-8", "9-12"] },
       { value: "farm-animals", label: "Farm Animals", emoji: "🐄", ages: ["0-2", "3-5", "6-8"] },
       { value: "bugs-butterflies", label: "Bugs & Butterflies", emoji: "🦋", ages: ["0-2", "3-5", "6-8"] },
     ],
@@ -36,7 +35,6 @@ const CATEGORIES: Category[] = [
     items: [
       { value: "pirates", label: "Pirates", emoji: "🏴‍☠️", ages: ["3-5", "6-8", "9-12"] },
       { value: "superheroes", label: "Superheroes", emoji: "🦸", ages: ["3-5", "6-8", "9-12"] },
-      { value: "princesses-castles", label: "Princesses & Castles", emoji: "👑", ages: ["3-5", "6-8"] },
       { value: "unicorns", label: "Unicorns", emoji: "🦄", ages: ["3-5", "6-8"] },
       { value: "dragons", label: "Dragons", emoji: "🐉", ages: ["3-5", "6-8", "9-12"] },
       { value: "mermaids-magic", label: "Mermaids & Magic", emoji: "🧜", ages: ["3-5", "6-8"] },
@@ -49,7 +47,6 @@ const CATEGORIES: Category[] = [
       { value: "cars-trucks", label: "Cars & Trucks", emoji: "🚗", ages: ["0-2", "3-5", "6-8"] },
       { value: "bikes-scooters", label: "Bikes & Scooters", emoji: "🛴", ages: ["3-5", "6-8", "9-12"] },
       { value: "planes", label: "Planes", emoji: "✈️", ages: ["0-2", "3-5", "6-8", "9-12"] },
-      { value: "boats-ships", label: "Boats & Ships", emoji: "⛵", ages: ["0-2", "3-5", "6-8", "9-12"] },
       { value: "construction-trucks", label: "Construction Trucks", emoji: "🚜", ages: ["0-2", "3-5", "6-8"] },
     ],
   },
@@ -58,7 +55,6 @@ const CATEGORIES: Category[] = [
     items: [
       { value: "soccer", label: "Soccer", emoji: "⚽", ages: ["3-5", "6-8", "9-12"] },
       { value: "basketball", label: "Basketball", emoji: "🏀", ages: ["3-5", "6-8", "9-12"] },
-      { value: "baseball", label: "Baseball", emoji: "⚾", ages: ["3-5", "6-8", "9-12"] },
       { value: "swimming", label: "Swimming", emoji: "🏊", ages: ["3-5", "6-8", "9-12"] },
       { value: "gymnastics", label: "Gymnastics", emoji: "🤸", ages: ["3-5", "6-8", "9-12"] },
       { value: "dancing-ballet", label: "Dancing/Ballet", emoji: "💃", ages: ALL_AGES },
@@ -70,7 +66,6 @@ const CATEGORIES: Category[] = [
       { value: "art-drawing", label: "Art & Drawing", emoji: "🎨", ages: ["3-5", "6-8", "9-12"] },
       { value: "music", label: "Music", emoji: "🎵", ages: ALL_AGES },
       { value: "reading-books", label: "Reading & Books", emoji: "📚", ages: ["3-5", "6-8", "9-12"] },
-      { value: "cooking-baking", label: "Cooking & Baking", emoji: "🧁", ages: ["3-5", "6-8", "9-12"] },
       { value: "building-lego", label: "Building/LEGO", emoji: "🧱", ages: ["3-5", "6-8", "9-12"] },
       { value: "science-experiments", label: "Science & Experiments", emoji: "🔬", ages: ["6-8", "9-12"] },
     ],
@@ -79,7 +74,6 @@ const CATEGORIES: Category[] = [
     label: "🌈 Worlds & Wonders",
     items: [
       { value: "camping-outdoors", label: "Camping & Outdoors", emoji: "🏕️", ages: ["3-5", "6-8", "9-12"] },
-      { value: "gardening-flowers", label: "Gardening & Flowers", emoji: "🌸", ages: ["0-2", "3-5", "6-8"] },
       { value: "snow-winter", label: "Snow & Winter", emoji: "❄️", ages: ALL_AGES },
       { value: "rainbows-colors", label: "Rainbows & Colors", emoji: "🌈", ages: ["0-2", "3-5"] },
       { value: "space-stars", label: "Space & Stars", emoji: "🌟", ages: ["3-5", "6-8", "9-12"] },
@@ -90,9 +84,9 @@ const CATEGORIES: Category[] = [
 
 const POPULAR_BY_AGE: Record<AgeRange, string[]> = {
   "0-2": ["farm-animals", "dogs", "cats", "bugs-butterflies", "rainbows-colors", "music"],
-  "3-5": ["dinosaurs", "unicorns", "princesses-castles", "dogs", "space-stars", "cars-trucks"],
+  "3-5": ["dinosaurs", "unicorns", "mermaids-magic", "dogs", "space-stars", "cars-trucks"],
   "6-8": ["superheroes", "dragons", "space-stars", "soccer", "art-drawing", "science-experiments"],
-  "9-12": ["building-lego", "cooking-baking", "science-experiments", "robots-machines", "reading-books", "art-drawing"],
+  "9-12": ["building-lego", "camping-outdoors", "science-experiments", "robots-machines", "reading-books", "art-drawing"],
 };
 
 const AGE_LABEL: Record<AgeRange, string> = {
@@ -108,9 +102,7 @@ const COMBO_SENTENCES: Record<string, string> = {
   "unicorns+mermaids-magic": "{name} gallops through an enchanted forest of shimmering spells…",
   "superheroes+robots-machines": "{name} builds a mega-robot suit and saves the city before bedtime…",
   "dogs+camping-outdoors": "{name} and a loyal pup set up camp under a sky full of stars…",
-  "cooking-baking+dragons": "{name} bakes a cake so good even a dragon wants the recipe…",
   "space-stars+robots-machines": "{name} pilots a robot spaceship to the edge of the galaxy…",
-  "princesses-castles+horses": "{name} rides a royal horse through a kingdom of wildflowers…",
   "mermaids-magic+pirates": "{name} dives deep to find a sunken chest of glowing pearls…",
 };
 
@@ -226,7 +218,7 @@ export default function Step4() {
           {visibleCategories.map((cat) => (
             <div key={cat.label} className="space-y-3">
               <h2 className="font-medium text-muted-foreground text-base">{cat.label}</h2>
-              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
+              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-5 gap-2">
                 {cat.items.map((item) => (
                   <InterestTile
                     key={item.value}
