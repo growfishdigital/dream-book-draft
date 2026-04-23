@@ -16,6 +16,7 @@ import Step9 from "./pages/steps/Step9";
 import Step10 from "./pages/steps/Step10";
 import Step11 from "./pages/steps/Step11";
 import StepPlaceholder from "./pages/steps/StepPlaceholder";
+import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,7 +29,8 @@ const App = () => (
       <BrowserRouter>
         <WizardProvider>
           <Routes>
-            <Route path="/" element={<Navigate to="/step/1" replace />} />
+            <Route path="/" element={<Login />} />
+            <Route path="/login" element={<Login />} />
             <Route path="/step/1" element={<Step1 />} />
             <Route path="/step/2" element={<Step2 />} />
             <Route path="/step/3" element={<Step3 />} />
