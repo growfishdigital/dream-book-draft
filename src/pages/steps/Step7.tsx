@@ -18,7 +18,7 @@ function getDefaultArtStyle(genre: string): string {
 
 export default function Step7() {
   const { answers, setAnswer, setCanContinue } = useWizard();
-  const name = (answers.childName as string) || "your child";
+  const name = (answers.childName as string) || "your little one";
   const artStyle = (answers.artStyle as string) || "";
 
   useEffect(() => {

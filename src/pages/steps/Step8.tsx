@@ -44,7 +44,7 @@ function getDefaultDedication(name: string, role: string): string {
 
 export default function Step8() {
   const { answers, setAnswer, setCanContinue } = useWizard();
-  const name = (answers.childName as string) || "your child";
+  const name = (answers.childName as string) || "your little one";
   const buyerRole = (answers.buyerRole as string) || "parent";
   const occasion = (answers.occasion as string) || "";
   const occasionOther = (answers.occasionOther as string) || "";

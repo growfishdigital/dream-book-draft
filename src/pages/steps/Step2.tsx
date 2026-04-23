@@ -26,7 +26,7 @@ const MOODS = [
 
 export default function Step2() {
   const { answers, setAnswer, setCanContinue } = useWizard();
-  const name = (answers.childName as string) || "your child";
+  const name = (answers.childName as string) || "your little one";
   const genre = (answers.genre as string) || "";
   const mood = (answers.mood as string) || "";
 
