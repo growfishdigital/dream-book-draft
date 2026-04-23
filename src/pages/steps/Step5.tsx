@@ -247,9 +247,6 @@ export default function Step5() {
           </div>
         )}
 
-        <p className="text-center text-sm text-muted-foreground italic">
-          This becomes a cameo in the story — a moment that only {name}'s book will have.
-        </p>
       </div>
     </WizardShell>
   );
