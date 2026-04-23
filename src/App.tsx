@@ -34,8 +34,8 @@ const App = () => (
             <Route path="/step/1" element={<Step1 />} />
             <Route path="/step/2" element={<Step2 />} />
             <Route path="/step/3" element={<Step3 />} />
-            <Route path="/step/4" element={<Step4 />} />
-            <Route path="/step/5" element={<Step7 />} />
+            <Route path="/step/4" element={<Step7 />} />
+            <Route path="/step/5" element={<Step4 />} />
             <Route path="/step/6" element={<Step5 />} />
             <Route path="/step/7" element={<Step6 />} />
             <Route path="/step/8" element={<Step9 />} />
