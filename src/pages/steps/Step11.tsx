@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
-import { Input } from "@/components/ui/input";
+
 import { Check, ChevronLeft } from "lucide-react";
 import ProgressBar from "@/components/ProgressBar";
 
