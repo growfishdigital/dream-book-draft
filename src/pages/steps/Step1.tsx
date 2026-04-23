@@ -31,6 +31,7 @@ export default function Step1() {
   const name = (answers.childName as string) || "";
   const age = (answers.ageRange as string) || "";
   const gender = (answers.gender as string) || "";
+  const language = (answers.language as string) || "english";
   const bookBelongsTo = answers.bookBelongsTo !== false;
 
   const [headingVisible, setHeadingVisible] = useState(true);
