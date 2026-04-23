@@ -149,7 +149,7 @@ function InterestTile({ item, selected, shaking, onClick }: InterestTileProps) {
     <button
       type="button"
       onClick={onClick}
-      className={`relative aspect-[4/3] rounded-2xl border-2 shadow-sm transition-all flex flex-col items-center justify-center gap-1.5 px-2 py-3 ${
+      className={`relative aspect-square rounded-xl border-2 shadow-sm transition-all flex flex-col items-center justify-center gap-0.5 px-1.5 py-2 ${
         selected
           ? "bg-[hsl(var(--wizard-primary)/0.08)]"
           : "bg-white border-transparent hover:shadow-md hover:-translate-y-0.5"
@@ -158,15 +158,15 @@ function InterestTile({ item, selected, shaking, onClick }: InterestTileProps) {
     >
       {selected && (
         <span
-          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+          className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center"
           style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
         >
-          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+          <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
         </span>
       )}
-      <span className="text-3xl leading-none">{item.emoji}</span>
+      <span className="text-xl leading-none">{item.emoji}</span>
       <span
-        className="text-xs sm:text-sm font-medium text-center leading-tight"
+        className="text-[10px] sm:text-xs font-medium text-center leading-tight"
         style={{ color: "hsl(var(--wizard-primary))" }}
       >
         {item.label}
@@ -245,7 +245,7 @@ export default function Step4() {
             <h2 className="text-sm font-medium text-muted-foreground">
               ⭐ Popular picks for ages {AGE_LABEL[ageRange]}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
               {popularItems.map((item) => (
                 <InterestTile
                   key={`pop-${item.value}`}
@@ -264,7 +264,7 @@ export default function Step4() {
           {visibleCategories.map((cat) => (
             <div key={cat.label} className="space-y-3">
               <h2 className="text-sm font-medium text-muted-foreground">{cat.label}</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              <div className="grid grid-cols-3 sm:grid-cols-5 md:grid-cols-6 gap-2">
                 {cat.items.map((item) => (
                   <InterestTile
                     key={item.value}
