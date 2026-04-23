@@ -377,16 +377,9 @@ export default function Step11() {
             const storyTypeBits = [genreLabel, moodLabel].filter(Boolean);
             const storyTypeLine = storyTypeBits.length ? storyTypeBits.join(" · ") : null;
 
-            const hasAnything =
-              ageLabel ||
-              storyTypeLine ||
-              lessonLabel ||
-              interests.length > 0 ||
-              customInterest ||
-              specialThing ||
-              charactersLine;
-
-            if (!hasAnything) return null;
+            const placeholder = (
+              <span className="italic opacity-50">Not chosen</span>
+            );
 
             return (
               <div
@@ -404,26 +397,20 @@ export default function Step11() {
                 </p>
 
                 <div className="divide-y" style={{ borderColor: `hsl(${artHsl} / 0.15)` }}>
-                  {ageLabel && (
-                    <SummaryRow label="Age range" artHsl={artHsl}>
-                      {ageLabel}
-                    </SummaryRow>
-                  )}
+                  <SummaryRow label="Age range" artHsl={artHsl}>
+                    {ageLabel || placeholder}
+                  </SummaryRow>
 
-                  {storyTypeLine && (
-                    <SummaryRow label="Story type" artHsl={artHsl}>
-                      {storyTypeLine}
-                    </SummaryRow>
-                  )}
+                  <SummaryRow label="Story type" artHsl={artHsl}>
+                    {storyTypeLine || placeholder}
+                  </SummaryRow>
 
-                  {lessonLabel && (
-                    <SummaryRow label="Life lesson" artHsl={artHsl}>
-                      {lessonLabel}
-                    </SummaryRow>
-                  )}
+                  <SummaryRow label="Life lesson" artHsl={artHsl}>
+                    {lessonLabel || placeholder}
+                  </SummaryRow>
 
-                  {(interests.length > 0 || customInterest) && (
-                    <SummaryRow label="Interests" artHsl={artHsl}>
+                  <SummaryRow label="Interests" artHsl={artHsl}>
+                    {interests.length > 0 || customInterest ? (
                       <div className="flex flex-wrap gap-1.5">
                         {interests.map((v) => {
                           const info = INTEREST_INFO[v];
@@ -455,20 +442,18 @@ export default function Step11() {
                           </span>
                         )}
                       </div>
-                    </SummaryRow>
-                  )}
+                    ) : (
+                      placeholder
+                    )}
+                  </SummaryRow>
 
-                  {specialThing && (
-                    <SummaryRow label="Favorite thing" artHsl={artHsl}>
-                      {specialThing}
-                    </SummaryRow>
-                  )}
+                  <SummaryRow label="Favorite thing" artHsl={artHsl}>
+                    {specialThing || placeholder}
+                  </SummaryRow>
 
-                  {charactersLine && (
-                    <SummaryRow label="Characters" artHsl={artHsl}>
-                      {charactersLine}
-                    </SummaryRow>
-                  )}
+                  <SummaryRow label="Characters" artHsl={artHsl}>
+                    {charactersLine || placeholder}
+                  </SummaryRow>
                 </div>
               </div>
             );
