@@ -155,7 +155,7 @@ export default function Step5() {
     }`;
 
   return (
-    <WizardShell>
+    <WizardShell showSkip>
       <div className="space-y-8">
         <div className="text-center space-y-2">
           <h1

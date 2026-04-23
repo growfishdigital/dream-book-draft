@@ -50,6 +50,7 @@ export default function Step8() {
   const occasionOther = (answers.occasionOther as string) || "";
   const dedication = (answers.dedication as string) ?? "";
   const language = (answers.language as string) || "english";
+  const skipDedication = (answers.skipDedication as boolean) ?? false;
 
   useEffect(() => {
     setCanContinue(true);
@@ -89,19 +90,34 @@ export default function Step8() {
 
         {/* Dedication */}
         <div className="space-y-2">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Dedication
-          </label>
+          <div className="flex items-center justify-between">
+            <label className="block text-sm font-medium text-muted-foreground">
+              Dedication
+            </label>
+            <label className="flex items-center gap-2 text-sm text-muted-foreground cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={skipDedication}
+                onChange={(e) => setAnswer("skipDedication", e.target.checked)}
+                className="h-4 w-4 rounded border-border accent-[hsl(var(--wizard-primary))] cursor-pointer"
+              />
+              No dedication
+            </label>
+          </div>
           <Textarea
-            value={dedication}
+            value={skipDedication ? "" : dedication}
+            disabled={skipDedication}
             onChange={(e) => {
               if (e.target.value.length <= 200) setAnswer("dedication", e.target.value);
             }}
             maxLength={200}
             rows={3}
-            className="rounded-xl resize-none"
+            className="rounded-xl resize-none disabled:opacity-50"
+            placeholder={skipDedication ? "Your book will be printed without a dedication." : undefined}
           />
-          <p className="text-xs text-muted-foreground text-right">{dedication.length}/200</p>
+          {!skipDedication && (
+            <p className="text-xs text-muted-foreground text-right">{dedication.length}/200</p>
+          )}
         </div>
 
         <Separator />

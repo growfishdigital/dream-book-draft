@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 const TOTAL_STEPS = 11;
 
-export default function WizardShell({ children }: { children: ReactNode }) {
+export default function WizardShell({ children, showSkip = false }: { children: ReactNode; showSkip?: boolean }) {
   const { step } = useParams<{ step: string }>();
   const location = useLocation();
   const currentStep = Number(step ?? location.pathname.match(/^\/step\/(\d+)$/)?.[1]) || 1;
@@ -53,6 +53,16 @@ export default function WizardShell({ children }: { children: ReactNode }) {
             }}
           >
             Back
+          </button>
+        )}
+        {showSkip && (
+          <button
+            type="button"
+            onClick={goNext}
+            className="py-4 px-6 rounded-full text-base font-semibold transition-all hover:bg-black/5"
+            style={{ color: "hsl(var(--wizard-primary))" }}
+          >
+            Skip
           </button>
         )}
         <button

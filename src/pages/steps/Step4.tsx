@@ -209,7 +209,7 @@ export default function Step4() {
   const isFull = count === 3;
 
   return (
-    <WizardShell>
+    <WizardShell showSkip>
       <div className="space-y-8 pb-32">
         <div className="text-center space-y-2">
           <h1 className="font-heading text-3xl sm:text-4xl font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>
