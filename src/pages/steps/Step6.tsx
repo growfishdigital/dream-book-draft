@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import CharacterHeadPreview, { type PreviewSnapshot } from "@/components/CharacterHeadPreview";
 
 /* ── constants ───────────────────────────────────────────── */
 
