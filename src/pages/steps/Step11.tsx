@@ -555,6 +555,35 @@ export default function Step11() {
               </p>
             </div>
           </div>
+
+          {/* Testimonial */}
+          <figure
+            className="mt-8 rounded-2xl p-5 border"
+            style={{
+              backgroundColor: `hsl(${artHsl} / 0.08)`,
+              borderColor: `hsl(${artHsl} / 0.2)`,
+            }}
+          >
+            <span
+              className="block text-2xl leading-none mb-2 font-serif"
+              style={{ color: `hsl(${artHsl})` }}
+              aria-hidden="true"
+            >
+              “
+            </span>
+            <blockquote
+              className="text-sm md:text-base font-serif italic leading-relaxed"
+              style={{ color: "hsl(var(--wizard-primary) / 0.9)" }}
+            >
+              She opened the first page and whispered, "Grandma, it's me." I still can't stop thinking about that moment.
+            </blockquote>
+            <figcaption
+              className="mt-3 text-xs font-medium"
+              style={{ color: "hsl(var(--wizard-primary) / 0.65)" }}
+            >
+              — Carol, grandmother
+            </figcaption>
+          </figure>
         </div>
       </div>
     </div>
