@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Star, PawPrint, Plus, X, Camera, Sparkles, User, Upload, ChevronDown, ChevronUp,
+  Star, Plus, X, Camera, Sparkles, User, Upload, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -37,9 +37,6 @@ const SKIN_TONES = [
   "#7D5A3C", "#5C3D2E", "#3E2723",
 ];
 
-const COMPANION_TYPES = [
-  "Pet Dog", "Pet Cat", "Stuffed Animal", "Imaginary Friend", "Other",
-] as const;
 
 /* ── interfaces ──────────────────────────────────────────── */
 
@@ -77,15 +74,7 @@ interface SupportingCharacter {
   appearance: Appearance;
 }
 
-interface Companion {
-  id: string;
-  name: string;
-  type: string;
-  typeOther: string;
-  description: string;
-}
-
-type ActiveTab = { kind: "protagonist" } | { kind: "supporting"; id: string } | { kind: "companion" };
+type ActiveTab = { kind: "protagonist" } | { kind: "supporting"; id: string };
 
 function makeId() { return Math.random().toString(36).slice(2, 9); }
 
@@ -383,38 +372,7 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
   );
 }
 
-/* ── companion form ──────────────────────────────────────── */
-
-function CompanionForm({ data, onChange }: { data: Companion; onChange: (d: Companion) => void }) {
-  const upd = (p: Partial<Companion>) => onChange({ ...data, ...p });
-
-  return (
-    <div className="space-y-5">
-      <div className="space-y-1.5">
-        <FieldLabel>Name</FieldLabel>
-        <Input className="rounded-xl" placeholder="e.g. Mr. Wrinkles" value={data.name}
-          onChange={(e) => upd({ name: e.target.value })} />
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel>What are they?</FieldLabel>
-        <PillSelector options={COMPANION_TYPES} value={data.type} onChange={(v) => upd({ type: v })} />
-        {data.type === "Other" && (
-          <Input className="rounded-xl mt-2" placeholder="Describe…" value={data.typeOther}
-            onChange={(e) => upd({ typeOther: e.target.value })} />
-        )}
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel optional>Brief description</FieldLabel>
-        <Input className="rounded-xl" maxLength={100}
-          placeholder="A scruffy golden retriever with one floppy ear"
-          value={data.description} onChange={(e) => upd({ description: e.target.value })} />
-        <CharCounter current={data.description.length} max={100} />
-      </div>
-    </div>
-  );
-}
+/* ── companion form removed ──────────────────────────────── */
 
 /* ── pill bar ────────────────────────────────────────────── */
 
@@ -484,7 +442,7 @@ export default function Step6() {
   const supportingCharacters: SupportingCharacter[] =
     (answers.supportingCharacters as SupportingCharacter[]) || [];
 
-  const companion: Companion | null = (answers.companion as Companion) || null;
+  
 
   const [activeTab, setActiveTab] = useState<ActiveTab>({ kind: "protagonist" });
   const [warnings, setWarnings] = useState<Set<string>>(new Set());
@@ -496,7 +454,6 @@ export default function Step6() {
 
   const setProtagonist = useCallback((p: Protagonist) => setAnswer("protagonist", p), [setAnswer]);
   const setSupportingCharacters = useCallback((s: SupportingCharacter[]) => setAnswer("supportingCharacters", s), [setAnswer]);
-  const setCompanion = useCallback((c: Companion | null) => setAnswer("companion", c), [setAnswer]);
 
   const addSupporting = () => {
     if (supportingCharacters.length >= 2) {
@@ -525,25 +482,13 @@ export default function Step6() {
     toast.success("Extra character unlocked!", { description: "$3.00 charged (simulated)" });
   };
 
-  const addCompanion = () => {
-    if (companion) return;
-    const c: Companion = { id: makeId(), name: "", type: "", typeOther: "", description: "" };
-    setCompanion(c);
-    setActiveTab({ kind: "companion" });
-  };
-
   const confirmRemove = (id: string) => setShowRemoveDialog(id);
 
   const doRemove = () => {
     if (!showRemoveDialog) return;
-    if (companion && showRemoveDialog === companion.id) {
-      setCompanion(null);
-      setActiveTab({ kind: "protagonist" });
-    } else {
-      const filtered = supportingCharacters.filter((c) => c.id !== showRemoveDialog);
-      setSupportingCharacters(filtered);
-      setActiveTab({ kind: "protagonist" });
-    }
+    const filtered = supportingCharacters.filter((c) => c.id !== showRemoveDialog);
+    setSupportingCharacters(filtered);
+    setActiveTab({ kind: "protagonist" });
     setShowRemoveDialog(null);
   };
 
@@ -592,27 +537,11 @@ export default function Step6() {
             />
           ))}
 
-          {companion && (
-            <Pill active={activeTab.kind === "companion"}
-              icon={<PawPrint className="w-4 h-4" />}
-              label={companion.name || "Companion"}
-              onClick={() => setActiveTab({ kind: "companion" })}
-              onRemove={() => confirmRemove(companion.id)}
-              hasWarning={warnings.has(companion.id)}
-            />
-          )}
-
           {supportingCharacters.length < 3 && (
             <AddPill label="Character" icon={<Plus className="w-3.5 h-3.5" />}
               onClick={addSupporting}
               disabled={supportingCharacters.length >= 3}
               tooltip={supportingCharacters.length >= 3 ? "3 character max" : undefined}
-            />
-          )}
-
-          {!companion && (
-            <AddPill label="Companion" icon={<PawPrint className="w-3.5 h-3.5" />}
-              onClick={addCompanion}
             />
           )}
         </div>
@@ -633,10 +562,6 @@ export default function Step6() {
               />
             );
           })()}
-
-          {activeTab.kind === "companion" && companion && (
-            <CompanionForm data={companion} onChange={(d) => setCompanion(d)} />
-          )}
         </div>
       </div>
 
