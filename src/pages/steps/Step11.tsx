@@ -76,16 +76,6 @@ function StoryPage({ name, artHsl }: { name: string; artHsl: string }) {
   );
 }
 
-function PlotPreviewPage({ name, artHsl }: { name: string; artHsl: string }) {
-  return (
-    <div className="flex flex-col h-full p-5 gap-3">
-      <p className="text-[10px] uppercase tracking-widest" style={{ color: `hsl(${artHsl} / 0.5)` }}>The Story</p>
-      <p className="text-[11px] font-serif leading-relaxed" style={{ color: `hsl(${artHsl} / 0.85)` }}>
-        When {name} discovers a mysterious glowing map hidden beneath the old oak tree, an unforgettable adventure begins. Together with new friends, {name} journeys through enchanted forests, solves clever riddles, and learns that the greatest magic of all is courage, kindness, and believing in yourself.
-      </p>
-    </div>
-  );
-}
 
 export default function Step11() {
   const { answers } = useWizard();
@@ -102,10 +92,6 @@ export default function Step11() {
   const price = selected === "digital" ? "$9.99" : "$44.99";
   const planLabel = selected === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
 
-  const pages = [
-    <CoverPage key="cover" layout={layout} title={title} name={name} artHsl={artHsl} />,
-    <StoryPage key="story" name={name} artHsl={artHsl} />,
-  ];
 
   if (orderPlaced) {
     return (
