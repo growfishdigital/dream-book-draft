@@ -50,6 +50,7 @@ export default function Step8() {
   const occasionOther = (answers.occasionOther as string) || "";
   const dedication = (answers.dedication as string) ?? "";
   const language = (answers.language as string) || "english";
+  const skipDedication = (answers.skipDedication as boolean) ?? false;
 
   useEffect(() => {
     setCanContinue(true);
