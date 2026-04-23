@@ -44,9 +44,6 @@ export default function Step1() {
   const name = (answers.childName as string) || "";
   const age = (answers.ageRange as string) || "";
   const gender = (answers.gender as string) || "";
-  const occasion = (answers.occasion as string) || "";
-  const occasionOther = (answers.occasionOther as string) || "";
-  const buyerRole = (answers.buyerRole as string) || "";
   const bookBelongsTo = answers.bookBelongsTo !== false;
 
   const [headingVisible, setHeadingVisible] = useState(true);
@@ -67,12 +64,6 @@ export default function Step1() {
       return () => clearTimeout(t);
     }
   }, [name]);
-
-  // Validation
-  useEffect(() => {
-    if (!answers.buyerRole) setAnswer("buyerRole", "parent");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   useEffect(() => {
     setCanContinue(name.trim().length > 0 && age !== "" && gender !== "");
@@ -170,54 +161,6 @@ export default function Step1() {
           </div>
         </div>
 
-        {/* Who are you? */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Who are you in the child's life?
-          </label>
-          <div className="flex flex-wrap justify-center gap-3">
-            {BUYER_ROLES.map((r) => (
-              <button key={r.value} type="button" onClick={() => setAnswer("buyerRole", r.value)} className={pillClass(buyerRole === r.value)}>
-                <span className="block text-lg">{r.emoji}</span>
-                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>{r.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Occasion */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            What's the occasion? <span className="text-muted-foreground/60">(optional)</span>
-          </label>
-          <div className="grid grid-cols-3 gap-3 max-w-[420px] mx-auto">
-            {OCCASIONS.map((o) => (
-              <button
-                key={o.value}
-                type="button"
-                onClick={() =>
-                  setAnswer("occasion", occasion === o.value ? "" : o.value)
-                }
-                className={chipClass(occasion === o.value)}
-              >
-                <span className="block text-xl">{o.emoji}</span>
-                <span className="block text-sm mt-1">{o.label}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Other occasion input */}
-          {occasion === "other" && (
-            <div className="flex justify-center mt-3">
-              <Input
-                value={occasionOther}
-                onChange={(e) => setAnswer("occasionOther", e.target.value)}
-                placeholder="Tell us the occasion..."
-                className="max-w-[360px] rounded-2xl border-border bg-white shadow-sm"
-              />
-            </div>
-          )}
-        </div>
       </div>
     </WizardShell>
   );
