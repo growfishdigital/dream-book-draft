@@ -55,6 +55,16 @@ export default function WizardShell({ children, showSkip = false }: { children: 
             Back
           </button>
         )}
+        {showSkip && (
+          <button
+            type="button"
+            onClick={goNext}
+            className="py-4 px-6 rounded-full text-base font-semibold transition-all hover:bg-black/5"
+            style={{ color: "hsl(var(--wizard-primary))" }}
+          >
+            Skip
+          </button>
+        )}
         <button
           type="button"
           onClick={goNext}
