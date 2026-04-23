@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import { Carousel, CarouselContent, CarouselItem, CarouselPrevious, CarouselNext } from "@/components/ui/carousel";
 import { Input } from "@/components/ui/input";
-import { Check, ChevronLeft, Lock } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import ProgressBar from "@/components/ProgressBar";
 
 
@@ -94,7 +94,6 @@ export default function Step11() {
   const title = answers.bookTitle || `${name}'s Adventure`;
   const layout = answers.coverLayout || "full-illustration";
   const artStyle = answers.artStyle || "watercolor";
-  const dedication = answers.dedication || `For ${name}, with all my love.`;
   const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
 
   const [selected, setSelected] = useState<Plan>("hardcover");
