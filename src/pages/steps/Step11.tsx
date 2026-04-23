@@ -328,6 +328,9 @@ export default function Step11() {
             >
               Place Order — {price}
             </button>
+            <p className="text-xs text-center text-muted-foreground mt-1 px-2 leading-relaxed">
+              ✏️ Don't worry — after checkout you'll be able to review your book and request edits or revisions before it's finalized.
+            </p>
           </div>
         </div>
       </div>
