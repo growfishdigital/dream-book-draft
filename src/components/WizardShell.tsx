@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 const TOTAL_STEPS = 11;
 
-export default function WizardShell({ children }: { children: ReactNode }) {
+export default function WizardShell({ children, showSkip = false }: { children: ReactNode; showSkip?: boolean }) {
   const { step } = useParams<{ step: string }>();
   const location = useLocation();
   const currentStep = Number(step ?? location.pathname.match(/^\/step\/(\d+)$/)?.[1]) || 1;
