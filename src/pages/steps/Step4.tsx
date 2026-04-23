@@ -1,78 +1,108 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import WizardShell from "@/components/WizardShell";
 import { Input } from "@/components/ui/input";
 import { useWizard } from "@/contexts/WizardContext";
+import { Check, X } from "lucide-react";
 
-const CATEGORIES = [
+type AgeRange = "0-2" | "3-5" | "6-8" | "9-12";
+const ALL_AGES: AgeRange[] = ["0-2", "3-5", "6-8", "9-12"];
+
+interface InterestItem {
+  value: string;
+  label: string;
+  emoji: string;
+  ages: AgeRange[];
+}
+
+interface Category {
+  label: string;
+  items: InterestItem[];
+}
+
+const CATEGORIES: Category[] = [
   {
     label: "🐾 Animals & Nature",
     items: [
-      { value: "dinosaurs", label: "🦕 Dinosaurs" },
-      { value: "dogs", label: "🐶 Dogs" },
-      { value: "cats", label: "🐱 Cats" },
-      { value: "horses", label: "🐴 Horses" },
-      { value: "ocean-mermaids", label: "🧜 Ocean & Mermaids" },
-      { value: "farm-animals", label: "🐄 Farm Animals" },
-      { value: "zoo-animals", label: "🦁 Zoo Animals" },
-      { value: "bugs-butterflies", label: "🦋 Bugs & Butterflies" },
+      { value: "dinosaurs", label: "Dinosaurs", emoji: "🦕", ages: ["3-5", "6-8", "9-12"] },
+      { value: "dogs", label: "Dogs", emoji: "🐶", ages: ALL_AGES },
+      { value: "cats", label: "Cats", emoji: "🐱", ages: ALL_AGES },
+      { value: "horses", label: "Horses", emoji: "🐴", ages: ["3-5", "6-8", "9-12"] },
+      { value: "ocean-mermaids", label: "Ocean & Mermaids", emoji: "🧜", ages: ["3-5", "6-8"] },
+      { value: "farm-animals", label: "Farm Animals", emoji: "🐄", ages: ["0-2", "3-5", "6-8"] },
+      { value: "zoo-animals", label: "Zoo Animals", emoji: "🦁", ages: ["0-2", "3-5", "6-8"] },
+      { value: "bugs-butterflies", label: "Bugs & Butterflies", emoji: "🦋", ages: ["0-2", "3-5", "6-8"] },
     ],
   },
   {
     label: "🚀 Adventure & Fantasy",
     items: [
-      { value: "space-stars", label: "🌟 Space & Stars" },
-      { value: "pirates", label: "🏴‍☠️ Pirates" },
-      { value: "superheroes", label: "🦸 Superheroes" },
-      { value: "princesses-castles", label: "👑 Princesses & Castles" },
-      { value: "unicorns", label: "🦄 Unicorns" },
-      { value: "dragons", label: "🐉 Dragons" },
-      { value: "fairies-magic", label: "🧚 Fairies & Magic" },
-      { value: "ninjas", label: "🥷 Ninjas" },
-      { value: "treasure-hunting", label: "💎 Treasure Hunting" },
+      { value: "space-stars", label: "Space & Stars", emoji: "🌟", ages: ["3-5", "6-8", "9-12"] },
+      { value: "pirates", label: "Pirates", emoji: "🏴‍☠️", ages: ["3-5", "6-8", "9-12"] },
+      { value: "superheroes", label: "Superheroes", emoji: "🦸", ages: ["3-5", "6-8", "9-12"] },
+      { value: "princesses-castles", label: "Princesses & Castles", emoji: "👑", ages: ["3-5", "6-8"] },
+      { value: "unicorns", label: "Unicorns", emoji: "🦄", ages: ["3-5", "6-8"] },
+      { value: "dragons", label: "Dragons", emoji: "🐉", ages: ["3-5", "6-8", "9-12"] },
+      { value: "fairies-magic", label: "Fairies & Magic", emoji: "🧚", ages: ["3-5", "6-8"] },
+      { value: "ninjas", label: "Ninjas", emoji: "🥷", ages: ["6-8", "9-12"] },
+      { value: "treasure-hunting", label: "Treasure Hunting", emoji: "💎", ages: ["3-5", "6-8", "9-12"] },
     ],
   },
   {
     label: "🚗 Vehicles & Things That Go",
     items: [
-      { value: "trains", label: "🚂 Trains" },
-      { value: "cars-trucks", label: "🚗 Cars & Trucks" },
-      { value: "bikes-scooters", label: "🛴 Bikes & Scooters" },
+      { value: "trains", label: "Trains", emoji: "🚂", ages: ["0-2", "3-5", "6-8"] },
+      { value: "cars-trucks", label: "Cars & Trucks", emoji: "🚗", ages: ["0-2", "3-5", "6-8"] },
+      { value: "bikes-scooters", label: "Bikes & Scooters", emoji: "🛴", ages: ["3-5", "6-8", "9-12"] },
     ],
   },
   {
     label: "⚽ Sports & Active Play",
     items: [
-      { value: "soccer", label: "⚽ Soccer" },
-      { value: "basketball", label: "🏀 Basketball" },
-      { value: "baseball", label: "⚾ Baseball" },
-      { value: "swimming", label: "🏊 Swimming" },
-      { value: "gymnastics", label: "🤸 Gymnastics" },
-      { value: "martial-arts", label: "🥋 Martial Arts" },
-      { value: "dancing-ballet", label: "💃 Dancing/Ballet" },
+      { value: "soccer", label: "Soccer", emoji: "⚽", ages: ["3-5", "6-8", "9-12"] },
+      { value: "basketball", label: "Basketball", emoji: "🏀", ages: ["3-5", "6-8", "9-12"] },
+      { value: "baseball", label: "Baseball", emoji: "⚾", ages: ["3-5", "6-8", "9-12"] },
+      { value: "swimming", label: "Swimming", emoji: "🏊", ages: ["3-5", "6-8", "9-12"] },
+      { value: "gymnastics", label: "Gymnastics", emoji: "🤸", ages: ["3-5", "6-8", "9-12"] },
+      { value: "martial-arts", label: "Martial Arts", emoji: "🥋", ages: ["6-8", "9-12"] },
+      { value: "dancing-ballet", label: "Dancing/Ballet", emoji: "💃", ages: ALL_AGES },
     ],
   },
   {
     label: "🎨 Creative & Learning",
     items: [
-      { value: "art-drawing", label: "🎨 Art & Drawing" },
-      { value: "music", label: "🎵 Music" },
-      { value: "reading-books", label: "📚 Reading & Books" },
-      { value: "science-experiments", label: "🔬 Science & Experiments" },
-      { value: "cooking-baking", label: "🧁 Cooking & Baking" },
-      { value: "building-lego", label: "🧱 Building/LEGO" },
-      { value: "robots-machines", label: "🤖 Robots & Machines" },
+      { value: "art-drawing", label: "Art & Drawing", emoji: "🎨", ages: ["3-5", "6-8", "9-12"] },
+      { value: "music", label: "Music", emoji: "🎵", ages: ALL_AGES },
+      { value: "reading-books", label: "Reading & Books", emoji: "📚", ages: ["3-5", "6-8", "9-12"] },
+      { value: "science-experiments", label: "Science & Experiments", emoji: "🔬", ages: ["6-8", "9-12"] },
+      { value: "cooking-baking", label: "Cooking & Baking", emoji: "🧁", ages: ["3-5", "6-8", "9-12"] },
+      { value: "building-lego", label: "Building/LEGO", emoji: "🧱", ages: ["3-5", "6-8", "9-12"] },
+      { value: "robots-machines", label: "Robots & Machines", emoji: "🤖", ages: ["6-8", "9-12"] },
     ],
   },
   {
     label: "🌈 Vibes & Worlds",
     items: [
-      { value: "camping-outdoors", label: "🏕️ Camping & Outdoors" },
-      { value: "gardening-flowers", label: "🌸 Gardening & Flowers" },
-      { value: "snow-winter", label: "❄️ Snow & Winter" },
-      { value: "rainbows-colors", label: "🌈 Rainbows & Colors" },
+      { value: "camping-outdoors", label: "Camping & Outdoors", emoji: "🏕️", ages: ["3-5", "6-8", "9-12"] },
+      { value: "gardening-flowers", label: "Gardening & Flowers", emoji: "🌸", ages: ["0-2", "3-5", "6-8"] },
+      { value: "snow-winter", label: "Snow & Winter", emoji: "❄️", ages: ALL_AGES },
+      { value: "rainbows-colors", label: "Rainbows & Colors", emoji: "🌈", ages: ["0-2", "3-5"] },
     ],
   },
 ];
+
+const POPULAR_BY_AGE: Record<AgeRange, string[]> = {
+  "0-2": ["farm-animals", "dogs", "cats", "bugs-butterflies", "rainbows-colors", "music"],
+  "3-5": ["dinosaurs", "unicorns", "princesses-castles", "dogs", "space-stars", "cars-trucks"],
+  "6-8": ["superheroes", "dragons", "space-stars", "soccer", "art-drawing", "science-experiments"],
+  "9-12": ["science-experiments", "robots-machines", "martial-arts", "treasure-hunting", "building-lego", "cooking-baking"],
+};
+
+const AGE_LABEL: Record<AgeRange, string> = {
+  "0-2": "0–2",
+  "3-5": "3–5",
+  "6-8": "6–8",
+  "9-12": "9–12",
+};
 
 const COMBO_SENTENCES: Record<string, string> = {
   "dinosaurs+space-stars": "{name} zooms past the rings of Saturn on a dinosaur-back…",
@@ -87,9 +117,14 @@ const COMBO_SENTENCES: Record<string, string> = {
   "ninjas+martial-arts": "{name} trains in a secret mountain dojo with the world's sneakiest sensei…",
 };
 
+const ALL_ITEMS: InterestItem[] = CATEGORIES.flatMap((c) => c.items);
+
+function findItem(value: string): InterestItem | undefined {
+  return ALL_ITEMS.find((i) => i.value === value);
+}
+
 function getPreviewSentence(name: string, interests: string[]): string | null {
   if (interests.length < 2) return null;
-  // Try all pairs
   for (let i = 0; i < interests.length; i++) {
     for (let j = i + 1; j < interests.length; j++) {
       const key1 = `${interests[i]}+${interests[j]}`;
@@ -98,15 +133,52 @@ function getPreviewSentence(name: string, interests: string[]): string | null {
       if (COMBO_SENTENCES[key2]) return COMBO_SENTENCES[key2].replace("{name}", name);
     }
   }
-  // Fallback
-  const allItems = CATEGORIES.flatMap((c) => c.items);
-  const labels = interests.map((v) => allItems.find((i) => i.value === v)?.label.replace(/^[^\s]+\s/, "") ?? v);
+  const labels = interests.map((v) => findItem(v)?.label ?? v);
   return `${name} discovers a world of ${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}…`;
+}
+
+interface InterestTileProps {
+  item: InterestItem;
+  selected: boolean;
+  shaking: boolean;
+  onClick: () => void;
+}
+
+function InterestTile({ item, selected, shaking, onClick }: InterestTileProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`relative aspect-[4/3] rounded-2xl border-2 shadow-sm transition-all flex flex-col items-center justify-center gap-1.5 px-2 py-3 ${
+        selected
+          ? "bg-[hsl(var(--wizard-primary)/0.08)]"
+          : "bg-white border-transparent hover:shadow-md hover:-translate-y-0.5"
+      } ${shaking ? "animate-shake" : ""}`}
+      style={selected ? { borderColor: "hsl(var(--wizard-primary))" } : undefined}
+    >
+      {selected && (
+        <span
+          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+          style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+        >
+          <Check className="w-3 h-3 text-white" strokeWidth={3} />
+        </span>
+      )}
+      <span className="text-3xl leading-none">{item.emoji}</span>
+      <span
+        className="text-xs sm:text-sm font-medium text-center leading-tight"
+        style={{ color: "hsl(var(--wizard-primary))" }}
+      >
+        {item.label}
+      </span>
+    </button>
+  );
 }
 
 export default function Step4() {
   const { answers, setAnswer, setCanContinue } = useWizard();
   const name = (answers.childName as string) || "your little one";
+  const ageRange = (answers.ageRange as AgeRange | undefined) || undefined;
   const interests = (answers.interests as string[]) || [];
   const [shaking, setShaking] = useState<string | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout>>();
@@ -121,7 +193,6 @@ export default function Step4() {
     } else if (interests.length < 3) {
       setAnswer("interests", [...interests, value]);
     } else {
-      // Deselect oldest with shake
       const oldest = interests[0];
       setShaking(oldest);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
@@ -130,11 +201,35 @@ export default function Step4() {
     }
   };
 
+  const remove = (value: string) => {
+    setAnswer("interests", interests.filter((v) => v !== value));
+  };
+
+  // Age-filtered visible categories
+  const visibleCategories = useMemo(() => {
+    if (!ageRange) return CATEGORIES;
+    return CATEGORIES
+      .map((cat) => ({
+        ...cat,
+        items: cat.items.filter((i) => i.ages.includes(ageRange)),
+      }))
+      .filter((cat) => cat.items.length > 0);
+  }, [ageRange]);
+
+  const popularItems = useMemo(() => {
+    if (!ageRange) return [];
+    return POPULAR_BY_AGE[ageRange]
+      .map((v) => findItem(v))
+      .filter((x): x is InterestItem => Boolean(x));
+  }, [ageRange]);
+
   const preview = getPreviewSentence(name, interests);
+  const count = interests.length;
+  const isFull = count === 3;
 
   return (
     <WizardShell>
-      <div className="space-y-8">
+      <div className="space-y-8 pb-32">
         <div className="text-center space-y-2">
           <h1 className="font-heading text-3xl sm:text-4xl font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>
             What is {name} interested in?
@@ -144,34 +239,41 @@ export default function Step4() {
           </p>
         </div>
 
+        {/* Popular picks */}
+        {ageRange && popularItems.length > 0 && (
+          <div className="space-y-3">
+            <h2 className="text-sm font-medium text-muted-foreground">
+              ⭐ Popular picks for ages {AGE_LABEL[ageRange]}
+            </h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+              {popularItems.map((item) => (
+                <InterestTile
+                  key={`pop-${item.value}`}
+                  item={item}
+                  selected={interests.includes(item.value)}
+                  shaking={shaking === item.value}
+                  onClick={() => toggle(item.value)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Categories */}
         <div className="space-y-6">
-          {CATEGORIES.map((cat) => (
-            <div key={cat.label} className="space-y-2">
+          {visibleCategories.map((cat) => (
+            <div key={cat.label} className="space-y-3">
               <h2 className="text-sm font-medium text-muted-foreground">{cat.label}</h2>
-              <div className="flex flex-wrap gap-2">
-                {cat.items.map((item) => {
-                  const selected = interests.includes(item.value);
-                  const isShaking = shaking === item.value;
-                  return (
-                    <button
-                      key={item.value}
-                      type="button"
-                      onClick={() => toggle(item.value)}
-                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all border-2 shadow-sm ${
-                        selected
-                          ? "text-white border-transparent"
-                          : "border-transparent bg-white hover:shadow-md"
-                      } ${isShaking ? "animate-shake" : ""}`}
-                      style={
-                        selected
-                          ? { backgroundColor: "hsl(var(--wizard-primary))", color: "#fff" }
-                          : { color: "hsl(var(--wizard-primary))" }
-                      }
-                    >
-                      {item.label}
-                    </button>
-                  );
-                })}
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {cat.items.map((item) => (
+                  <InterestTile
+                    key={item.value}
+                    item={item}
+                    selected={interests.includes(item.value)}
+                    shaking={shaking === item.value}
+                    onClick={() => toggle(item.value)}
+                  />
+                ))}
               </div>
             </div>
           ))}
@@ -190,12 +292,62 @@ export default function Step4() {
             ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
           </p>
         </div>
+      </div>
 
-        {preview && (
-          <p className="text-center text-muted-foreground text-sm italic animate-fade-in">
-            {preview}
-          </p>
-        )}
+      {/* Persistent selection bar — sits above WizardShell footer (~88px) */}
+      <div className="fixed left-0 right-0 bottom-[96px] z-20 px-4 pointer-events-none">
+        <div className="max-w-[700px] mx-auto pointer-events-auto">
+          <div
+            className={`rounded-2xl border shadow-lg backdrop-blur-sm px-4 py-3 transition-colors ${
+              isFull ? "bg-[hsl(var(--wizard-primary)/0.08)]" : "bg-white/95"
+            }`}
+            style={{ borderColor: isFull ? "hsl(var(--wizard-primary))" : "hsl(var(--border))" }}
+          >
+            {count === 0 ? (
+              <p className="text-sm text-muted-foreground text-center">
+                Pick 2–3 interests to bring the story to life
+              </p>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span
+                    className="text-sm font-semibold whitespace-nowrap"
+                    style={{ color: "hsl(var(--wizard-primary))" }}
+                  >
+                    {isFull ? "Perfect — you're all set ✨" : `${count} of 3 selected`}
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {interests.map((v) => {
+                      const item = findItem(v);
+                      if (!item) return null;
+                      return (
+                        <span
+                          key={v}
+                          className="inline-flex items-center gap-1 pl-2 pr-1 py-1 rounded-full text-xs font-medium text-white"
+                          style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+                        >
+                          <span>{item.emoji}</span>
+                          <span>{item.label}</span>
+                          <button
+                            type="button"
+                            onClick={() => remove(v)}
+                            className="ml-0.5 w-4 h-4 rounded-full flex items-center justify-center hover:bg-white/20"
+                            aria-label={`Remove ${item.label}`}
+                          >
+                            <X className="w-3 h-3" strokeWidth={3} />
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+                {preview && (
+                  <p className="text-xs italic text-muted-foreground">{preview}</p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </WizardShell>
   );
