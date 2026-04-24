@@ -24,7 +24,7 @@ export default function WizardShell({ children, showSkip = false }: { children: 
   return (
     <div className="flex flex-col min-h-[100dvh]" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
       {/* Top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+      <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm border-b border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
         <div className="w-[70px]" />
 
         <ProgressBar currentStep={currentStep} />
@@ -35,7 +35,7 @@ export default function WizardShell({ children, showSkip = false }: { children: 
       </header>
 
       {/* Content */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8">
+      <main className="flex-1 flex justify-center px-4 pt-12 pb-8">
         <div className="w-full max-w-[700px]">{children}</div>
       </main>
 
