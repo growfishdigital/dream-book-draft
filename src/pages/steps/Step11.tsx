@@ -287,7 +287,7 @@ export default function Step11() {
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
       <button
-        onClick={() => navigate("/step/10")}
+        onClick={() => navigate("/step/9")}
         className="absolute top-4 left-4 p-2 rounded-xl transition-colors hover:bg-black/5 z-10"
         aria-label="Go back"
       >
@@ -299,7 +299,7 @@ export default function Step11() {
 
       {/* Progress */}
       <div className="mb-6">
-        <ProgressBar currentStep={11} />
+        <ProgressBar currentStep={10} />
       </div>
 
       {/* Heading */}
