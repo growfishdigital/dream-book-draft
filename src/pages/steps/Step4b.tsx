@@ -1,15 +1,17 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
+import { Plus, X } from "lucide-react";
 import WizardShell from "@/components/WizardShell";
-import { Textarea } from "@/components/ui/textarea";
 import { useWizard } from "@/contexts/WizardContext";
 
 type AgeRange = "0-2" | "3-5" | "6-8" | "9-12";
 type Gender = "girl" | "boy" | "non-binary" | "surprise";
 type Suggestion = { emoji: string; word: string };
+type Entry = { word: string; emoji?: string };
+
+const MAX_INTERESTS = 3;
 
 const s = (emoji: string, word: string): Suggestion => ({ emoji, word });
 
-// Base pool per age bucket
 const BASE_BY_AGE: Record<AgeRange, Suggestion[]> = {
   "0-2": [
     s("🐾", "animals"), s("🫧", "bubbles"), s("🎵", "music"), s("🦆", "ducks"),
@@ -37,7 +39,6 @@ const BASE_BY_AGE: Record<AgeRange, Suggestion[]> = {
   ],
 };
 
-// Gender-flavored boost
 const BOOST_BY_GENDER: Partial<Record<Gender, Partial<Record<AgeRange, Suggestion[]>>>> = {
   girl: {
     "0-2": [s("👑","princesses"), s("🪆","dolls"), s("🌸","flowers"), s("🐱","kittens"), s("🩰","ballet"), s("🍵","tea parties"), s("🦋","butterflies"), s("🧚","fairies")],
@@ -68,40 +69,81 @@ function buildPool(age: AgeRange, gender: string): Suggestion[] {
   });
 }
 
-function parseEntered(text: string): Set<string> {
-  return new Set(
-    text.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean),
-  );
-}
-
-function appendInterest(text: string, word: string): string {
-  const trimmed = text.replace(/\s+$/, "");
-  if (trimmed.length === 0) return `${word}, `;
-  if (trimmed.endsWith(",")) return `${trimmed} ${word}, `;
-  return `${trimmed}, ${word}, `;
-}
+const PLACEHOLDER = "type here";
 
 export default function Step4b() {
   const { answers, setAnswer, setCanContinue } = useWizard();
   const name = ((answers.childName as string) || "").trim() || "your little one";
   const age = (answers.ageRange as AgeRange) || "3-5";
   const gender = (answers.gender as string) || "";
-  const value = (answers.interestsFreeform as string) || "";
+  const list: Entry[] = (answers.interestsList as Entry[]) || [];
+  const focusIdxRef = useRef<number | null>(null);
+  const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
   useEffect(() => {
     setCanContinue(true);
   }, [setCanContinue]);
 
+  // Focus newly-added inputs
+  useEffect(() => {
+    if (focusIdxRef.current !== null) {
+      const el = inputRefs.current[focusIdxRef.current];
+      el?.focus();
+      focusIdxRef.current = null;
+    }
+  });
+
   const pool = useMemo(() => buildPool(age, gender), [age, gender]);
 
-  const visibleChips = useMemo(() => {
-    const entered = parseEntered(value);
-    return pool.filter((it) => !entered.has(it.word.toLowerCase())).slice(0, 10);
-  }, [pool, value]);
+  const enteredSet = useMemo(
+    () => new Set(list.map((e) => e.word.trim().toLowerCase()).filter(Boolean)),
+    [list],
+  );
 
-  const addChip = (word: string) => {
-    setAnswer("interestsFreeform", appendInterest(value, word));
+  const visibleChips = useMemo(
+    () => pool.filter((it) => !enteredSet.has(it.word.toLowerCase())).slice(0, 10),
+    [pool, enteredSet],
+  );
+
+  const setList = (next: Entry[]) => setAnswer("interestsList", next);
+
+  const addEntry = (word: string, emoji?: string) => {
+    if (list.length >= MAX_INTERESTS) return;
+    if (word && enteredSet.has(word.toLowerCase())) return;
+    // Fill first empty slot if one exists
+    const emptyIdx = list.findIndex((e) => !e.word.trim());
+    if (emptyIdx >= 0 && word) {
+      const next = list.slice();
+      next[emptyIdx] = { word, emoji };
+      setList(next);
+      return;
+    }
+    const next = [...list, { word, emoji }];
+    setList(next);
+    if (!word) focusIdxRef.current = next.length - 1;
   };
+
+  const updateEntry = (idx: number, word: string) => {
+    const next = list.slice();
+    const prev = next[idx];
+    // Drop emoji if user edits the suggestion text
+    const emoji = prev?.emoji && prev.word === word ? prev.emoji : undefined;
+    next[idx] = { word, emoji };
+    setList(next);
+  };
+
+  const removeEntry = (idx: number) => {
+    setList(list.filter((_, i) => i !== idx));
+  };
+
+  const atCap = list.length >= MAX_INTERESTS;
+
+  const pillBase =
+    "inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium transition-all";
+  const pillFilledStyle = {
+    backgroundColor: "hsl(var(--wizard-primary) / 0.10)",
+    color: "hsl(var(--wizard-primary))",
+  } as const;
 
   return (
     <WizardShell showSkip>
@@ -114,23 +156,59 @@ export default function Step4b() {
             What does {name} love?
           </h1>
           <p className="text-muted-foreground text-lg">
-            Type their interests, separated by commas — or tap a suggestion below to add it.
+            Add up to 3 things they're into.
           </p>
         </div>
 
-        <Textarea
-          value={value}
-          onChange={(e) => setAnswer("interestsFreeform", e.target.value)}
-          placeholder="Tell us what they're into…"
-          className="min-h-[140px] rounded-2xl bg-white border-2 text-base px-4 py-3 resize-none focus-visible:ring-0 focus-visible:ring-offset-0"
-          style={{ borderColor: "hsl(var(--wizard-primary) / 0.25)" }}
-        />
+        {/* Filled pills + add button */}
+        <div className="flex flex-wrap gap-2 min-h-[44px]">
+          {list.map((entry, idx) => {
+            const size = Math.max((entry.word || "").length, PLACEHOLDER.length);
+            return (
+              <div key={idx} className={pillBase} style={pillFilledStyle}>
+                {entry.emoji && <span aria-hidden>{entry.emoji}</span>}
+                <input
+                  ref={(el) => (inputRefs.current[idx] = el)}
+                  value={entry.word}
+                  onChange={(e) => updateEntry(idx, e.target.value)}
+                  placeholder={PLACEHOLDER}
+                  size={size}
+                  className="bg-transparent border-0 outline-none p-0 text-base font-medium placeholder:text-[hsl(var(--wizard-primary)/0.5)]"
+                  style={{ color: "hsl(var(--wizard-primary))" }}
+                />
+                <button
+                  type="button"
+                  onClick={() => removeEntry(idx)}
+                  aria-label="Remove interest"
+                  className="ml-1 opacity-50 hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            );
+          })}
+
+          {!atCap && (
+            <button
+              type="button"
+              onClick={() => addEntry("")}
+              className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium border-2 border-dashed transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)]"
+              style={{
+                borderColor: "hsl(var(--wizard-primary) / 0.4)",
+                color: "hsl(var(--wizard-primary))",
+              }}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add interest</span>
+            </button>
+          )}
+        </div>
 
         <p className="text-xs text-muted-foreground">
           ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
         </p>
 
-        {visibleChips.length > 0 && (
+        {!atCap && visibleChips.length > 0 && (
           <div className="space-y-3">
             <h2 className="font-medium text-muted-foreground text-base">Tap for inspiration:</h2>
             <div className="flex flex-wrap gap-2">
@@ -138,12 +216,9 @@ export default function Step4b() {
                 <button
                   key={it.word}
                   type="button"
-                  onClick={() => addChip(it.word)}
-                  className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium transition-all hover:shadow-md hover:-translate-y-0.5"
-                  style={{
-                    backgroundColor: "hsl(var(--wizard-primary) / 0.10)",
-                    color: "hsl(var(--wizard-primary))",
-                  }}
+                  onClick={() => addEntry(it.word, it.emoji)}
+                  className={`${pillBase} hover:shadow-md hover:-translate-y-0.5`}
+                  style={pillFilledStyle}
                 >
                   <span aria-hidden>{it.emoji}</span>
                   <span>{it.word}</span>
@@ -151,6 +226,12 @@ export default function Step4b() {
               ))}
             </div>
           </div>
+        )}
+
+        {atCap && (
+          <p className="text-sm text-muted-foreground">
+            That's plenty — 3 is the sweet spot ✨
+          </p>
         )}
 
         <p className="text-sm text-muted-foreground">
