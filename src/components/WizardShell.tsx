@@ -1,6 +1,6 @@
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
-import ProgressBar from "./ProgressBar";
+import WizardHeader from "./WizardHeader";
 import { useWizard } from "@/contexts/WizardContext";
 import type { ReactNode } from "react";
 
