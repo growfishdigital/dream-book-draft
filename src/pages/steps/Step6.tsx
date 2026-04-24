@@ -506,7 +506,7 @@ export default function Step6() {
       : <User className="w-4 h-4" />;
 
   return (
-    <WizardShell>
+    <WizardShell maxWidth={800}>
       <div className="space-y-6">
         {/* heading */}
         <div className="text-center space-y-2">
