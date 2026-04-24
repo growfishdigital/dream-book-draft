@@ -447,9 +447,7 @@ export default function Step11() {
                     )}
                   </SummaryRow>
 
-                  <SummaryRow label="Favorite thing" artHsl={artHsl}>
-                    {specialThing || placeholder}
-                  </SummaryRow>
+                  {/* Favorite thing row hidden — Secret Ingredient step disabled */}
 
                   <SummaryRow label="Characters" artHsl={artHsl}>
                     {charactersLine || placeholder}
