@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 const TOTAL_STEPS = 11;
 
-export default function WizardShell({ children, showSkip = false }: { children: ReactNode; showSkip?: boolean }) {
+export default function WizardShell({ children, showSkip = false, maxWidth = 700 }: { children: ReactNode; showSkip?: boolean; maxWidth?: number }) {
   const { step } = useParams<{ step: string }>();
   const location = useLocation();
   const currentStep = Number(step ?? location.pathname.match(/^\/step\/(\d+)$/)?.[1]) || 1;
@@ -36,11 +36,11 @@ export default function WizardShell({ children, showSkip = false }: { children: 
 
       {/* Content */}
       <main className="flex-1 flex justify-center px-4 pt-12 pb-8">
-        <div className="w-full max-w-[700px]">{children}</div>
+        <div className="w-full" style={{ maxWidth: `${maxWidth}px` }}>{children}</div>
       </main>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 z-30 px-4 py-4 flex justify-center gap-3" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+      <div className="sticky bottom-0 z-30 px-4 py-4 flex justify-center items-center gap-3 border-t border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
         {currentStep > 1 && (
           <button
             type="button"

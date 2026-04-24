@@ -8,10 +8,10 @@ import ProgressBar from "@/components/ProgressBar";
 
 
 const ART_COLORS: Record<string, string> = {
-  watercolor: "210 60% 70%",
-  cartoon: "45 90% 60%",
-  pastel: "320 40% 75%",
-  realistic: "160 30% 45%",
+  watercolor: "100 52% 20%",
+  cartoon: "100 52% 20%",
+  pastel: "100 52% 20%",
+  realistic: "100 52% 20%",
 };
 
 /* ── Label lookup maps for the recap card ─────────────────── */
