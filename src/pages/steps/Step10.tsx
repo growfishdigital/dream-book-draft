@@ -1,8 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
-import ProgressBar from "@/components/ProgressBar";
+import WizardHeader from "@/components/WizardHeader";
 
 const STAGES = [
   { emoji: "✍️", text: "Crafting {name}'s story..." },
@@ -48,24 +47,12 @@ export default function Step9() {
 
   return (
     <div
-      className="flex flex-col items-center justify-center min-h-[100dvh] px-4 relative"
+      className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <button
-        onClick={() => navigate("/step/9")}
-        className="absolute top-4 left-4 p-2 rounded-xl transition-colors hover:bg-black/5 z-10"
-        aria-label="Go back"
-      >
-        <ChevronLeft className="w-5 h-5" style={{ color: "hsl(var(--wizard-primary))" }} />
-      </button>
-      <button className="absolute top-4 right-4 text-sm font-medium px-3 py-1.5 rounded-xl transition-colors hover:bg-black/5 z-10" style={{ color: "hsl(var(--wizard-primary))" }}>
-        Save &amp; exit
-      </button>
+      <WizardHeader currentStep={10} />
 
-      {/* Progress dots */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10">
-        <ProgressBar currentStep={10} />
-      </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
       <style>{`
         @keyframes book-open {
           0% { transform: rotateY(0deg); }
@@ -223,6 +210,7 @@ export default function Step9() {
           ✨ Your book is ready — take a look
         </button>
       )}
+      </div>
     </div>
   );
 }

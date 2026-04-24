@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 
 
-import { Check, ChevronLeft } from "lucide-react";
-import ProgressBar from "@/components/ProgressBar";
+import { Check } from "lucide-react";
+import WizardHeader from "@/components/WizardHeader";
 
 
 const ART_COLORS: Record<string, string> = {
@@ -283,25 +283,12 @@ export default function Step11() {
 
   return (
     <div
-      className="flex flex-col items-center min-h-[100dvh] px-4 py-8 relative"
+      className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <button
-        onClick={() => navigate("/step/10")}
-        className="absolute top-4 left-4 p-2 rounded-xl transition-colors hover:bg-black/5 z-10"
-        aria-label="Go back"
-      >
-        <ChevronLeft className="w-5 h-5" style={{ color: "hsl(var(--wizard-primary))" }} />
-      </button>
-      <button className="absolute top-4 right-4 text-sm font-medium px-3 py-1.5 rounded-xl transition-colors hover:bg-black/5 z-10" style={{ color: "hsl(var(--wizard-primary))" }}>
-        Save &amp; exit
-      </button>
+      <WizardHeader currentStep={10} />
 
-      {/* Progress */}
-      <div className="mb-6">
-        <ProgressBar currentStep={10} />
-      </div>
-
+      <div className="flex flex-col items-center px-4 py-8">
       {/* Heading */}
       <h1 className="text-2xl md:text-3xl font-bold text-center mb-1" style={{ color: "hsl(var(--wizard-primary))" }}>
         {name}'s book is ready. ✨
@@ -583,6 +570,7 @@ export default function Step11() {
             </figcaption>
           </figure>
         </div>
+      </div>
       </div>
     </div>
   );
