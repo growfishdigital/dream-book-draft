@@ -180,10 +180,11 @@ export default function CharacterHeadPreview({
       <button
         type="button"
         onClick={update}
-        className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
-          isStale ? "text-white shadow-md" : "text-muted-foreground bg-muted"
-        }`}
-        style={isStale ? { backgroundColor: "hsl(var(--wizard-primary))" } : undefined}
+        className="flex items-center gap-2 px-4 py-2 rounded-full text-sm font-semibold transition-all border-2 bg-transparent"
+        style={{
+          borderColor: "hsl(var(--wizard-primary))",
+          color: "hsl(var(--wizard-primary))",
+        }}
       >
         <RefreshCw className={`w-4 h-4 ${pulse ? "animate-spin" : ""}`} />
         {isStale ? "Update preview" : "Up to date"}
