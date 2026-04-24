@@ -571,6 +571,7 @@ export default function Step11() {
           </figure>
         </div>
       </div>
+      </div>
     </div>
   );
 }
