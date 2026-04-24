@@ -49,7 +49,7 @@ export default function Step7() {
         <div className="grid grid-cols-2 gap-3">
           {ART_STYLES.map((s) => (
             <button key={s.value} type="button" onClick={() => setAnswer("artStyle", s.value)} className={cardClass(artStyle === s.value)}>
-              <div className="w-full h-16 rounded-lg mb-2 flex items-center justify-center text-2xl" style={{ backgroundColor: s.color }}>
+              <div className="w-full h-[200px] rounded-lg mb-2 flex items-center justify-center text-2xl" style={{ backgroundColor: s.color }}>
                 {s.emoji}
               </div>
               <span className="block text-base font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>{s.label}</span>
