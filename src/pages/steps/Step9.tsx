@@ -96,7 +96,7 @@ export default function Step8() {
   return (
     <WizardShell>
       {/* Widen beyond the shell's 700px cap for this step */}
-      <div className="mx-auto w-[min(1100px,calc(100vw-2rem))] -mx-[max(0px,calc((min(1100px,100vw-2rem)-700px)/2))]">
+      <div className="relative left-1/2 -translate-x-1/2 w-[min(1100px,calc(100vw-2rem))]">
         <div className="space-y-8">
           <div className="text-center space-y-2">
             <h1 className="font-heading text-3xl sm:text-4xl font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>
