@@ -268,9 +268,9 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
       </div>
 
       <div className="space-y-1.5">
-        <FieldLabel optional>What makes {displayName} special?</FieldLabel>
+        <FieldLabel optional>Tell us something unique about the appearance of this character</FieldLabel>
         <Textarea className="rounded-xl resize-none" rows={3} maxLength={200}
-          placeholder="Loves dinosaurs, just lost a front tooth, always carries a blue blanket, speaks Spanish at home…"
+          placeholder="Just lost a front tooth, always carries a blue blanket, always wears pink…"
           value={data.special} onChange={(e) => upd({ special: e.target.value })} />
         <CharCounter current={data.special.length} max={200} />
       </div>
