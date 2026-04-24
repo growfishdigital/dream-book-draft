@@ -252,10 +252,11 @@ export default function Step4() {
       <div className="fixed left-0 right-0 bottom-[96px] z-20 px-4 pointer-events-none">
         <div className="max-w-[700px] mx-auto pointer-events-auto">
           <div
-            className={`rounded-2xl border shadow-lg px-4 py-3 transition-colors ${
-              isFull ? "bg-[hsl(var(--wizard-primary)/0.08)]" : ""
-            }`}
-            style={{ borderColor: isFull ? "hsl(var(--wizard-primary))" : "hsl(var(--border))", backgroundColor: isFull ? undefined : "hsl(var(--wizard-bg))" }}
+            className="rounded-2xl border shadow-lg px-4 py-3 transition-colors"
+            style={{
+              borderColor: isFull ? "hsl(var(--wizard-primary))" : "hsl(var(--border))",
+              backgroundColor: isFull ? "hsl(var(--wizard-primary) / 0.08)" : "hsl(var(--wizard-bg))",
+            }}
           >
             {count === 0 ? (
               <p className="text-sm text-muted-foreground text-center">
