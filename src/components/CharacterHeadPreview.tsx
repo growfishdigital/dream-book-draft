@@ -147,8 +147,8 @@ export default function CharacterHeadPreview({
   const hasPhoto = !!snap.photo;
 
   return (
-    <div className="rounded-2xl border-2 bg-white p-4 flex flex-col items-center gap-3"
-      style={{ borderColor: "hsl(var(--wizard-primary) / 0.2)" }}>
+    <div className="rounded-2xl border p-5 sm:p-6 flex flex-col items-center gap-3"
+      style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
       <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         Live preview
       </div>
