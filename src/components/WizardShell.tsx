@@ -36,7 +36,7 @@ export default function WizardShell({ children, showSkip = false, maxWidth = 700
 
       {/* Content */}
       <main className="flex-1 flex justify-center px-4 pt-12 pb-8">
-        <div className="w-full max-w-[700px]">{children}</div>
+        <div className="w-full" style={{ maxWidth: `${maxWidth}px` }}>{children}</div>
       </main>
 
       {/* Bottom bar */}
