@@ -210,6 +210,7 @@ export default function Step9() {
           ✨ Your book is ready — take a look
         </button>
       )}
+      </div>
     </div>
   );
 }
