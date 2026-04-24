@@ -23,16 +23,7 @@ export default function WizardShell({ children, showSkip = false, maxWidth = 700
 
   return (
     <div className="flex flex-col min-h-[100dvh]" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
-      {/* Top bar */}
-      <header className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm border-b border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
-        <div className="w-[70px]" />
-
-        <ProgressBar currentStep={currentStep} />
-
-        <button className="text-sm font-medium px-3 py-1.5 rounded-xl transition-colors hover:bg-black/5" style={{ color: "hsl(var(--wizard-primary))" }}>
-          Save &amp; exit
-        </button>
-      </header>
+      <WizardHeader currentStep={currentStep} />
 
       {/* Content */}
       <main className="flex-1 flex justify-center px-4 pt-12 pb-8">
