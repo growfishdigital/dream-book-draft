@@ -3,8 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 
 
-import { Check, ChevronLeft } from "lucide-react";
-import ProgressBar from "@/components/ProgressBar";
+import { Check } from "lucide-react";
+import WizardHeader from "@/components/WizardHeader";
 
 
 const ART_COLORS: Record<string, string> = {
