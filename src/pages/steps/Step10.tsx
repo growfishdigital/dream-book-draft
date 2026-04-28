@@ -214,9 +214,22 @@ export default function Step11Generating() {
           </p>
         </div>
 
-        <p className="text-sm italic text-center mb-8" style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}>
+        <p className="text-sm italic text-center mb-6" style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}>
           Every word, every illustration — made just for {name}.
         </p>
+
+        {/* Live checklist */}
+        <ul
+          className="w-full max-w-xs space-y-2 mb-8 rounded-2xl px-4 py-3"
+          style={{
+            backgroundColor: "hsl(var(--wizard-primary) / 0.05)",
+            border: "1px solid hsl(var(--wizard-primary) / 0.1)",
+          }}
+        >
+          <ChecklistRow state="done" label="Story written" />
+          <ChecklistRow state={coverDone ? "done" : "active"} label={coverDone ? "Cover painted" : "Painting the cover…"} />
+          <ChecklistRow state={done ? "done" : coverDone ? "active" : "pending"} label={done ? "Pages bound" : "Binding the pages"} />
+        </ul>
 
         {done && (
           <button
