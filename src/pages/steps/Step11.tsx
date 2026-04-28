@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 
 
-import { Check } from "lucide-react";
+import { Check, LayoutGrid, Columns2, AlignVerticalJustifyCenter } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import WizardHeader from "@/components/WizardHeader";
 
 
@@ -271,7 +272,8 @@ export default function Step11() {
   const title = concept.title || answers.bookTitle || `${name}'s Adventure`;
   const approvedSummary: string | undefined = concept.summary;
   const coverImage: string | undefined = concept.coverImage;
-  const layout = answers.coverLayout || "full-illustration";
+  const initialLayout = answers.coverLayout || "full-illustration";
+  const [layout, setLayout] = useState<string>(initialLayout);
   const artStyle = answers.artStyle || "watercolor";
   const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
 
@@ -314,7 +316,7 @@ export default function Step11() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={12} />
+      <WizardHeader currentStep={10} />
 
       <div className="flex flex-col items-center px-4 py-8">
       {/* Heading */}
@@ -341,6 +343,52 @@ export default function Step11() {
               >
                 <CoverPage layout={layout} title={title} name={name} artHsl={artHsl} coverImage={coverImage} />
               </div>
+              {/* Cover variant selector */}
+              {(() => {
+                const variants: { value: string; label: string; Icon: typeof LayoutGrid }[] = [
+                  { value: "full-illustration", label: "Full illustration", Icon: AlignVerticalJustifyCenter },
+                  { value: "bold-title", label: "Bold title split", Icon: Columns2 },
+                  { value: "classic", label: "Classic framed", Icon: LayoutGrid },
+                ];
+                return (
+                  <div className="flex items-center gap-1.5 mt-1">
+                    {variants.map(({ value, label, Icon }) => {
+                      const active = layout === value;
+                      return (
+                        <Tooltip key={value}>
+                          <TooltipTrigger asChild>
+                            <button
+                              type="button"
+                              onClick={() => setLayout(value)}
+                              aria-label={label}
+                              aria-pressed={active}
+                              className="w-8 h-8 rounded-lg flex items-center justify-center border transition-all"
+                              style={
+                                active
+                                  ? {
+                                      backgroundColor: "hsl(var(--wizard-primary))",
+                                      borderColor: "hsl(var(--wizard-primary))",
+                                      color: "#fff",
+                                    }
+                                  : {
+                                      backgroundColor: "#fff",
+                                      borderColor: "hsl(var(--wizard-primary) / 0.2)",
+                                      color: "hsl(var(--wizard-primary) / 0.7)",
+                                    }
+                              }
+                            >
+                              <Icon className="w-4 h-4" />
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            {label}
+                          </TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="flex flex-col items-center gap-2">

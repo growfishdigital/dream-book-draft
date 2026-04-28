@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 10;
 
 const STEP_LABELS: Record<number, string> = {
   1: "Who's it for?",
@@ -15,11 +15,10 @@ const STEP_LABELS: Record<number, string> = {
   4: "Interests",
   5: "Art Style",
   6: "Characters",
-  7: "Dedication & Language",
-  8: "Cover Design",
-  9: "Story Summary",
-  10: "Generating…",
-  11: "Preview & Buy",
+  7: "Cover Design",
+  8: "Story Summary",
+  9: "Generating…",
+  10: "Preview & Buy",
 };
 
 export default function ProgressBar({ currentStep }: { currentStep: number }) {
