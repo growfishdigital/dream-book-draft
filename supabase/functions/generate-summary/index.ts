@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
                     summary: {
                       type: "string",
                       description:
-                        "Single paragraph, ~200 words (150–240), narrative summary.",
+                        "Single paragraph, ~100 words (80–130), narrative summary.",
                     },
                   },
                   required: ["title", "summary"],
