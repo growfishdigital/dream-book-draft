@@ -31,42 +31,53 @@ export default function WizardShell({ children, showSkip = false, maxWidth = 700
       </main>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 z-30 px-4 py-4 flex justify-center items-center gap-3 border-t border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
-        {currentStep > 1 && (
+      <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+        <div className="flex justify-center items-center gap-3 w-full">
+          {currentStep > 1 && (
+            <button
+              type="button"
+              onClick={goBack}
+              className="py-4 px-8 rounded-full text-base font-semibold transition-all border-2"
+              style={{
+                borderColor: "hsl(var(--wizard-primary))",
+                color: "hsl(var(--wizard-primary))",
+                backgroundColor: "transparent",
+              }}
+            >
+              Back
+            </button>
+          )}
+          {showSkip && (
+            <button
+              type="button"
+              onClick={goNext}
+              className="py-4 px-6 rounded-full text-base font-semibold transition-all hover:bg-black/5"
+              style={{ color: "hsl(var(--wizard-primary))" }}
+            >
+              Skip
+            </button>
+          )}
           <button
             type="button"
-            onClick={goBack}
-            className="py-4 px-8 rounded-full text-base font-semibold transition-all border-2"
+            onClick={() => { if (canContinue) goNext(); }}
+            disabled={!canContinue}
+            className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
-              borderColor: "hsl(var(--wizard-primary))",
-              color: "hsl(var(--wizard-primary))",
-              backgroundColor: "transparent",
+              backgroundColor: "hsl(var(--wizard-primary))",
+              color: "#fff",
             }}
           >
-            Back
+            Continue
           </button>
-        )}
-        {showSkip && (
-          <button
-            type="button"
-            onClick={goNext}
-            className="py-4 px-6 rounded-full text-base font-semibold transition-all hover:bg-black/5"
-            style={{ color: "hsl(var(--wizard-primary))" }}
-          >
-            Skip
-          </button>
-        )}
+        </div>
+        {/* Dev-only bypass: ignores validation, always advances */}
         <button
           type="button"
-          onClick={() => { if (canContinue) goNext(); }}
-          disabled={!canContinue}
-          className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            backgroundColor: "hsl(var(--wizard-primary))",
-            color: "#fff",
-          }}
+          onClick={goNext}
+          title="Developer bypass — skips validation"
+          className="text-[11px] font-mono uppercase tracking-wider px-3 py-1 rounded-full border border-dashed border-muted-foreground/40 text-muted-foreground/70 hover:text-muted-foreground hover:border-muted-foreground/70 transition-colors"
         >
-          Continue
+          ⚙ dev: skip step
         </button>
       </div>
     </div>
