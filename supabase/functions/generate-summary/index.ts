@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       ``,
       `Requirements:`,
       `- Title: short, warm, kid-appropriate (≤ 60 chars)`,
-      `- Summary: ONE paragraph, target ~200 words (hard min 150, hard max 240).`,
+      `- Summary: ONE paragraph, target ~100 words (hard min 80, hard max 130).`,
       `- Use ${childName}'s name as the hero. Mention supporting characters by name where natural.`,
       `- Voice: warm, gentle, magical — like a parent reading aloud.`,
       `- Hint at the lesson; do NOT spoil the ending.`,
