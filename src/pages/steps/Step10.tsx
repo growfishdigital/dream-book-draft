@@ -68,7 +68,7 @@ export default function Step11Generating() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={9} />
+      <WizardHeader currentStep={10} />
 
       <div className="flex-1 flex flex-col items-center justify-center px-4 relative">
         <style>{`
@@ -197,7 +197,7 @@ export default function Step11Generating() {
 
         {done && (
           <button
-            onClick={() => navigate("/step/10")}
+            onClick={() => navigate("/step/11")}
             className="px-8 py-4 rounded-full text-base font-semibold"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
