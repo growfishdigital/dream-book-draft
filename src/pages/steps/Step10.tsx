@@ -15,9 +15,12 @@ export default function Step11Generating() {
   const name = (answers.childName || "your little one").trim();
 
   const [done, setDone] = useState(false);
+  const [coverDone, setCoverDone] = useState(false);
   const [errored, setErrored] = useState<string | null>(null);
   const startedAt = useRef<number>(Date.now());
   const fired = useRef(false);
+
+  const title = (answers.selectedConcept?.title || "").trim();
 
   const message = useRotatingMessage(coverMessages(name), 2200);
 
