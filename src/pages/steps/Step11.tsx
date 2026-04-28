@@ -191,9 +191,34 @@ const HARDCOVER_FEATURES = [
   "Free digital copy included",
 ];
 
-function CoverPage({ layout, title, name, artHsl }: { layout: string; title: string; name: string; artHsl: string }) {
+function CoverPage({
+  layout,
+  title,
+  name,
+  artHsl,
+  coverImage,
+}: {
+  layout: string;
+  title: string;
+  name: string;
+  artHsl: string;
+  coverImage?: string;
+}) {
   const bg = `hsl(${artHsl} / 0.2)`;
   const accent = `hsl(${artHsl})`;
+
+  // If we have an AI-generated cover, show it full-bleed.
+  if (coverImage) {
+    return (
+      <div className="relative h-full w-full">
+        <img
+          src={coverImage}
+          alt={`Cover of ${title}`}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      </div>
+    );
+  }
 
   if (layout === "bold-title") {
     return (
@@ -242,7 +267,10 @@ export default function Step11() {
   const { answers } = useWizard();
   const navigate = useNavigate();
   const name = answers.childName || "your little one";
-  const title = answers.bookTitle || `${name}'s Adventure`;
+  const concept = answers.selectedConcept || {};
+  const title = concept.title || answers.bookTitle || `${name}'s Adventure`;
+  const approvedSummary: string | undefined = concept.summary;
+  const coverImage: string | undefined = concept.coverImage;
   const layout = answers.coverLayout || "full-illustration";
   const artStyle = answers.artStyle || "watercolor";
   const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
@@ -286,7 +314,7 @@ export default function Step11() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={10} />
+      <WizardHeader currentStep={12} />
 
       <div className="flex flex-col items-center px-4 py-8">
       {/* Heading */}
@@ -311,7 +339,7 @@ export default function Step11() {
                 className="rounded-2xl overflow-hidden shadow-lg bg-white"
                 style={{ aspectRatio: "2/3", width: 180 }}
               >
-                <CoverPage layout={layout} title={title} name={name} artHsl={artHsl} />
+                <CoverPage layout={layout} title={title} name={name} artHsl={artHsl} coverImage={coverImage} />
               </div>
             </div>
 
@@ -343,10 +371,11 @@ export default function Step11() {
               The Story
             </p>
             <p
-              className="text-sm font-serif leading-relaxed"
+              className="text-sm font-serif leading-relaxed whitespace-pre-wrap"
               style={{ color: "hsl(var(--wizard-primary) / 0.85)" }}
             >
-              When {name} discovers a mysterious glowing map hidden beneath the old oak tree, an unforgettable adventure begins. Together with new friends, {name} journeys through enchanted forests, solves clever riddles, and learns that the greatest magic of all is courage, kindness, and believing in yourself.
+              {approvedSummary ||
+                `When ${name} discovers a mysterious glowing map hidden beneath the old oak tree, an unforgettable adventure begins. Together with new friends, ${name} journeys through enchanted forests, solves clever riddles, and learns that the greatest magic of all is courage, kindness, and believing in yourself.`}
             </p>
           </div>
 
