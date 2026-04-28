@@ -58,8 +58,8 @@ export default function WizardShell({ children, showSkip = false, maxWidth = 700
         )}
         <button
           type="button"
-          onClick={goNext}
-          disabled={false}
+          onClick={() => { if (canContinue) goNext(); }}
+          disabled={!canContinue}
           className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "hsl(var(--wizard-primary))",
