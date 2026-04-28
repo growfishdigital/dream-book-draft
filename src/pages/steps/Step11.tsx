@@ -290,6 +290,9 @@ export default function Step11() {
 
   const [selected, setSelected] = useState<Plan>("hardcover");
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [layoutConfirmed, setLayoutConfirmed] = useState(false);
+
+  const canOrder = !!coverImage || layoutConfirmed;
 
   const price = selected === "digital" ? "$9.99" : "$44.99";
   const planLabel = selected === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
@@ -399,6 +402,19 @@ export default function Step11() {
                   </div>
                 );
               })()}
+              {!coverImage && (
+                <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={layoutConfirmed}
+                    onChange={(e) => setLayoutConfirmed(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[hsl(var(--wizard-primary))]"
+                  />
+                  <span className="text-xs" style={{ color: "hsl(var(--wizard-primary) / 0.75)" }}>
+                    Confirm this layout
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-2">
@@ -608,12 +624,18 @@ export default function Step11() {
           {/* Order form */}
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => setOrderPlaced(true)}
-              className="w-full h-12 rounded-full text-base font-semibold transition-opacity"
+              onClick={() => canOrder && setOrderPlaced(true)}
+              disabled={!canOrder}
+              className="w-full h-12 rounded-full text-base font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: "#2B4E18", color: "#fff" }}
             >
               Place Order
             </button>
+            {!canOrder && (
+              <p className="text-xs text-center" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
+                Confirm your cover layout above to continue.
+              </p>
+            )}
             <div
               className="mt-2 rounded-2xl p-4 border flex gap-3 items-start"
               style={{
