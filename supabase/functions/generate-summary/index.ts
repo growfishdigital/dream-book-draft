@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
               type: "function",
               function: {
                 name: "return_story_summary",
-                description: "Return a single working title and a ~200-word summary.",
+                description: "Return a single working title and a ~100-word summary.",
                 parameters: {
                   type: "object",
                   properties: {
