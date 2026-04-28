@@ -1,4 +1,4 @@
-// Generate a single ~200-word kid-friendly story summary using GPT-5-mini.
+// Generate a single ~100-word kid-friendly story summary using GPT-5-mini.
 // Returns { title, summary } via structured tool-call output.
 
 const corsHeaders = {
