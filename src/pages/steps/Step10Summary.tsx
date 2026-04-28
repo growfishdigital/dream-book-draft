@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Pencil, RefreshCw, Check, X } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
 import { buildBrief } from "@/lib/buildBrief";
@@ -17,10 +17,6 @@ export default function Step10Summary() {
   const [summary, setSummary] = useState<string>(answers.selectedConcept?.summary || "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState("");
-  const [draftTitle, setDraftTitle] = useState("");
 
   const previousSummaryRef = useRef<string>("");
   const loadingMsg = useRotatingMessage(summaryMessages(name), 2000);
@@ -64,22 +60,6 @@ export default function Step10Summary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const startEdit = () => {
-    setDraft(summary);
-    setDraftTitle(title);
-    setEditing(true);
-  };
-
-  const saveEdit = () => {
-    setTitle(draftTitle.trim());
-    setSummary(draft.trim());
-    setEditing(false);
-  };
-
-  const cancelEdit = () => {
-    setEditing(false);
-  };
-
   const approve = () => {
     if (!summary.trim()) return;
     setAnswer("selectedConcept", {
@@ -108,7 +88,7 @@ export default function Step10Summary() {
             className="text-sm text-center mb-6"
             style={{ color: "hsl(var(--wizard-primary) / 0.65)" }}
           >
-            Read it, refresh it, or tweak it before we draw the pictures.
+            Read it and refresh until it feels right.
           </p>
 
           {/* Summary card */}
@@ -130,45 +110,6 @@ export default function Step10Summary() {
                 >
                   {loadingMsg}
                 </p>
-              </div>
-            ) : editing ? (
-              <div className="flex flex-col gap-3">
-                <input
-                  value={draftTitle}
-                  onChange={(e) => setDraftTitle(e.target.value)}
-                  maxLength={80}
-                  placeholder="Working title"
-                  className="font-heading text-2xl font-bold text-[#2b4e18] bg-transparent border-b border-black/10 focus:outline-none focus:border-[#2b4e18] px-1 py-1"
-                />
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  rows={10}
-                  className="w-full text-base font-serif leading-relaxed text-[#2b4e18]/90 bg-transparent border border-black/10 rounded-xl p-3 focus:outline-none focus:border-[#2b4e18]"
-                />
-                <div className="flex items-center justify-between text-xs text-[#2b4e18]/60">
-                  <span>{wordCount(draft)} words</span>
-                  <span className="italic">
-                    Tip: aim for ~100 words for the best book length.
-                  </span>
-                </div>
-                <div className="flex gap-2 justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-black/15 text-[#2b4e18]"
-                  >
-                    <X className="w-4 h-4" /> Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveEdit}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
-                    style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
-                  >
-                    <Check className="w-4 h-4" /> Save changes
-                  </button>
-                </div>
               </div>
             ) : (
               <div className="relative">
@@ -194,38 +135,25 @@ export default function Step10Summary() {
               </div>
             )}
 
-            {error && !loading && !editing && (
+            {error && !loading && (
               <p className="text-sm text-red-600 mt-3 text-center">{error}</p>
             )}
           </div>
 
-          {/* Refresh + Edit controls */}
-          {!editing && (
-            <div className="flex items-center justify-center gap-3 mt-5">
-              <button
-                type="button"
-                onClick={fetchSummary}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[#2b4e18] bg-white disabled:opacity-50"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                />
-                {loading ? "Crafting…" : summary ? "Refresh" : "Try again"}
-              </button>
-              {summary && !loading && (
-                <button
-                  type="button"
-                  onClick={startEdit}
-                  aria-label="Edit summary"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[#2b4e18] bg-white"
-                >
-                  <Pencil className="w-4 h-4" />
-                  Edit
-                </button>
-              )}
-            </div>
-          )}
+          {/* Small Refresh button */}
+          <div className="flex justify-end mt-3">
+            <button
+              type="button"
+              onClick={fetchSummary}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-black/15 text-[#2b4e18] bg-white disabled:opacity-50"
+            >
+              <RefreshCw
+                className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`}
+              />
+              {loading ? "Crafting…" : summary ? "Refresh" : "Try again"}
+            </button>
+          </div>
 
           <p
             className="text-center text-xs italic mt-6"
@@ -257,7 +185,7 @@ export default function Step10Summary() {
         <button
           type="button"
           onClick={approve}
-          disabled={!summary || loading || editing}
+          disabled={!summary || loading}
           className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
           style={{
             backgroundColor: "hsl(var(--wizard-primary))",
