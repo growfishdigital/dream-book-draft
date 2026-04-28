@@ -111,23 +111,6 @@ export default function Step8() {
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] gap-8 lg:gap-12 items-start">
             {/* LEFT: controls */}
             <div className="space-y-6">
-              {/* Book title */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-muted-foreground">
-                  What's {name}'s book called?
-                </label>
-                <Input
-                  value={bookTitle}
-                  onChange={(e) => {
-                    if (e.target.value.length <= 40) setAnswer("bookTitle", e.target.value);
-                  }}
-                  maxLength={40}
-                  className="text-lg rounded-xl"
-                  placeholder={`${name} and the [something amazing]`}
-                />
-                <p className="text-xs text-muted-foreground text-right">{bookTitle.length}/40</p>
-              </div>
-
               {/* Layout picker */}
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-muted-foreground">
