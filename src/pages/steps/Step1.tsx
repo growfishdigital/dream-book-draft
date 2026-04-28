@@ -115,47 +115,6 @@ export default function Step1() {
           </label>
         </div>
 
-        {/* Book type tiles (drives age range) */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Pick a book type
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-[640px] mx-auto">
-            {AGE_RANGES.map((a) => {
-              const selected = age === a.value;
-              return (
-                <button
-                  key={a.value}
-                  type="button"
-                  onClick={() => setAnswer("ageRange", a.value)}
-                  className={`group flex flex-col items-center gap-2 rounded-2xl p-3 transition-all border-2 shadow-sm ${
-                    selected
-                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-                      : "border-transparent bg-white hover:shadow-md"
-                  }`}
-                >
-                  <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
-                    <img
-                      src={a.image}
-                      alt={`${a.label} example`}
-                      width={512}
-                      height={512}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                  </div>
-                  <span className="block text-sm font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
-                    {a.label}
-                  </span>
-                  <span className="block text-xs text-muted-foreground -mt-1">
-                    {a.sub}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Gender */}
         <div className="space-y-2 max-w-[420px] mx-auto">
           <label className="block text-sm font-medium text-muted-foreground text-center">
@@ -196,6 +155,47 @@ export default function Step1() {
             <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
               <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
             </div>
+          </div>
+        </div>
+
+        {/* Book type tiles (drives age range) */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            Pick a book type
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-[640px] mx-auto">
+            {AGE_RANGES.map((a) => {
+              const selected = age === a.value;
+              return (
+                <button
+                  key={a.value}
+                  type="button"
+                  onClick={() => setAnswer("ageRange", a.value)}
+                  className={`group flex flex-col items-center gap-2 rounded-2xl p-3 transition-all border-2 shadow-sm ${
+                    selected
+                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
+                      : "border-transparent bg-white hover:shadow-md"
+                  }`}
+                >
+                  <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
+                    <img
+                      src={a.image}
+                      alt={`${a.label} example`}
+                      width={512}
+                      height={512}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  </div>
+                  <span className="block text-sm font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
+                    {a.label}
+                  </span>
+                  <span className="block text-xs text-muted-foreground -mt-1">
+                    {a.sub}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
