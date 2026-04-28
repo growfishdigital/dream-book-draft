@@ -1,0 +1,7 @@
+project_id = "zsvknybyzvvirkvfrhuf"
+
+[functions.generate-summary]
+verify_jwt = false
+
+[functions.generate-cover]
+verify_jwt = false

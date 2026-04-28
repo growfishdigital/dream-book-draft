@@ -4,7 +4,7 @@ import WizardHeader from "./WizardHeader";
 import { useWizard } from "@/contexts/WizardContext";
 import type { ReactNode } from "react";
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 12;
 
 export default function WizardShell({ children, showSkip = false, maxWidth = 700 }: { children: ReactNode; showSkip?: boolean; maxWidth?: number }) {
   const { step } = useParams<{ step: string }>();
