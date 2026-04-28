@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 
 
-import { Check, LayoutGrid, Columns2, AlignVerticalJustifyCenter } from "lucide-react";
+import { Check, Image as ImageIcon, Columns2 } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import WizardHeader from "@/components/WizardHeader";
 
@@ -208,7 +208,32 @@ function CoverPage({
   const bg = `hsl(${artHsl} / 0.2)`;
   const accent = `hsl(${artHsl})`;
 
-  // If we have an AI-generated cover, show it full-bleed.
+  // Bold title split: image on the left, title block on the right.
+  if (layout === "bold-title") {
+    return (
+      <div className="flex h-full">
+        <div className="w-1/2 relative" style={{ backgroundColor: bg }}>
+          {coverImage ? (
+            <img
+              src={coverImage}
+              alt={`Cover of ${title}`}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="w-16 h-20 rounded-lg" style={{ backgroundColor: accent, opacity: 0.5 }} />
+            </div>
+          )}
+        </div>
+        <div className="w-1/2 flex flex-col items-center justify-center p-4 gap-2 bg-white">
+          <p className="text-lg font-bold text-center font-serif leading-tight" style={{ color: accent }}>{title}</p>
+          <p className="text-xs" style={{ color: `hsl(${artHsl} / 0.6)` }}>A story for {name}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Full illustration: image full-bleed (or wireframe placeholder).
   if (coverImage) {
     return (
       <div className="relative h-full w-full">
@@ -217,20 +242,6 @@ function CoverPage({
           alt={`Cover of ${title}`}
           className="absolute inset-0 h-full w-full object-cover"
         />
-      </div>
-    );
-  }
-
-  if (layout === "bold-title") {
-    return (
-      <div className="flex h-full">
-        <div className="w-1/2 flex items-center justify-center" style={{ backgroundColor: bg }}>
-          <div className="w-16 h-20 rounded-lg" style={{ backgroundColor: accent, opacity: 0.5 }} />
-        </div>
-        <div className="w-1/2 flex flex-col items-center justify-center p-4 gap-2">
-          <p className="text-lg font-bold text-center font-serif leading-tight" style={{ color: accent }}>{title}</p>
-          <p className="text-xs" style={{ color: `hsl(${artHsl} / 0.6)` }}>A story for {name}</p>
-        </div>
       </div>
     );
   }
@@ -345,10 +356,9 @@ export default function Step11() {
               </div>
               {/* Cover variant selector */}
               {(() => {
-                const variants: { value: string; label: string; Icon: typeof LayoutGrid }[] = [
-                  { value: "full-illustration", label: "Full illustration", Icon: AlignVerticalJustifyCenter },
+                const variants: { value: string; label: string; Icon: typeof ImageIcon }[] = [
+                  { value: "full-illustration", label: "Full illustration", Icon: ImageIcon },
                   { value: "bold-title", label: "Bold title split", Icon: Columns2 },
-                  { value: "classic", label: "Classic framed", Icon: LayoutGrid },
                 ];
                 return (
                   <div className="flex items-center gap-1.5 mt-1">
