@@ -624,12 +624,18 @@ export default function Step11() {
           {/* Order form */}
           <div className="flex flex-col gap-3">
             <button
-              onClick={() => setOrderPlaced(true)}
-              className="w-full h-12 rounded-full text-base font-semibold transition-opacity"
+              onClick={() => canOrder && setOrderPlaced(true)}
+              disabled={!canOrder}
+              className="w-full h-12 rounded-full text-base font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
               style={{ backgroundColor: "#2B4E18", color: "#fff" }}
             >
               Place Order
             </button>
+            {!canOrder && (
+              <p className="text-xs text-center" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
+                Confirm your cover layout above to continue.
+              </p>
+            )}
             <div
               className="mt-2 rounded-2xl p-4 border flex gap-3 items-start"
               style={{
