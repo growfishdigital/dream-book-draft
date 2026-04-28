@@ -391,30 +391,10 @@ export default function Step11() {
                               }
                             >
                               <Icon className="w-4 h-4" />
-                          </button>
-                        </TooltipTrigger>
-                        <TooltipContent side="bottom" className="text-xs">
-                          {label}
-                        </TooltipContent>
-                      </Tooltip>
-                    );
-                  })}
-                </div>
-              );
-            })()}
-            {!coverImage && (
-              <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={layoutConfirmed}
-                  onChange={(e) => setLayoutConfirmed(e.target.checked)}
-                  className="w-4 h-4 rounded accent-[hsl(var(--wizard-primary))]"
-                />
-                <span className="text-xs" style={{ color: "hsl(var(--wizard-primary) / 0.75)" }}>
-                  Confirm this layout
-                </span>
-              </label>
-            )}
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            {label}
                           </TooltipContent>
                         </Tooltip>
                       );
@@ -422,6 +402,19 @@ export default function Step11() {
                   </div>
                 );
               })()}
+              {!coverImage && (
+                <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={layoutConfirmed}
+                    onChange={(e) => setLayoutConfirmed(e.target.checked)}
+                    className="w-4 h-4 rounded accent-[hsl(var(--wizard-primary))]"
+                  />
+                  <span className="text-xs" style={{ color: "hsl(var(--wizard-primary) / 0.75)" }}>
+                    Confirm this layout
+                  </span>
+                </label>
+              )}
             </div>
 
             <div className="flex flex-col items-center gap-2">
