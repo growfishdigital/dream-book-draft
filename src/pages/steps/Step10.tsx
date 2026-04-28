@@ -58,6 +58,7 @@ export default function Step11Generating() {
         setErrored(msg);
         toast({ title: "Cover hit a snag", description: msg });
       } finally {
+        setCoverDone(true);
         const elapsed = Date.now() - startedAt.current;
         const wait = Math.max(0, MIN_DURATION - elapsed);
         setTimeout(() => setDone(true), wait);
