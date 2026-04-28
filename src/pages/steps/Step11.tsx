@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 
 
-import { Check } from "lucide-react";
+import { Check, LayoutGrid, Columns2, AlignVerticalJustifyCenter } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import WizardHeader from "@/components/WizardHeader";
 
 
@@ -271,7 +272,8 @@ export default function Step11() {
   const title = concept.title || answers.bookTitle || `${name}'s Adventure`;
   const approvedSummary: string | undefined = concept.summary;
   const coverImage: string | undefined = concept.coverImage;
-  const layout = answers.coverLayout || "full-illustration";
+  const initialLayout = answers.coverLayout || "full-illustration";
+  const [layout, setLayout] = useState<string>(initialLayout);
   const artStyle = answers.artStyle || "watercolor";
   const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
 
