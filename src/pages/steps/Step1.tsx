@@ -4,12 +4,16 @@ import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import bookBoard from "@/assets/book-board.jpg";
+import bookPicture from "@/assets/book-picture.jpg";
+import bookEarly from "@/assets/book-early.jpg";
+import bookChapter from "@/assets/book-chapter.jpg";
 
 const AGE_RANGES = [
-  { value: "0-2", label: "0–2", sub: "Board book" },
-  { value: "3-5", label: "3–5", sub: "Picture book" },
-  { value: "6-8", label: "6–8", sub: "Early reader" },
-  { value: "9-12", label: "9–12", sub: "Chapter book" },
+  { value: "0-2", label: "Board Book", sub: "Ages 0–2", image: bookBoard },
+  { value: "3-5", label: "Picture Book", sub: "Ages 3–5", image: bookPicture },
+  { value: "6-8", label: "Early Reader", sub: "Ages 6–8", image: bookEarly },
+  { value: "9-12", label: "Chapter Book", sub: "Ages 9–12", image: bookChapter },
 ];
 
 const GENDERS = [
@@ -111,42 +115,64 @@ export default function Step1() {
           </label>
         </div>
 
-        {/* Age range & Gender side by side */}
-        <div className="grid grid-cols-2 gap-4 max-w-[420px] mx-auto">
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-muted-foreground">
-              Age range
-            </label>
-            <Select value={age} onValueChange={(v) => setAnswer("ageRange", v)}>
-              <SelectTrigger className="rounded-xl bg-white">
-                <SelectValue placeholder="Select age" />
-              </SelectTrigger>
-              <SelectContent>
-                {AGE_RANGES.map((a) => (
-                  <SelectItem key={a.value} value={a.value}>
-                    {a.label} — {a.sub}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {/* Book type tiles (drives age range) */}
+        <div className="space-y-3">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            Pick a book type
+          </label>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-[640px] mx-auto">
+            {AGE_RANGES.map((a) => {
+              const selected = age === a.value;
+              return (
+                <button
+                  key={a.value}
+                  type="button"
+                  onClick={() => setAnswer("ageRange", a.value)}
+                  className={`group flex flex-col items-center gap-2 rounded-2xl p-3 transition-all border-2 shadow-sm ${
+                    selected
+                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
+                      : "border-transparent bg-white hover:shadow-md"
+                  }`}
+                >
+                  <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
+                    <img
+                      src={a.image}
+                      alt={`${a.label} example`}
+                      width={512}
+                      height={512}
+                      loading="lazy"
+                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                  </div>
+                  <span className="block text-sm font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
+                    {a.label}
+                  </span>
+                  <span className="block text-xs text-muted-foreground -mt-1">
+                    {a.sub}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-muted-foreground">
-              Gender
-            </label>
-            <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
-              <SelectTrigger className="rounded-xl bg-white">
-                <SelectValue placeholder="Select gender" />
-              </SelectTrigger>
-              <SelectContent>
-                {GENDERS.map((g) => (
-                  <SelectItem key={g.value} value={g.value}>
-                    {g.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        </div>
+
+        {/* Gender */}
+        <div className="space-y-2 max-w-[420px] mx-auto">
+          <label className="block text-sm font-medium text-muted-foreground text-center">
+            Gender
+          </label>
+          <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
+            <SelectTrigger className="rounded-xl bg-white">
+              <SelectValue placeholder="Select gender" />
+            </SelectTrigger>
+            <SelectContent>
+              {GENDERS.map((g) => (
+                <SelectItem key={g.value} value={g.value}>
+                  {g.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Book language */}
