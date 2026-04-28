@@ -106,6 +106,25 @@ export default function Step11Generating() {
           }
         `}</style>
 
+        {/* Title header */}
+        <div className="text-center mb-6 px-2 max-w-sm">
+          <p
+            className="text-xs uppercase tracking-[0.18em] mb-1"
+            style={{ color: "hsl(var(--wizard-primary) / 0.55)" }}
+          >
+            Now making
+          </p>
+          <h1
+            className="text-2xl leading-tight"
+            style={{ color: "hsl(var(--wizard-primary))", fontFamily: "'Playfair Display', serif" }}
+          >
+            {title ? `"${title}"` : "Your book"}
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
+            for {name}
+          </p>
+        </div>
+
         {/* Book animation */}
         <div className="relative w-40 h-48 mb-8" style={{ perspective: "600px" }}>
           {[...Array(7)].map((_, i) => (
