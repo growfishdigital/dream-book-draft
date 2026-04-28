@@ -356,10 +356,9 @@ export default function Step11() {
               </div>
               {/* Cover variant selector */}
               {(() => {
-                const variants: { value: string; label: string; Icon: typeof LayoutGrid }[] = [
-                  { value: "full-illustration", label: "Full illustration", Icon: AlignVerticalJustifyCenter },
+                const variants: { value: string; label: string; Icon: typeof ImageIcon }[] = [
+                  { value: "full-illustration", label: "Full illustration", Icon: ImageIcon },
                   { value: "bold-title", label: "Bold title split", Icon: Columns2 },
-                  { value: "classic", label: "Classic framed", Icon: LayoutGrid },
                 ];
                 return (
                   <div className="flex items-center gap-1.5 mt-1">
