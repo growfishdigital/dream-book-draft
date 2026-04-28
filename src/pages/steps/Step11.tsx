@@ -314,7 +314,7 @@ export default function Step11() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={12} />
+      <WizardHeader currentStep={10} />
 
       <div className="flex flex-col items-center px-4 py-8">
       {/* Heading */}
