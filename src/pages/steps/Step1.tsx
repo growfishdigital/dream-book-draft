@@ -159,11 +159,19 @@ export default function Step1() {
         </div>
 
         {/* Book type tiles (drives age range) */}
-        <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
-            Pick a book type
-          </label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-[640px] mx-auto">
+        <div className="space-y-4 pt-4">
+          <div className="text-center space-y-1">
+            <h2
+              className="font-heading text-2xl sm:text-3xl font-bold"
+              style={{ color: "hsl(var(--wizard-primary))" }}
+            >
+              Pick a book type
+            </h2>
+            <p className="text-sm sm:text-base text-muted-foreground">
+              Choose the format that fits them best.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 max-w-[820px] mx-auto">
             {AGE_RANGES.map((a) => {
               const selected = age === a.value;
               return (
@@ -171,10 +179,10 @@ export default function Step1() {
                   key={a.value}
                   type="button"
                   onClick={() => setAnswer("ageRange", a.value)}
-                  className={`group flex flex-col items-center gap-2 rounded-2xl p-3 transition-all border-2 shadow-sm ${
+                  className={`group flex flex-col items-center gap-3 rounded-2xl p-4 sm:p-5 transition-all border-2 ${
                     selected
-                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-                      : "border-transparent bg-white hover:shadow-md"
+                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)] shadow-lg scale-[1.02]"
+                      : "border-transparent bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5"
                   }`}
                 >
                   <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
@@ -187,10 +195,10 @@ export default function Step1() {
                       className="w-full h-full object-cover transition-transform group-hover:scale-105"
                     />
                   </div>
-                  <span className="block text-sm font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
+                  <span className="block text-base sm:text-lg font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
                     {a.label}
                   </span>
-                  <span className="block text-xs text-muted-foreground -mt-1">
+                  <span className="block text-sm text-muted-foreground -mt-2">
                     {a.sub}
                   </span>
                 </button>
