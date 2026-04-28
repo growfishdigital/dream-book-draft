@@ -290,6 +290,9 @@ export default function Step11() {
 
   const [selected, setSelected] = useState<Plan>("hardcover");
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [layoutConfirmed, setLayoutConfirmed] = useState(false);
+
+  const canOrder = !!coverImage || layoutConfirmed;
 
   const price = selected === "digital" ? "$9.99" : "$44.99";
   const planLabel = selected === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
@@ -388,10 +391,30 @@ export default function Step11() {
                               }
                             >
                               <Icon className="w-4 h-4" />
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="bottom" className="text-xs">
-                            {label}
+                          </button>
+                        </TooltipTrigger>
+                        <TooltipContent side="bottom" className="text-xs">
+                          {label}
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
+                </div>
+              );
+            })()}
+            {!coverImage && (
+              <label className="flex items-center gap-2 mt-2 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={layoutConfirmed}
+                  onChange={(e) => setLayoutConfirmed(e.target.checked)}
+                  className="w-4 h-4 rounded accent-[hsl(var(--wizard-primary))]"
+                />
+                <span className="text-xs" style={{ color: "hsl(var(--wizard-primary) / 0.75)" }}>
+                  Confirm this layout
+                </span>
+              </label>
+            )}
                           </TooltipContent>
                         </Tooltip>
                       );
