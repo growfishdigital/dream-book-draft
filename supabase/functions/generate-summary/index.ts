@@ -1,4 +1,4 @@
-// Generate a single ~200-word kid-friendly story summary using GPT-5-mini.
+// Generate a single ~100-word kid-friendly story summary using GPT-5-mini.
 // Returns { title, summary } via structured tool-call output.
 
 const corsHeaders = {
@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       ``,
       `Requirements:`,
       `- Title: short, warm, kid-appropriate (≤ 60 chars)`,
-      `- Summary: ONE paragraph, target ~200 words (hard min 150, hard max 240).`,
+      `- Summary: ONE paragraph, target ~100 words (hard min 80, hard max 130).`,
       `- Use ${childName}'s name as the hero. Mention supporting characters by name where natural.`,
       `- Voice: warm, gentle, magical — like a parent reading aloud.`,
       `- Hint at the lesson; do NOT spoil the ending.`,
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
               type: "function",
               function: {
                 name: "return_story_summary",
-                description: "Return a single working title and a ~200-word summary.",
+                description: "Return a single working title and a ~100-word summary.",
                 parameters: {
                   type: "object",
                   properties: {
@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
                     summary: {
                       type: "string",
                       description:
-                        "Single paragraph, ~200 words (150–240), narrative summary.",
+                        "Single paragraph, ~100 words (80–130), narrative summary.",
                     },
                   },
                   required: ["title", "summary"],
