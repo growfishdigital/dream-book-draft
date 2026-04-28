@@ -255,3 +255,50 @@ export default function Step11Generating() {
     </div>
   );
 }
+
+type RowState = "done" | "active" | "pending";
+
+function ChecklistRow({ state, label }: { state: RowState; label: string }) {
+  return (
+    <li
+      className="flex items-center gap-3 text-sm transition-opacity"
+      style={{
+        color:
+          state === "pending"
+            ? "hsl(var(--wizard-primary) / 0.45)"
+            : "hsl(var(--wizard-primary))",
+        opacity: state === "pending" ? 0.7 : 1,
+      }}
+    >
+      <span
+        className="flex items-center justify-center w-5 h-5 rounded-full shrink-0"
+        style={{
+          backgroundColor:
+            state === "done"
+              ? "hsl(var(--wizard-primary))"
+              : "hsl(var(--wizard-primary) / 0.12)",
+          border:
+            state === "pending"
+              ? "1.5px solid hsl(var(--wizard-primary) / 0.3)"
+              : "none",
+        }}
+      >
+        {state === "done" && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+        {state === "active" && (
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: "hsl(var(--wizard-primary))",
+              animation: "pulse 1.4s ease-in-out infinite",
+            }}
+          />
+        )}
+      </span>
+      <span className={state === "active" ? "font-medium" : ""}>{label}</span>
+    </li>
+  );
+}
