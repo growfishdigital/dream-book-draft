@@ -13,6 +13,7 @@ import Step6 from "./pages/steps/Step6";
 import Step7 from "./pages/steps/Step7";
 import Step8 from "./pages/steps/Step8";
 import Step9 from "./pages/steps/Step9";
+import Step10Summary from "./pages/steps/Step10Summary";
 import Step10 from "./pages/steps/Step10";
 import Step11 from "./pages/steps/Step11";
 import Step4b from "./pages/steps/Step4b";
@@ -41,11 +42,11 @@ const App = () => (
             <Route path="/step/7" element={<Step6 />} />
             <Route path="/step/8" element={<Step9 />} />
             <Route path="/step/9" element={<Step8 />} />
-            <Route path="/step/10" element={<Step10 />} />
-            <Route path="/step/11" element={<Step11 />} />
+            <Route path="/step/10" element={<Step10Summary />} />
+            <Route path="/step/11" element={<Step10 />} />
+            <Route path="/step/12" element={<Step11 />} />
             {/* Secret Ingredient (Step5) hidden — route preserved but redirects */}
             <Route path="/step/secret-ingredient" element={<Step5 />} />
-            <Route path="/step/12" element={<Navigate to="/step/11" replace />} />
             <Route path="/step/:step" element={<StepPlaceholder />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
