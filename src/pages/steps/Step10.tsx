@@ -15,9 +15,12 @@ export default function Step11Generating() {
   const name = (answers.childName || "your little one").trim();
 
   const [done, setDone] = useState(false);
+  const [coverDone, setCoverDone] = useState(false);
   const [errored, setErrored] = useState<string | null>(null);
   const startedAt = useRef<number>(Date.now());
   const fired = useRef(false);
+
+  const title = (answers.selectedConcept?.title || "").trim();
 
   const message = useRotatingMessage(coverMessages(name), 2200);
 
@@ -55,6 +58,7 @@ export default function Step11Generating() {
         setErrored(msg);
         toast({ title: "Cover hit a snag", description: msg });
       } finally {
+        setCoverDone(true);
         const elapsed = Date.now() - startedAt.current;
         const wait = Math.max(0, MIN_DURATION - elapsed);
         setTimeout(() => setDone(true), wait);
@@ -101,6 +105,25 @@ export default function Step11Generating() {
             animation: float-sparkle 2.4s ease-out infinite;
           }
         `}</style>
+
+        {/* Title header */}
+        <div className="text-center mb-6 px-2 max-w-sm">
+          <p
+            className="text-xs uppercase tracking-[0.18em] mb-1"
+            style={{ color: "hsl(var(--wizard-primary) / 0.55)" }}
+          >
+            Now making
+          </p>
+          <h1
+            className="text-2xl leading-tight"
+            style={{ color: "hsl(var(--wizard-primary))", fontFamily: "'Playfair Display', serif" }}
+          >
+            {title ? `"${title}"` : "Your book"}
+          </h1>
+          <p className="text-sm mt-1" style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
+            for {name}
+          </p>
+        </div>
 
         {/* Book animation */}
         <div className="relative w-40 h-48 mb-8" style={{ perspective: "600px" }}>
@@ -191,9 +214,22 @@ export default function Step11Generating() {
           </p>
         </div>
 
-        <p className="text-sm italic text-center mb-8" style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}>
+        <p className="text-sm italic text-center mb-6" style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}>
           Every word, every illustration — made just for {name}.
         </p>
+
+        {/* Live checklist */}
+        <ul
+          className="w-full max-w-xs space-y-2 mb-8 rounded-2xl px-4 py-3"
+          style={{
+            backgroundColor: "hsl(var(--wizard-primary) / 0.05)",
+            border: "1px solid hsl(var(--wizard-primary) / 0.1)",
+          }}
+        >
+          <ChecklistRow state="done" label="Story written" />
+          <ChecklistRow state={coverDone ? "done" : "active"} label={coverDone ? "Cover painted" : "Painting the cover…"} />
+          <ChecklistRow state={done ? "done" : coverDone ? "active" : "pending"} label={done ? "Pages bound" : "Binding the pages"} />
+        </ul>
 
         {done && (
           <button
@@ -217,5 +253,52 @@ export default function Step11Generating() {
         )}
       </div>
     </div>
+  );
+}
+
+type RowState = "done" | "active" | "pending";
+
+function ChecklistRow({ state, label }: { state: RowState; label: string }) {
+  return (
+    <li
+      className="flex items-center gap-3 text-sm transition-opacity"
+      style={{
+        color:
+          state === "pending"
+            ? "hsl(var(--wizard-primary) / 0.45)"
+            : "hsl(var(--wizard-primary))",
+        opacity: state === "pending" ? 0.7 : 1,
+      }}
+    >
+      <span
+        className="flex items-center justify-center w-5 h-5 rounded-full shrink-0"
+        style={{
+          backgroundColor:
+            state === "done"
+              ? "hsl(var(--wizard-primary))"
+              : "hsl(var(--wizard-primary) / 0.12)",
+          border:
+            state === "pending"
+              ? "1.5px solid hsl(var(--wizard-primary) / 0.3)"
+              : "none",
+        }}
+      >
+        {state === "done" && (
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        )}
+        {state === "active" && (
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{
+              backgroundColor: "hsl(var(--wizard-primary))",
+              animation: "pulse 1.4s ease-in-out infinite",
+            }}
+          />
+        )}
+      </span>
+      <span className={state === "active" ? "font-medium" : ""}>{label}</span>
+    </li>
   );
 }
