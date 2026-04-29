@@ -227,7 +227,8 @@ function CoverPage({
         </div>
         <div className="w-1/2 flex flex-col items-center justify-center p-4 gap-2 bg-white">
           <p className="text-lg font-bold text-center font-serif leading-tight" style={{ color: accent }}>{title}</p>
-          <p className="text-xs" style={{ color: `hsl(${artHsl} / 0.6)` }}>A story for {name}</p>
+          <p className="text-[10px] uppercase tracking-wider mt-1" style={{ color: `hsl(${artHsl} / 0.55)` }}>Written for</p>
+          <p className="text-sm font-serif italic" style={{ color: `hsl(${artHsl} / 0.85)` }}>{name}</p>
         </div>
       </div>
     );
@@ -253,7 +254,8 @@ function CoverPage({
       </div>
       <div className="p-4 text-center">
         <p className="text-base font-bold font-serif" style={{ color: accent }}>{title}</p>
-        <p className="text-xs mt-1" style={{ color: `hsl(${artHsl} / 0.6)` }}>A story for {name}</p>
+        <p className="text-[10px] uppercase tracking-wider mt-2" style={{ color: `hsl(${artHsl} / 0.55)` }}>Written for</p>
+        <p className="text-sm font-serif italic" style={{ color: `hsl(${artHsl} / 0.85)` }}>{name}</p>
       </div>
     </div>
   );

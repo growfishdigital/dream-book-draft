@@ -74,9 +74,9 @@ Deno.serve(async (req) => {
       brief.specialThing ? `Special object/companion: ${brief.specialThing}` : "",
       ``,
       `Requirements:`,
-      `- Title: short, warm, kid-appropriate (≤ 60 chars)`,
+      `- Title: short, warm, kid-appropriate (≤ 60 chars). NEVER include the child's name (${childName}) or any first name in the title — focus on the adventure, object, place, or theme instead.`,
       `- Summary: ONE paragraph, target ~100 words (hard min 80, hard max 130).`,
-      `- Use ${childName}'s name as the hero. Mention supporting characters by name where natural.`,
+      `- Use ${childName}'s name as the hero IN THE SUMMARY ONLY. Mention supporting characters by name where natural.`,
       `- Voice: warm, gentle, magical — like a parent reading aloud.`,
       `- Hint at the lesson; do NOT spoil the ending.`,
       `- No headings, no bullet lists, no quotation marks around the summary.`,
@@ -185,9 +185,24 @@ Deno.serve(async (req) => {
     }
     const parsed = JSON.parse(argsStr);
 
+    // Safety net: strip the child's first name from the title if the model slipped it in.
+    let cleanTitle = String(parsed.title || "").slice(0, 80);
+    const firstName = String(childName).trim().split(/\s+/)[0];
+    if (firstName) {
+      const nameRe = new RegExp(`\\b${firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s|s')?\\b`, "gi");
+      cleanTitle = cleanTitle
+        .replace(nameRe, "")
+        .replace(/\s+(and|&)\s+the\b/i, " The")
+        .replace(/^\s*(and|&|the)\s+/i, "")
+        .replace(/\s{2,}/g, " ")
+        .replace(/\s+([,.!?;:])/g, "$1")
+        .trim();
+      if (!cleanTitle) cleanTitle = "An Amazing Adventure";
+    }
+
     return new Response(
       JSON.stringify({
-        title: String(parsed.title || "").slice(0, 80),
+        title: cleanTitle,
         summary: String(parsed.summary || ""),
       }),
       {
