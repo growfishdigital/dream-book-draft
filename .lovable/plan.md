@@ -1,65 +1,58 @@
+# Central Prompt Config
+
 ## Goal
+One file you (or anyone) can open to tweak every prompt that affects story generation and cover art. Changes deploy automatically with the next push and apply to all users immediately — no database, no admin UI, no auth needed (which fits this prototype).
 
-Replace the flat-color emoji thumbnails on Step 6 (the art-style picker) with real AI-generated example illustrations — one per style. The prompt used to generate each example becomes the **single source of truth** for that style and is fed directly into the cover-generation prompt later, so what the user picks visually is what the cover model is told to paint.
+## Why a config file (not a database / admin panel)
 
-This also fixes a current bug: the cover edge function checks for style values (`cartoon`, `pastel`, `realistic`) that don't exist in the picker (which uses `cozy-sketch`, `bold-bright`, `dreamy-pastel`), so 3 of 4 styles silently fall back to a generic prompt.
+I considered three options:
 
-## What changes
+1. **Shared config file in the repo** ← recommended
+   - Edit in one place, redeploys instantly, version-controlled (you can see what changed and when), zero new infra.
+2. **Database table + admin page**
+   - Overkill for a prototype with no auth. Would need an admin role, RLS, a UI, and a fetch on every generation. Worth it only if non-developers need to tweak prompts live in production.
+3. **Edge function env vars / secrets**
+   - Awful for multi-line prompts, no diffing, no history. Bad fit.
 
-### 1. Single source of truth for art styles
+Given this is a prototype and you're the one tweaking, **option 1** gives the best speed-to-iteration with zero downside. We can graduate to option 2 later if needed (the config file becomes the default, the DB overrides it).
 
-Create `src/lib/artStyles.ts` exporting the 4 styles with everything needed in one place:
+## What gets built
 
-| value | label | example prompt (also used in cover prompt) |
-|---|---|---|
-| `watercolor` | Watercolor Storybook | "soft watercolor children's book illustration, hand-painted texture, gentle washes, warm muted palette, paper grain visible, classic storybook feel" |
-| `cozy-sketch` | Cozy Sketch | "charming hand-drawn children's book illustration, visible pencil and ink linework, light watercolor wash fill, warm earthy tones, sketchbook feel" |
-| `bold-bright` | Bold & Bright | "modern vibrant children's book illustration, bold black outlines, flat saturated colors, playful punchy palette, contemporary cartoon style" |
-| `dreamy-pastel` | Dreamy Pastel | "dreamy pastel children's book illustration, soft glowing light, gentle pinks lavenders and creams, ethereal and calm, bedtime story feel" |
+### New file: `supabase/functions/_shared/prompts.ts`
+Single source of truth for every tunable prompt string. Exports:
 
-### 2. Generate the 4 example images (one-off)
+- `STORY_SYSTEM_PROMPT` — system message for the summary model
+- `STORY_USER_TEMPLATE(ctx)` — function that builds the user prompt from the brief (title rules, length, voice, lesson handling, regeneration nudge)
+- `TITLE_RETRY_INSTRUCTION(name)` — the re-prompt used when the title contains the child's name
+- `COVER_PROMPT_TEMPLATE(ctx)` — function that builds the cover image prompt (style hint, hero description, scene, composition rules, no-text rules)
+- `ART_STYLE_PROMPTS` — the 4 style fragments (moved out of the inline map)
+- `MODELS` — `{ summary: "openai/gpt-5-mini", cover: "google/gemini-3-pro-image-preview" }` so model choice is tweakable too
+- `STORY_LENGTH` — `{ min: 80, target: 100, max: 130 }` knobs
 
-Use a one-off script (Lovable AI, `google/gemini-3.1-flash-image-preview`) to render one 2:3 example per style. Same neutral subject in each so the user is comparing **style only**, not subject:
+Each export gets a short `//` comment explaining what it controls and any "don't break this" notes (e.g. "must instruct the model to call the tool", "must forbid child name in title").
 
-> "A cheerful young child standing in a small magical meadow holding a glowing lantern, soft sky in background, [STYLE PROMPT], portrait 2:3, no text."
+### Edits to `supabase/functions/generate-summary/index.ts`
+- Remove the inline `userPrompt` array and system string
+- Import from `../_shared/prompts.ts` and call `STORY_USER_TEMPLATE({...})`
+- Use `MODELS.summary` instead of hardcoded model name
+- Title-name retry uses `TITLE_RETRY_INSTRUCTION(firstName)`
 
-Saved as static assets:
-```
-public/art-styles/watercolor.webp
-public/art-styles/cozy-sketch.webp
-public/art-styles/bold-bright.webp
-public/art-styles/dreamy-pastel.webp
-```
+### Edits to `supabase/functions/generate-cover/index.ts`
+- Remove the inline `ART_STYLE_PROMPTS` map and inline `promptText` array
+- Import from `../_shared/prompts.ts` and call `COVER_PROMPT_TEMPLATE({...})`
+- Use `MODELS.cover` instead of hardcoded model name
 
-### 3. Update Step 6 picker (`src/pages/steps/Step7.tsx`)
+### Edits to `src/lib/artStyles.ts`
+Keep the frontend `ART_STYLES` array (it also holds labels, emojis, preview paths used by the picker), but add a comment pointing to `supabase/functions/_shared/prompts.ts` as the canonical place for the prompt fragment. The two stay in sync manually — same as today, just documented.
 
-- Import the styles from `src/lib/artStyles.ts` (remove the inline `ART_STYLES` array).
-- Replace each thumbnail's flat color block with `<img src="/art-styles/{value}.webp" alt={label} />` rendered at 2:3 aspect with rounded corners.
-- Keep the emoji + label + description below each thumbnail.
-- Selected state: same primary-color border treatment as today.
+### Memory update
+Add a one-liner to `mem://index.md` Core: "All AI prompts live in `supabase/functions/_shared/prompts.ts` — edit there to affect all users."
 
-### 4. Wire the prompt into cover generation
+## How you'll use it
 
-- Edge function `supabase/functions/generate-cover/index.ts`: import (inline copy is fine — edge functions can't import from `src/`) the same 4-entry map keyed by value, and replace the broken if/else chain at lines 35–44 with a lookup. Falls back to the watercolor prompt if value is unknown.
-- The matched style prompt is interpolated into the existing `Children's book cover illustration in ${styleHint}.` line, so the cover model now receives the exact same descriptor the example image was generated with.
+Open `supabase/functions/_shared/prompts.ts`, change a string or a knob (e.g. bump target word count, soften the tone line, change the cover composition rule), and on next deploy every user gets the new prompt. No code changes needed in the function bodies.
 
-### 5. Memory
-
-Add a small entry under "Memories" describing the shared art-styles source of truth and where the previews live.
-
-## File map
-
-```text
-src/lib/artStyles.ts                              new — shared constants
-src/pages/steps/Step7.tsx                         use shared styles, render images
-supabase/functions/generate-cover/index.ts        replace styleHint lookup
-public/art-styles/{watercolor,cozy-sketch,        new — 4 generated previews
-                   bold-bright,dreamy-pastel}.webp
-mem://style/art-styles                            new memory file
-```
-
-## Notes
-
-- Generating the 4 previews uses ~4 image-generation calls against the user's Lovable AI balance (one-time, at build time).
-- Previews are static assets — fast load, no per-session generation cost for end users.
-- If a style is later added or its prompt is tweaked, regenerating its preview keeps the picker thumbnail and the cover output consistent.
+## Out of scope
+- Per-user prompt overrides
+- A/B testing different prompts
+- An in-app admin UI for editing prompts (can add later if you want non-devs to tweak)
