@@ -40,44 +40,90 @@ Deno.serve(async (req) => {
 
     const childName = brief.child?.name || "the child";
     const proto = brief.protagonist || {};
-    const photoDataUrl: string | undefined = proto.photoDataUrl;
+
+    // Collect hero photos (new field is `photos[]`; fall back to legacy single).
+    const heroPhotos: string[] = Array.isArray(proto.photos)
+      ? proto.photos.filter((p: unknown) => typeof p === "string" && p.startsWith("data:"))
+      : proto.photoDataUrl
+        ? [proto.photoDataUrl]
+        : [];
+
+    // Collect supporting-character likeness photos (only "real" mode contributes).
+    const supportingChars: any[] = Array.isArray(brief.supportingCharacters)
+      ? brief.supportingCharacters
+      : [];
+    const supportingPhotos: string[] = supportingChars.flatMap((c: any) =>
+      Array.isArray(c?.photos)
+        ? c.photos.filter(
+            (p: unknown) => typeof p === "string" && p.startsWith("data:"),
+          )
+        : [],
+    );
 
     const styleHint = getArtStylePrompt(brief.artStyle);
 
-    const protoDesc = [
-      proto.hair && `hair: ${proto.hair}`,
-      proto.skin && `skin tone: ${proto.skin}`,
-      proto.eyes && `eyes: ${proto.eyes}`,
-      proto.clothing && `clothing: ${proto.clothing}`,
-      proto.accessories && `accessories: ${proto.accessories}`,
-      proto.vibe && `vibe: ${proto.vibe}`,
-    ]
+    // Hero appearance — read the field names that Step6 actually saves.
+    const app = proto.appearance || {};
+    const protoDescBits = [
+      proto.age && `age: ${proto.age}`,
+      proto.gender && `gender: ${proto.gender}`,
+      app.hairColor && `hair color: ${app.hairColor}`,
+      app.hairStyle && `hair style: ${app.hairStyle}`,
+      app.skinTone && `skin tone: ${app.skinTone}`,
+      app.glasses && `wears glasses`,
+      app.features && `other: ${app.features}`,
+      proto.special && `signature detail: ${proto.special}`,
+    ].filter(Boolean);
+    const protoDesc = protoDescBits.join(", ");
+
+    // Supporting character text descriptors (always sent so even AI-only chars
+    // are depicted accurately).
+    const supportingDesc = supportingChars
+      .map((c: any) => {
+        const a = c?.appearance || {};
+        const bits = [
+          c?.name && c?.name,
+          c?.relationship && `(${c.relationship})`,
+          c?.gender,
+          c?.ageRange,
+          a.hairColor && `${a.hairColor} hair`,
+          a.hairStyle,
+          a.skinTone && `skin tone ${a.skinTone}`,
+          a.glasses && `glasses`,
+          a.features,
+          c?.description,
+        ].filter(Boolean);
+        return bits.length ? bits.join(" ") : "";
+      })
       .filter(Boolean)
-      .join(", ");
+      .join("; ");
 
     const promptText = COVER_PROMPT_TEMPLATE({
       title,
       summary,
       childName,
       protoDesc,
+      supportingDesc,
       styleHint,
       hasStyleReference: !!styleReferenceImage,
-      hasPhoto: !!photoDataUrl,
+      heroPhotoCount: heroPhotos.length,
+      supportingPhotoCount: supportingPhotos.length,
     });
 
     const userContent: any[] = [{ type: "text", text: promptText }];
-    // Order matters — references are introduced in the prompt as FIRST/SECOND.
+    // Image order MUST match the prompt's "Image #N" references:
+    //   [styleRef?] [heroPhotos…] [supportingPhotos…]
     if (styleReferenceImage) {
       userContent.push({
         type: "image_url",
         image_url: { url: styleReferenceImage },
       });
     }
-    if (photoDataUrl) {
-      userContent.push({
-        type: "image_url",
-        image_url: { url: photoDataUrl },
-      });
+    for (const url of heroPhotos) {
+      userContent.push({ type: "image_url", image_url: { url } });
+    }
+    for (const url of supportingPhotos) {
+      userContent.push({ type: "image_url", image_url: { url } });
     }
 
     const aiResp = await fetch(

@@ -63,14 +63,22 @@ export interface StoryPromptCtx {
   childName: string;
   ageBand: string;
   gender?: string;
+  /** Story output language (e.g. "english", "español"). */
+  language?: string;
   genre?: string;
   mood?: string;
   lesson?: string;
-  /** Pre-joined "interest1, interest2, customInterest". */
+  /** Pre-joined "interest1, interest2, …". */
   interestsLine?: string;
-  /** Pre-joined "Name (relationship) — trait, trait, …". */
+  /** Pre-joined "trait1, trait2, …" describing the hero's personality. */
+  personalityLine?: string;
+  /** Pre-joined "Name (relationship) — trait, trait. Description." */
   supportingLine?: string;
+  /** Pre-joined detailed special-thing line, e.g.
+   *  "stuffed-animal — bear named Floppy, purple with a pink belly". */
   specialThing?: string;
+  /** Free-text appearance quirk for the hero (e.g. "lost a front tooth"). */
+  heroQuirk?: string;
   /** Previous summary text when user asked for a refresh. */
   previousSummary?: string;
 }
@@ -83,33 +91,48 @@ export function STORY_USER_TEMPLATE(ctx: StoryPromptCtx): string {
     childName,
     ageBand,
     gender,
+    language,
     genre,
     mood,
     lesson,
     interestsLine,
+    personalityLine,
     supportingLine,
     specialThing,
+    heroQuirk,
     previousSummary,
   } = ctx;
+
+  const langLabel = (language || "").trim().toLowerCase();
+  const langLine =
+    langLabel && langLabel !== "english"
+      ? `Write the title AND the summary in ${language}. Do not include any English.`
+      : "";
 
   return [
     `Write a single, complete story summary for a personalized children's book.`,
     ``,
     `Hero: ${childName} (age band: ${ageBand})${gender ? `, gender: ${gender}` : ""}`,
+    personalityLine ? `Hero's personality: ${personalityLine}` : "",
+    heroQuirk ? `Hero's signature detail: ${heroQuirk}` : "",
     genre ? `Genre: ${genre}` : "",
     mood ? `Mood: ${mood}` : "",
     lesson ? `Lesson / theme: ${lesson}` : "",
     interestsLine ? `Interests woven in: ${interestsLine}` : "",
     supportingLine ? `Supporting characters: ${supportingLine}` : "",
-    specialThing ? `Special object/companion: ${specialThing}` : "",
+    specialThing ? `Special object/companion to feature: ${specialThing}` : "",
     ``,
     `Requirements:`,
     `- Title: short, warm, kid-appropriate (≤ 60 chars). NEVER include the child's name (${childName}) or any first name in the title — focus on the adventure, object, place, or theme instead.`,
     `- Summary: ONE paragraph, target ~${STORY_LENGTH.target} words (hard min ${STORY_LENGTH.min}, hard max ${STORY_LENGTH.max}).`,
     `- Use ${childName}'s name as the hero IN THE SUMMARY ONLY. Mention supporting characters by name where natural.`,
+    `- Reflect the hero's personality traits in their actions and choices.`,
+    `- Weave at least one of the listed interests naturally into the plot.`,
+    specialThing ? `- Give the special object/companion a meaningful cameo.` : "",
     `- Voice: warm, gentle, magical — like a parent reading aloud.`,
     `- Hint at the lesson; do NOT spoil the ending.`,
     `- No headings, no bullet lists, no quotation marks around the summary.`,
+    langLine,
     previousSummary
       ? `\nThe previous attempt is below — write something distinctly DIFFERENT (different setting, twist, or framing). Do not repeat its opening line.\nPrevious:\n${previousSummary}`
       : "",
@@ -117,6 +140,7 @@ export function STORY_USER_TEMPLATE(ctx: StoryPromptCtx): string {
     .filter(Boolean)
     .join("\n");
 }
+
 
 // Re-prompt nudge when the model returns a title containing the child's name.
 // DON'T BREAK: the function loops up to 3 times with this feedback.
@@ -135,14 +159,18 @@ export interface CoverPromptCtx {
   title: string;
   summary: string;
   childName: string;
-  /** Pre-joined "hair: brown, eyes: hazel, …". May be empty. */
+  /** Pre-joined "hair: brown, skin: medium, …". May be empty. */
   protoDesc: string;
+  /** Pre-joined description of supporting characters who appear on the cover. */
+  supportingDesc?: string;
   /** Style fragment from ART_STYLE_PROMPTS. */
   styleHint: string;
   /** True if a style reference image is attached. */
   hasStyleReference: boolean;
-  /** True if a child likeness photo is attached. */
-  hasPhoto: boolean;
+  /** Number of hero likeness photos attached (0 if none). */
+  heroPhotoCount: number;
+  /** Number of supporting-character likeness photos attached. */
+  supportingPhotoCount: number;
 }
 
 // Builds the cover image prompt.
@@ -154,21 +182,47 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
     summary,
     childName,
     protoDesc,
+    supportingDesc,
     styleHint,
     hasStyleReference,
-    hasPhoto,
+    heroPhotoCount,
+    supportingPhotoCount,
   } = ctx;
+
+  // Build a positional reference guide so the model knows which image is which.
+  const refParts: string[] = [];
+  let pos = 0;
+  if (hasStyleReference) {
+    pos++;
+    refParts.push(
+      `Image #${pos} is a STYLE REFERENCE — match its illustration technique, line quality, color palette, and finish. Do NOT copy its subject, pose, or composition; only mimic its style.`,
+    );
+  }
+  if (heroPhotoCount > 0) {
+    const start = pos + 1;
+    const end = pos + heroPhotoCount;
+    pos = end;
+    refParts.push(
+      heroPhotoCount === 1
+        ? `Image #${start} is a LIKENESS REFERENCE for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically. Keep it kind, warm, and age-appropriate.`
+        : `Images #${start}–#${end} are LIKENESS REFERENCES for the hero child from different angles. Use them together to capture face shape, hair, and skin tone. Render in the chosen art style — not photo-realistically.`,
+    );
+  }
+  if (supportingPhotoCount > 0) {
+    const start = pos + 1;
+    const end = pos + supportingPhotoCount;
+    pos = end;
+    refParts.push(
+      `Image${supportingPhotoCount > 1 ? "s" : ""} #${start}${end > start ? `–#${end}` : ""} ${supportingPhotoCount > 1 ? "are likeness references" : "is a likeness reference"} for supporting character${supportingPhotoCount > 1 ? "s" : ""}. Render them in the chosen art style alongside the hero.`,
+    );
+  }
 
   return [
     `Children's book cover illustration in ${styleHint}.`,
-    hasStyleReference
-      ? `The FIRST attached image is a STYLE REFERENCE — match its illustration technique, line quality, color palette, and overall finish exactly. Do NOT copy its subject, pose, or composition; only mimic its visual style.`
-      : "",
+    ...refParts,
     `Title to display on the cover: "${title}". Render this title text exactly as given — do NOT add the child's name or any first name to the title.`,
     `Hero (depicted in the art only, NOT named in any visible text): ${childName}.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
-    hasPhoto
-      ? `The ${hasStyleReference ? "SECOND" : "attached"} image is a likeness reference for the child (face shape, hair, skin tone) — render the child in the chosen art style, not photo-realistically. Keep it kind, warm, and age-appropriate.`
-      : "",
+    supportingDesc ? `Also depict supporting characters: ${supportingDesc}.` : "",
     `Scene inspired by: ${summary.slice(0, 600)}`,
     `Composition: portrait orientation (2:3), the title clearly readable at the top or centered, no extra text, no author byline, no watermarks. Do NOT include "${childName}" or any name as visible text on the cover.`,
     `Tone: magical, hopeful, suitable for young children.`,
@@ -176,3 +230,4 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
     .filter(Boolean)
     .join(" ");
 }
+
