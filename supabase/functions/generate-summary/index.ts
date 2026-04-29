@@ -18,23 +18,48 @@ const corsHeaders = {
 };
 
 interface Brief {
-  child?: { name?: string; ageRange?: string; gender?: string };
+  child?: { name?: string; ageRange?: string; gender?: string; language?: string };
   story?: {
     genre?: string;
     mood?: string;
     lesson?: string;
     interests?: string[];
-    customInterest?: string;
+    personality?: string[];
   };
-  protagonist?: Record<string, unknown>;
+  protagonist?: { special?: string; [k: string]: unknown };
   supportingCharacters?: Array<{
     name?: string;
     relationship?: string;
     description?: string;
+    traits?: string[];
+    gender?: string;
+    ageRange?: string;
   }>;
   artStyle?: string;
-  cover?: { workingTitle?: string };
-  specialThing?: string;
+  specialThing?:
+    | string
+    | { category?: string; details?: Record<string, string> };
+}
+
+function describeSpecialThing(
+  s: Brief["specialThing"],
+): string | undefined {
+  if (!s) return undefined;
+  if (typeof s === "string") return s;
+  const cat = s.category?.replace(/-/g, " ");
+  const d = s.details || {};
+  // Drop photo data URLs and empty values; keep readable detail bits.
+  const bits = Object.entries(d)
+    .filter(([k, v]) =>
+      v && typeof v === "string" && k !== "photo" && !v.startsWith("data:"),
+    )
+    .map(([k, v]) => {
+      if (k === "name") return `named "${v}"`;
+      if (k === "color") return `${v} colored`;
+      return v;
+    });
+  if (!cat && !bits.length) return undefined;
+  return [cat, bits.join(", ")].filter(Boolean).join(" — ");
 }
 
 Deno.serve(async (req) => {
@@ -60,16 +85,20 @@ Deno.serve(async (req) => {
         const traits = Array.isArray(c.traits) && c.traits.length
           ? ` — ${c.traits.join(", ")}`
           : "";
+        const desc = c.description?.trim()
+          ? `. ${c.description.trim()}`
+          : "";
         const base = nm && rel ? `${nm} (${rel})` : nm || rel;
-        return base ? `${base}${traits}` : "";
+        return base ? `${base}${traits}${desc}` : "";
       })
+      .filter(Boolean)
+      .join("; ");
+
+    const interestsLine = (brief.story?.interests || [])
       .filter(Boolean)
       .join(", ");
 
-    const interestsLine = [
-      ...(brief.story?.interests || []),
-      brief.story?.customInterest,
-    ]
+    const personalityLine = (brief.story?.personality || [])
       .filter(Boolean)
       .join(", ");
 
@@ -77,12 +106,15 @@ Deno.serve(async (req) => {
       childName,
       ageBand,
       gender: brief.child?.gender,
+      language: brief.child?.language,
       genre: brief.story?.genre,
       mood: brief.story?.mood,
       lesson: brief.story?.lesson,
       interestsLine,
+      personalityLine,
       supportingLine: supporting,
-      specialThing: brief.specialThing,
+      specialThing: describeSpecialThing(brief.specialThing),
+      heroQuirk: brief.protagonist?.special as string | undefined,
       previousSummary,
     });
 
