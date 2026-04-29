@@ -838,6 +838,32 @@ export default function Step6() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* "Are you sure?" when continuing without any supporting characters */}
+      <Dialog open={showNoCharsDialog} onOpenChange={(open) => { if (!open) resolveNoChars(false); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Continue without any extra characters?</DialogTitle>
+            <DialogDescription>
+              Stories feel extra magical with friends, family, or favorite people
+              alongside {protoName}. You can always add a sibling, grandparent,
+              or best friend now.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button type="button" onClick={() => resolveNoChars(true)}
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors">
+              Continue anyway
+            </button>
+            <button type="button"
+              onClick={() => { resolveNoChars(false); addSupporting(); }}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-colors"
+              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}>
+              Add a character
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </WizardShell>
   );
 }
