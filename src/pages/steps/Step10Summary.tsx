@@ -97,7 +97,7 @@ export default function Step10Summary() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={10} />
+      <WizardHeader currentStep={9} />
 
       <main className="flex-1 px-4 pt-8 pb-32">
         <div className="mx-auto w-full max-w-[640px]">
