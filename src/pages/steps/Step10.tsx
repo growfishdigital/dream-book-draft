@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
@@ -10,84 +10,95 @@ import { toast } from "@/hooks/use-toast";
 const MIN_DURATION = 6000; // soft floor so animation doesn't feel cut short
 
 export default function Step11Generating() {
-  const { answers, setAnswer } = useWizard();
+  const { answers, setAnswer, setIsGenerating } = useWizard();
   const navigate = useNavigate();
   const name = (answers.childName || "your little one").trim();
 
   const [done, setDone] = useState(false);
   const [coverDone, setCoverDone] = useState(false);
   const [errored, setErrored] = useState<string | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const startedAt = useRef<number>(Date.now());
-  const fired = useRef(false);
 
   const title = (answers.selectedConcept?.title || "").trim();
 
   const message = useRotatingMessage(coverMessages(name), 2200);
 
-  useEffect(() => {
-    if (fired.current) return;
-    fired.current = true;
+  const runGeneration = useCallback(async () => {
+    setErrored(null);
+    setCoverDone(false);
+    setDone(false);
+    setIsGenerating(true);
     startedAt.current = Date.now();
 
-    (async () => {
-      const concept = answers.selectedConcept || {};
+    const concept = answers.selectedConcept || {};
+    try {
+      const brief = buildBrief(answers);
+
+      // Load the picked art-style preview as a data URL so the cover model
+      // gets the same image the user picked on Step 6 as a visual reference.
+      let styleReferenceImage: string | undefined;
       try {
-        const brief = buildBrief(answers);
-
-        // Load the picked art-style preview as a data URL so the cover model
-        // gets the same image the user picked on Step 6 as a visual reference.
-        let styleReferenceImage: string | undefined;
-        try {
-          const { ART_STYLES } = await import("@/lib/artStyles");
-          const style = ART_STYLES.find((s) => s.value === brief.artStyle);
-          if (style?.preview) {
-            const resp = await fetch(style.preview);
-            const blob = await resp.blob();
-            styleReferenceImage = await new Promise<string>((resolve, reject) => {
-              const reader = new FileReader();
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.onerror = reject;
-              reader.readAsDataURL(blob);
-            });
-          }
-        } catch (e) {
-          console.warn("Could not load style reference image", e);
-        }
-
-        const { data, error: fnError } = await supabase.functions.invoke(
-          "generate-cover",
-          {
-            body: {
-              brief,
-              title: concept.title || "",
-              summary: concept.summary || "",
-              styleReferenceImage,
-            },
-          },
-        );
-        if (fnError) throw fnError;
-        if (data?.error) throw new Error(data.error);
-        const imageDataUrl = data?.imageDataUrl as string | undefined;
-
-        if (imageDataUrl) {
-          setAnswer("selectedConcept", {
-            ...concept,
-            coverImage: imageDataUrl,
+        const { ART_STYLES } = await import("@/lib/artStyles");
+        const style = ART_STYLES.find((s) => s.value === brief.artStyle);
+        if (style?.preview) {
+          const resp = await fetch(style.preview);
+          const blob = await resp.blob();
+          styleReferenceImage = await new Promise<string>((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
           });
         }
-      } catch (e: any) {
-        const msg = e?.message || "Cover generation failed.";
-        setErrored(msg);
-        toast({ title: "Cover hit a snag", description: msg });
-      } finally {
-        setCoverDone(true);
-        const elapsed = Date.now() - startedAt.current;
-        const wait = Math.max(0, MIN_DURATION - elapsed);
-        setTimeout(() => setDone(true), wait);
+      } catch (e) {
+        console.warn("Could not load style reference image", e);
       }
-    })();
+
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "generate-cover",
+        {
+          body: {
+            brief,
+            title: concept.title || "",
+            summary: concept.summary || "",
+            styleReferenceImage,
+          },
+        },
+      );
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
+      const imageDataUrl = data?.imageDataUrl as string | undefined;
+      if (!imageDataUrl) throw new Error("No cover image returned.");
+
+      setAnswer("selectedConcept", {
+        ...concept,
+        coverImage: imageDataUrl,
+      });
+
+      setCoverDone(true);
+      const elapsed = Date.now() - startedAt.current;
+      const wait = Math.max(0, MIN_DURATION - elapsed);
+      setTimeout(() => {
+        setDone(true);
+        setIsGenerating(false);
+      }, wait);
+    } catch (e: any) {
+      const msg = e?.message || "Cover generation failed.";
+      setErrored(msg);
+      setCoverDone(false);
+      setDone(false);
+      setIsGenerating(false); // unlock nav so they can go Back if needed
+      toast({ title: "Cover hit a snag", description: msg });
+    }
+  }, [answers, setAnswer, setIsGenerating]);
+
+  useEffect(() => {
+    runGeneration();
+    // Cleanup: if the user navigates away mid-flight, release the lock.
+    return () => setIsGenerating(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [attempt]);
 
   return (
     <div
@@ -253,9 +264,9 @@ export default function Step11Generating() {
           <ChecklistRow state={done ? "done" : coverDone ? "active" : "pending"} label={done ? "Pages bound" : "Binding the pages"} />
         </ul>
 
-        {done && (
+        {done && !errored && (
           <button
-            onClick={() => navigate("/step/11")}
+            onClick={() => navigate("/step/10")}
             className="px-8 py-4 rounded-full text-base font-semibold"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
@@ -267,11 +278,32 @@ export default function Step11Generating() {
           </button>
         )}
 
-        {errored && done && (
-          <p className="text-xs text-center mt-4 max-w-xs text-[#2b4e18]/60">
-            We had trouble drawing the cover, but your story is safe. You can
-            continue and we'll try again later.
-          </p>
+        {errored && (
+          <div
+            className="flex flex-col items-center gap-3 max-w-xs text-center"
+            style={{ animation: "btn-fade 0.4s ease-out" }}
+          >
+            <p className="text-sm text-[#2b4e18]/70">
+              We had a little trouble painting the cover. Let's try again —
+              your story is safe.
+            </p>
+            <button
+              onClick={() => setAttempt((n) => n + 1)}
+              className="px-6 py-3 rounded-full text-sm font-semibold"
+              style={{
+                backgroundColor: "hsl(var(--wizard-primary))",
+                color: "#fff",
+              }}
+            >
+              ✨ Try again
+            </button>
+            <button
+              onClick={() => navigate("/step/8")}
+              className="text-xs underline text-[#2b4e18]/60"
+            >
+              Back to the story
+            </button>
+          </div>
         )}
       </div>
     </div>

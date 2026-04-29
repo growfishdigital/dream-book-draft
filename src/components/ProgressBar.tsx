@@ -5,6 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useWizard } from "@/contexts/WizardContext";
 
 const TOTAL_STEPS = 10;
 
@@ -40,6 +41,7 @@ const PROGRESS_MESSAGES: Record<number, string> = {
 
 export default function ProgressBar({ currentStep }: { currentStep: number }) {
   const navigate = useNavigate();
+  const { isGenerating } = useWizard();
 
   const safeStep = Math.min(Math.max(currentStep, 1), TOTAL_STEPS);
   const message = PROGRESS_MESSAGES[safeStep] ?? PROGRESS_MESSAGES[1];
@@ -50,14 +52,23 @@ export default function ProgressBar({ currentStep }: { currentStep: number }) {
         <div className="flex gap-1.5">
           {Array.from({ length: TOTAL_STEPS }, (_, i) => {
             const stepNum = i + 1;
+            const locked = isGenerating;
             return (
               <Tooltip key={i}>
                 <TooltipTrigger asChild>
                   <div
                     role="button"
-                    tabIndex={0}
-                    onClick={() => navigate(`/step/${stepNum}`)}
-                    className="h-2 rounded-full transition-all duration-300 cursor-pointer hover:scale-y-150"
+                    tabIndex={locked ? -1 : 0}
+                    aria-disabled={locked}
+                    onClick={() => {
+                      if (locked) return;
+                      navigate(`/step/${stepNum}`);
+                    }}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      locked
+                        ? "cursor-not-allowed pointer-events-none"
+                        : "cursor-pointer hover:scale-y-150"
+                    }`}
                     style={{
                       width: 24,
                       backgroundColor:
