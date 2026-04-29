@@ -19,6 +19,9 @@
 export const MODELS = {
   summary: "openai/gpt-5-mini",
   cover: "google/gemini-3-pro-image-preview",
+  // Full-book engine. Long context + strong reasoning. Swappable to
+  // "anthropic/claude-sonnet-4-5" once an Anthropic key is wired in.
+  book: "google/gemini-2.5-pro",
 } as const;
 
 // ---- Story length knobs -----------------------------------------------------
