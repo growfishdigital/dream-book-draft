@@ -1,5 +1,15 @@
-// Generate a single ~100-word kid-friendly story summary using GPT-5-mini.
+// Generate a single ~100-word kid-friendly story summary.
 // Returns { title, summary } via structured tool-call output.
+//
+// Prompt copy lives in ../_shared/prompts.ts — edit there to tweak for all users.
+
+import {
+  MODELS,
+  STORY_LENGTH,
+  STORY_SYSTEM_PROMPT,
+  STORY_USER_TEMPLATE,
+  TITLE_RETRY_INSTRUCTION,
+} from "../_shared/prompts.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -63,32 +73,18 @@ Deno.serve(async (req) => {
       .filter(Boolean)
       .join(", ");
 
-    const userPrompt = [
-      `Write a single, complete story summary for a personalized children's book.`,
-      ``,
-      `Hero: ${childName} (age band: ${ageBand})${
-        brief.child?.gender ? `, gender: ${brief.child.gender}` : ""
-      }`,
-      brief.story?.genre ? `Genre: ${brief.story.genre}` : "",
-      brief.story?.mood ? `Mood: ${brief.story.mood}` : "",
-      brief.story?.lesson ? `Lesson / theme: ${brief.story.lesson}` : "",
-      interestsLine ? `Interests woven in: ${interestsLine}` : "",
-      supporting ? `Supporting characters: ${supporting}` : "",
-      brief.specialThing ? `Special object/companion: ${brief.specialThing}` : "",
-      ``,
-      `Requirements:`,
-      `- Title: short, warm, kid-appropriate (≤ 60 chars). NEVER include the child's name (${childName}) or any first name in the title — focus on the adventure, object, place, or theme instead.`,
-      `- Summary: ONE paragraph, target ~100 words (hard min 80, hard max 130).`,
-      `- Use ${childName}'s name as the hero IN THE SUMMARY ONLY. Mention supporting characters by name where natural.`,
-      `- Voice: warm, gentle, magical — like a parent reading aloud.`,
-      `- Hint at the lesson; do NOT spoil the ending.`,
-      `- No headings, no bullet lists, no quotation marks around the summary.`,
-      previousSummary
-        ? `\nThe previous attempt is below — write something distinctly DIFFERENT (different setting, twist, or framing). Do not repeat its opening line.\nPrevious:\n${previousSummary}`
-        : "",
-    ]
-      .filter(Boolean)
-      .join("\n");
+    const userPrompt = STORY_USER_TEMPLATE({
+      childName,
+      ageBand,
+      gender: brief.child?.gender,
+      genre: brief.story?.genre,
+      mood: brief.story?.mood,
+      lesson: brief.story?.lesson,
+      interestsLine,
+      supportingLine: supporting,
+      specialThing: brief.specialThing,
+      previousSummary,
+    });
 
     const firstName = String(childName).trim().split(/\s+/)[0];
     const nameRe = firstName
@@ -98,11 +94,7 @@ Deno.serve(async (req) => {
 
     const callModel = async (extraInstruction?: string) => {
       const messages = [
-        {
-          role: "system",
-          content:
-            "You write personalized children's book summaries. Always call the provided tool to return your output — never reply in plain text.",
-        },
+        { role: "system", content: STORY_SYSTEM_PROMPT },
         { role: "user", content: userPrompt },
       ];
       if (extraInstruction) {
@@ -116,7 +108,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "openai/gpt-5-mini",
+          model: MODELS.summary,
           messages,
           tools: [
             {
@@ -133,8 +125,7 @@ Deno.serve(async (req) => {
                     },
                     summary: {
                       type: "string",
-                      description:
-                        "Single paragraph, ~100 words (80–130), narrative summary.",
+                      description: `Single paragraph, ~${STORY_LENGTH.target} words (${STORY_LENGTH.min}–${STORY_LENGTH.max}), narrative summary.`,
                     },
                   },
                   required: ["title", "summary"],
@@ -159,7 +150,7 @@ Deno.serve(async (req) => {
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const feedback = lastBadTitle
-        ? `Your previous title was: "${lastBadTitle}". It violated the rule because it contains the child's first name${firstName ? ` "${firstName}"` : ""}. Generate a NEW title that does NOT contain any first names — focus on the adventure, object, place, theme, or feeling instead. Keep the same summary style.`
+        ? TITLE_RETRY_INSTRUCTION(lastBadTitle, firstName)
         : undefined;
 
       const aiResp = await callModel(feedback);
