@@ -466,7 +466,7 @@ export default function Step6() {
     const sc: SupportingCharacter = {
       id: makeId(), mode: "", name: "", surpriseName: false,
       relationship: "", relationshipOther: "", gender: "", ageRange: "",
-      photos: [], appearance: emptyAppearance(),
+      photos: [], appearance: emptyAppearance(), traits: [],
     };
     setSupportingCharacters([...supportingCharacters, sc]);
     setActiveTab({ kind: "supporting", id: sc.id });
@@ -477,7 +477,7 @@ export default function Step6() {
     const sc: SupportingCharacter = {
       id: makeId(), mode: "", name: "", surpriseName: false,
       relationship: "", relationshipOther: "", gender: "", ageRange: "",
-      photos: [], appearance: emptyAppearance(),
+      photos: [], appearance: emptyAppearance(), traits: [],
     };
     setSupportingCharacters([...supportingCharacters, sc]);
     setActiveTab({ kind: "supporting", id: sc.id });
