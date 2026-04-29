@@ -5,6 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { useWizard } from "@/contexts/WizardContext";
 
 const TOTAL_STEPS = 10;
 
