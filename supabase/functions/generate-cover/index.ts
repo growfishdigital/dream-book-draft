@@ -89,7 +89,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          model: "google/gemini-3-pro-image-preview",
+          model: MODELS.cover,
           messages: [{ role: "user", content: userContent }],
           modalities: ["image", "text"],
         }),

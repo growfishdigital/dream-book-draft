@@ -1,12 +1,14 @@
-// Single source of truth for illustration art styles.
-// Used by:
-//   - Step 6 picker (src/pages/steps/Step7.tsx) for thumbnails + labels
-//   - Cover generation (supabase/functions/generate-cover/index.ts) for the
-//     style fragment passed to the image model
-// If you change a `prompt` here, regenerate the matching preview in
-// public/art-styles/{value}.webp so the picker reflects what the cover model
-// will actually paint. The cover edge function keeps its own copy of this
-// table — keep them in sync.
+// Frontend art-style catalogue used by the Step 6 picker (labels, emojis,
+// preview thumbnails).
+//
+// IMPORTANT: the `prompt` strings below are duplicated in
+// `supabase/functions/_shared/prompts.ts` (ART_STYLE_PROMPTS), which is the
+// canonical place for ALL backend prompt copy. The duplication exists only
+// so the frontend can show preview text without importing from the edge
+// function. When you change a `prompt` here, also change it in
+// `supabase/functions/_shared/prompts.ts` AND regenerate the matching
+// preview in `public/art-styles/{value}.jpg` so the picker reflects what
+// the cover model will actually paint.
 
 export interface ArtStyle {
   value: string;
