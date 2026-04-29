@@ -461,7 +461,10 @@ export default function Step11() {
             const genreLabel = GENRE_LABEL[answers.genre as string];
             const moodLabel = MOOD_LABEL[answers.mood as string];
             const lessonLabel = LESSON_LABEL[answers.lesson as string];
-            const interests = (answers.interests as string[]) || [];
+            const interestsRaw = (answers.interestsList as Array<{ word?: string; emoji?: string }>) || [];
+            const interests = interestsRaw
+              .map((e) => ({ word: (e?.word || "").trim(), emoji: e?.emoji }))
+              .filter((e) => e.word.length > 0);
             const customInterest = (answers.customInterest as string)?.trim();
             const specialThing = formatSpecialThing(answers.specialThing);
             const charactersLine = formatCharacters(answers);
