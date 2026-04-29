@@ -86,7 +86,7 @@ export default function Step10Summary() {
       title: title.trim() || `${name}'s Adventure`,
       summary: summary.trim(),
     });
-    navigate("/step/11");
+    navigate("/step/9");
   };
 
   const wordCount = (s: string) =>
@@ -244,7 +244,7 @@ export default function Step10Summary() {
       >
         <button
           type="button"
-          onClick={() => navigate("/step/9")}
+          onClick={() => navigate("/step/7")}
           className="py-4 px-8 rounded-full text-base font-semibold border-2"
           style={{
             borderColor: "hsl(var(--wizard-primary))",
