@@ -80,12 +80,37 @@ export default function Step10Summary() {
     setEditing(false);
   };
 
-  const approve = () => {
+  const approve = async () => {
     if (!summary.trim()) return;
     setAnswer("selectedConcept", {
       title: title.trim() || `${name}'s Adventure`,
       summary: summary.trim(),
     });
+
+    // Dev-only: ?dev=1 fires the full-book engine and routes to the dev preview
+    // INSTEAD of the normal Generating step. Without ?dev=1, behavior unchanged.
+    const isDev = new URLSearchParams(window.location.search).get("dev") === "1";
+    if (isDev) {
+      setLoading(true);
+      try {
+        const brief = buildBrief(answers);
+        const { data, error: fnError } = await supabase.functions.invoke(
+          "generate-book",
+          { body: { brief } },
+        );
+        if (fnError) throw fnError;
+        if (data?.error) throw new Error(data.error);
+        if (!data?.id) throw new Error("No book id returned.");
+        navigate(`/dev/story-preview/${data.id}`);
+        return;
+      } catch (e: any) {
+        const msg = e?.message || "Full-book generation failed.";
+        toast({ title: "Dev: book engine error", description: msg });
+        setLoading(false);
+        // Fall through to normal flow on failure.
+      }
+    }
+
     navigate("/step/10");
   };
 
