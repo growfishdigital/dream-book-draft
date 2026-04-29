@@ -14,7 +14,45 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      generated_books: {
+        Row: {
+          brief: Json
+          created_at: string
+          framework_id: string
+          generation_ms: number | null
+          id: string
+          model: string
+          parsed: Json | null
+          prompt_hash: string | null
+          raw_output: string | null
+          status: string
+        }
+        Insert: {
+          brief: Json
+          created_at?: string
+          framework_id: string
+          generation_ms?: number | null
+          id?: string
+          model: string
+          parsed?: Json | null
+          prompt_hash?: string | null
+          raw_output?: string | null
+          status?: string
+        }
+        Update: {
+          brief?: Json
+          created_at?: string
+          framework_id?: string
+          generation_ms?: number | null
+          id?: string
+          model?: string
+          parsed?: Json | null
+          prompt_hash?: string | null
+          raw_output?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
