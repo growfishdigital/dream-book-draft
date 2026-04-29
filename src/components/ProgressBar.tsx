@@ -7,36 +7,37 @@ import {
 } from "@/components/ui/tooltip";
 import { useWizard } from "@/contexts/WizardContext";
 
-const TOTAL_STEPS = 10;
+const TOTAL_STEPS = 11;
 
-// Short, accurate step names for tooltips. Matches the current 10-step flow
-// (Cover Designer was removed).
+// Short, accurate step names for tooltips. Matches the current 11-step flow.
 const STEP_LABELS: Record<number, string> = {
   1: "Who's it for?",
-  2: "Story Type",
-  3: "Life Lessons",
-  4: "Interests",
-  5: "Personality",
-  6: "Art Style",
-  7: "Characters",
-  8: "Story Summary",
-  9: "Generating",
-  10: "Preview & Buy",
+  2: "From & Occasion",
+  3: "Story Type",
+  4: "Life Lessons",
+  5: "Interests",
+  6: "Personality",
+  7: "Art Style",
+  8: "Characters",
+  9: "Story Summary",
+  10: "Generating",
+  11: "Preview & Buy",
 };
 
 // Warm, child-focused encouragement that swaps as the user advances.
 // Keep these short — they sit in a tiny caption under the dots.
 const PROGRESS_MESSAGES: Record<number, string> = {
   1: "Your book is taking shape ✨",
-  2: "Lovely start — let's pick the vibe 🌱",
-  3: "Beautiful choice — what should they learn? 💛",
-  4: "You're sparking ideas already ✨",
-  5: "Bringing their personality to life 🌟",
-  6: "Painting the perfect look 🎨",
-  7: "Filling the world with friends 🧸",
-  8: "Your story is almost written 📖",
-  9: "Stitching every page together ✨",
-  10: "Tada! Meet your storybook 🎉",
+  2: "What a thoughtful gift 💛",
+  3: "Lovely — let's pick the vibe 🌱",
+  4: "Beautiful choice — what should they learn? 💛",
+  5: "You're sparking ideas already ✨",
+  6: "Bringing their personality to life 🌟",
+  7: "Painting the perfect look 🎨",
+  8: "Filling the world with friends 🧸",
+  9: "Your story is almost written 📖",
+  10: "Stitching every page together ✨",
+  11: "Tada! Meet your storybook 🎉",
 };
 
 export default function ProgressBar({ currentStep }: { currentStep: number }) {
