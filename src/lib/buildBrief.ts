@@ -32,6 +32,7 @@ export interface StoryBrief {
     name?: string;
     relationship?: string;
     description?: string;
+    traits?: string[];
   }>;
   artStyle?: string;
   cover: {
@@ -75,6 +76,9 @@ export function buildBrief(answers: Record<string, any>): StoryBrief {
           ? c.relationshipOther
           : c.relationship,
       description: c.description,
+      traits: Array.isArray(c.traits)
+        ? c.traits.map((t: any) => t?.word).filter(Boolean)
+        : undefined,
     })),
     artStyle: answers.artStyle,
     cover: {
