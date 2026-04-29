@@ -1,33 +1,47 @@
-# Step-Aware Progress Encouragement
+## Goal
 
-## What you'll see
-The dot/segment progress bar in the wizard header already exists and already says "Your book is taking shape ✨" under the dots. This change makes that **caption rotate** through warm, kid-focused encouragement that matches the user's current step — so it feels like the app is cheering them on as they go.
+On Step 9 (the animated "generating" screen), the user must not be able to advance to Step 10 (Book Preview) until the real cover image has finished generating. The existing stage UI and animation stays exactly as-is.
 
-The dots themselves keep their current behavior (filled = completed, click to jump back, tooltip shows step name).
+## Current behavior (verified)
 
-## Per-step messages
-Each step gets its own short caption (≤ ~40 chars, child-focused warmth, light emoji):
+- `src/pages/steps/Step10.tsx` (the Step 9 route) calls `generate-cover` on mount, then sets `done = true` after both:
+  1. The cover request resolves (success or error), and
+  2. A 6s minimum animation floor has elapsed.
+- The "✨ Your book is ready — take a look" CTA is already conditionally rendered only when `done` is true, so direct CTA bypass is not possible.
 
-| Step | Screen | Caption |
-|------|--------|---------|
-| 1 | Who's it for? | Your book is taking shape ✨ |
-| 2 | Story Type | Lovely start — let's pick the vibe 🌱 |
-| 3 | Life Lessons | Beautiful choice — what should they learn? 💛 |
-| 4 | Interests | You're sparking ideas already ✨ |
-| 5 | Personality | Bringing their personality to life 🌟 |
-| 6 | Art Style | Painting the perfect look 🎨 |
-| 7 | Characters | Filling the world with friends 🧸 |
-| 8 | Story Summary | Your story is almost written 📖 |
-| 9 | Generating | Stitching every page together ✨ |
-| 10 | Preview & Buy | Tada! Meet your storybook 🎉 |
+## What's missing / risk of bypass
 
-(Easy to tweak later — they live in one map.)
+1. **Progress-bar dot navigation** — the global `ProgressBar` lets users click any dot to jump steps. From Step 9 a user could click dot 10 and land on the Book Preview before the cover finishes.
+2. **Browser back/forward + manual URL** — minor, but worth at least not actively re-enabling navigation from Step 9 itself.
+3. **Error path** — currently if `generate-cover` fails, `done` still becomes true and the CTA appears with a soft apology. The user said "do not bypass until generation is complete," so on hard failure we should offer a Retry instead of silently moving on.
 
-## Files to change
-- **`src/components/ProgressBar.tsx`** — add a `PROGRESS_MESSAGES` map keyed by step, render the matching message instead of the hardcoded one. Use `key={message}` + a CSS opacity transition so the swap is a soft fade rather than a jarring snap.
-- Same file: fix the existing `STEP_LABELS` tooltip map, which is stale (still lists "Cover Design" at 8 and goes up to 11). Update to the current 10-step flow so tooltips match what users actually see.
+## Changes
+
+### 1. `src/pages/steps/Step10.tsx`
+- Track a `generating` flag (true until the cover request resolves, independent of the 6s floor).
+- On error: do **not** auto-advance. Set `done = false`, show the existing apology copy plus a "Try again" button that re-runs the cover request. The animated book keeps playing.
+- Pass a `lockNavigation` signal (via `WizardContext` — see step 3) so the progress bar disables dot clicks while generating.
+
+### 2. `src/components/ProgressBar.tsx`
+- Read the new `isGenerating` flag from `WizardContext`.
+- When true: render the dots as visually unchanged but make them non-interactive (`pointer-events: none`, `aria-disabled`, no hover affordance, no click handler). Keep the encouraging caption.
+- When false: existing click-to-jump behavior is unchanged.
+
+### 3. `src/contexts/WizardContext.tsx`
+- Add `isGenerating: boolean` and `setIsGenerating(v: boolean)` to the context.
+- Step 9 sets it to `true` on mount and `false` once the cover request resolves successfully (and we're ready to advance).
+
+### 4. No edge-function changes
+The `generate-cover` function and prompts file are untouched.
 
 ## Out of scope
-- No layout/visual changes to the dots themselves — just the caption text.
-- No changes to step routing or `WizardContext`.
-- No new dependencies.
+
+- No change to the Step 8 → Step 9 transition (Approve & illustrate still navigates normally).
+- No change to the animation, checklist labels, copy, or 6s minimum floor.
+- No change to story generation (still happens on Step 8).
+
+## Files touched
+
+- `src/pages/steps/Step10.tsx`
+- `src/components/ProgressBar.tsx`
+- `src/contexts/WizardContext.tsx`
