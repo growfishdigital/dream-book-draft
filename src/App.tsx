@@ -49,6 +49,8 @@ const App = () => (
             {/* Secret Ingredient (Step5) hidden — route preserved but redirects */}
             <Route path="/step/secret-ingredient" element={<Step5 />} />
             <Route path="/step/:step" element={<StepPlaceholder />} />
+            {/* Dev-only full-book engine preview — no auth, unlinked. */}
+            <Route path="/dev/story-preview/:id" element={<DevStoryPreview />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </WizardProvider>
