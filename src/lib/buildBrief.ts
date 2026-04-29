@@ -62,6 +62,12 @@ export interface StoryBrief {
     /** Free-form details (animal type, color, name, photo, etc.). */
     details?: Record<string, string>;
   };
+  /** Buyer's relationship to the child — flavors the dedication voice. */
+  buyer_relationship?: string;
+  /** Occasion the book is for — light flavor, never central plot. */
+  occasion?: string;
+  /** Whether to include the "This book belongs to" page. */
+  bookBelongsTo?: boolean;
 }
 
 function wordsFromList(list: any): string[] {
@@ -125,5 +131,8 @@ export function buildBrief(answers: Record<string, any>): StoryBrief {
           details: answers.specialThing.details,
         }
       : undefined,
+    buyer_relationship: answers.buyer_relationship,
+    occasion: answers.occasion,
+    bookBelongsTo: answers.bookBelongsTo,
   };
 }
