@@ -87,9 +87,26 @@ Deno.serve(async (req) => {
       .filter(Boolean)
       .join("\n");
 
-    const aiResp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+    const firstName = String(childName).trim().split(/\s+/)[0];
+    const nameRe = firstName
+      ? new RegExp(`\\b${firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s|s')?\\b`, "i")
+      : null;
+    const titleHasName = (t: string) => !!(nameRe && nameRe.test(t));
+
+    const callModel = async (extraInstruction?: string) => {
+      const messages = [
+        {
+          role: "system",
+          content:
+            "You write personalized children's book summaries. Always call the provided tool to return your output — never reply in plain text.",
+        },
+        { role: "user", content: userPrompt },
+      ];
+      if (extraInstruction) {
+        messages.push({ role: "user", content: extraInstruction });
+      }
+
+      const r = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -97,14 +114,7 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify({
           model: "openai/gpt-5-mini",
-          messages: [
-            {
-              role: "system",
-              content:
-                "You write personalized children's book summaries. Always call the provided tool to return your output — never reply in plain text.",
-            },
-            { role: "user", content: userPrompt },
-          ],
+          messages,
           tools: [
             {
               type: "function",
@@ -116,7 +126,7 @@ Deno.serve(async (req) => {
                   properties: {
                     title: {
                       type: "string",
-                      description: "Short, kid-friendly working title (max 60 chars).",
+                      description: `Short, kid-friendly working title (max 60 chars). MUST NOT contain the child's first name${firstName ? ` "${firstName}"` : ""}.`,
                     },
                     summary: {
                       type: "string",
@@ -135,63 +145,77 @@ Deno.serve(async (req) => {
             function: { name: "return_story_summary" },
           },
         }),
-      },
-    );
-
-    if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(
-          JSON.stringify({
-            error: "We're a bit busy — please try again in a moment.",
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-      if (aiResp.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error:
-              "Out of AI credits. Please add credits in Settings → Workspace → Usage.",
-          }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
-        );
-      }
-      const t = await aiResp.text();
-      console.error("AI gateway error", aiResp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
-    }
+      return r;
+    };
 
-    const data = await aiResp.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const argsStr = toolCall?.function?.arguments;
-    if (!argsStr) {
-      console.error("No tool call in AI response", JSON.stringify(data));
-      return new Response(
-        JSON.stringify({ error: "Model did not return a structured summary." }),
-        {
+    // Try up to 3 times — if the title contains the child's name, re-prompt with feedback.
+    let parsed: { title?: string; summary?: string } | null = null;
+    let lastBadTitle: string | null = null;
+    const MAX_ATTEMPTS = 3;
+
+    for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+      const feedback = lastBadTitle
+        ? `Your previous title was: "${lastBadTitle}". It violated the rule because it contains the child's first name${firstName ? ` "${firstName}"` : ""}. Generate a NEW title that does NOT contain any first names — focus on the adventure, object, place, theme, or feeling instead. Keep the same summary style.`
+        : undefined;
+
+      const aiResp = await callModel(feedback);
+
+      if (!aiResp.ok) {
+        if (aiResp.status === 429) {
+          return new Response(
+            JSON.stringify({ error: "We're a bit busy — please try again in a moment." }),
+            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        if (aiResp.status === 402) {
+          return new Response(
+            JSON.stringify({
+              error: "Out of AI credits. Please add credits in Settings → Workspace → Usage.",
+            }),
+            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+          );
+        }
+        const t = await aiResp.text();
+        console.error("AI gateway error", aiResp.status, t);
+        return new Response(JSON.stringify({ error: "AI gateway error" }), {
           status: 500,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
-      );
-    }
-    const parsed = JSON.parse(argsStr);
+        });
+      }
 
-    // Safety net: strip the child's first name from the title if the model slipped it in.
-    let cleanTitle = String(parsed.title || "").slice(0, 80);
-    const firstName = String(childName).trim().split(/\s+/)[0];
-    if (firstName) {
-      const nameRe = new RegExp(`\\b${firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s|s')?\\b`, "gi");
+      const data = await aiResp.json();
+      const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+      const argsStr = toolCall?.function?.arguments;
+      if (!argsStr) {
+        console.error("No tool call in AI response", JSON.stringify(data));
+        return new Response(
+          JSON.stringify({ error: "Model did not return a structured summary." }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+        );
+      }
+
+      const candidate = JSON.parse(argsStr);
+      const candidateTitle = String(candidate.title || "").slice(0, 80).trim();
+
+      if (!titleHasName(candidateTitle)) {
+        parsed = { title: candidateTitle, summary: candidate.summary };
+        console.log(`Title validated on attempt ${attempt}: "${candidateTitle}"`);
+        break;
+      }
+
+      console.warn(`Attempt ${attempt}: title "${candidateTitle}" contains "${firstName}" — re-prompting.`);
+      lastBadTitle = candidateTitle;
+      parsed = { title: candidateTitle, summary: candidate.summary }; // keep latest as fallback
+    }
+
+    // Final safety net: if all attempts produced a name-containing title, scrub it.
+    let cleanTitle = String(parsed?.title || "").slice(0, 80);
+    if (nameRe && titleHasName(cleanTitle)) {
+      console.warn(`All ${MAX_ATTEMPTS} attempts violated rule. Scrubbing "${cleanTitle}".`);
+      const stripRe = new RegExp(`\\b${firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s|s')?\\b`, "gi");
       cleanTitle = cleanTitle
-        .replace(nameRe, "")
+        .replace(stripRe, "")
         .replace(/\s+(and|&)\s+the\b/i, " The")
         .replace(/^\s*(and|&|the)\s+/i, "")
         .replace(/\s{2,}/g, " ")
@@ -203,12 +227,9 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         title: cleanTitle,
-        summary: String(parsed.summary || ""),
+        summary: String(parsed?.summary || ""),
       }),
-      {
-        status: 200,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      },
+      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("generate-summary error", e);
