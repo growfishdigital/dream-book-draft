@@ -44,11 +44,14 @@ Deno.serve(async (req) => {
     const ageBand = brief.child?.ageRange || "young";
 
     const supporting = (brief.supportingCharacters || [])
-      .map((c) => {
+      .map((c: any) => {
         const rel = c.relationship?.trim();
         const nm = c.name?.trim();
-        if (nm && rel) return `${nm} (${rel})`;
-        return nm || rel;
+        const traits = Array.isArray(c.traits) && c.traits.length
+          ? ` — ${c.traits.join(", ")}`
+          : "";
+        const base = nm && rel ? `${nm} (${rel})` : nm || rel;
+        return base ? `${base}${traits}` : "";
       })
       .filter(Boolean)
       .join(", ");
