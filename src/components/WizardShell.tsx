@@ -80,7 +80,7 @@ export default function WizardShell({
           )}
           <button
             type="button"
-            onClick={() => { if (canContinue) goNext(); }}
+            onClick={handleContinue}
             disabled={!canContinue}
             className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
