@@ -553,9 +553,26 @@ export default function Step6() {
   const [warnings, setWarnings] = useState<Set<string>>(new Set());
   const [showRemoveDialog, setShowRemoveDialog] = useState<string | null>(null);
   const [showUpsell, setShowUpsell] = useState(false);
+  const [showNoCharsDialog, setShowNoCharsDialog] = useState(false);
+  const noCharsResolver = useRef<((ok: boolean) => void) | null>(null);
 
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
+
+  // Intercept Continue: if no supporting characters, ask "are you sure?"
+  const handleBeforeContinue = useCallback(() => {
+    if (supportingCharacters.length > 0) return true;
+    return new Promise<boolean>((resolve) => {
+      noCharsResolver.current = resolve;
+      setShowNoCharsDialog(true);
+    });
+  }, [supportingCharacters.length]);
+
+  const resolveNoChars = (ok: boolean) => {
+    setShowNoCharsDialog(false);
+    noCharsResolver.current?.(ok);
+    noCharsResolver.current = null;
+  };
 
   const setProtagonist = useCallback((p: Protagonist) => setAnswer("protagonist", p), [setAnswer]);
   const setSupportingCharacters = useCallback((s: SupportingCharacter[]) => setAnswer("supportingCharacters", s), [setAnswer]);
