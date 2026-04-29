@@ -56,13 +56,13 @@ Deno.serve(async (req) => {
 
     const promptText = [
       `Children's book cover illustration in ${styleHint}.`,
-      `Title to display: "${title}".`,
-      `Hero: ${childName}.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
+      `Title to display on the cover: "${title}". Render this title text exactly as given — do NOT add the child's name or any first name to the title.`,
+      `Hero (depicted in the art only, NOT named in any visible text): ${childName}.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
       photoDataUrl
         ? `Use the attached reference photo for the child's likeness (face shape, hair, skin tone). Keep it kind, warm, and age-appropriate.`
         : "",
       `Scene inspired by: ${summary.slice(0, 600)}`,
-      `Composition: portrait orientation (2:3), the title clearly readable at the top or centered, no extra text, no watermarks.`,
+      `Composition: portrait orientation (2:3), the title clearly readable at the top or centered, no extra text, no author byline, no watermarks. Do NOT include "${childName}" or any name as visible text on the cover.`,
       `Tone: magical, hopeful, suitable for young children.`,
     ]
       .filter(Boolean)
