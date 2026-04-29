@@ -48,17 +48,9 @@ Deno.serve(async (req) => {
         ? [proto.photoDataUrl]
         : [];
 
-    // Collect supporting-character likeness photos (only "real" mode contributes).
-    const supportingChars: any[] = Array.isArray(brief.supportingCharacters)
-      ? brief.supportingCharacters
-      : [];
-    const supportingPhotos: string[] = supportingChars.flatMap((c: any) =>
-      Array.isArray(c?.photos)
-        ? c.photos.filter(
-            (p: unknown) => typeof p === "string" && p.startsWith("data:"),
-          )
-        : [],
-    );
+    // NOTE: Supporting characters are intentionally EXCLUDED from the cover.
+    // The cover is hero-only by product decision — supporting characters still
+    // appear in the story summary and inside the book, just not on the cover.
 
     const styleHint = getArtStylePrompt(brief.artStyle);
 
@@ -76,43 +68,19 @@ Deno.serve(async (req) => {
     ].filter(Boolean);
     const protoDesc = protoDescBits.join(", ");
 
-    // Supporting character text descriptors (always sent so even AI-only chars
-    // are depicted accurately).
-    const supportingDesc = supportingChars
-      .map((c: any) => {
-        const a = c?.appearance || {};
-        const bits = [
-          c?.name && c?.name,
-          c?.relationship && `(${c.relationship})`,
-          c?.gender,
-          c?.ageRange,
-          a.hairColor && `${a.hairColor} hair`,
-          a.hairStyle,
-          a.skinTone && `skin tone ${a.skinTone}`,
-          a.glasses && `glasses`,
-          a.features,
-          c?.description,
-        ].filter(Boolean);
-        return bits.length ? bits.join(" ") : "";
-      })
-      .filter(Boolean)
-      .join("; ");
-
     const promptText = COVER_PROMPT_TEMPLATE({
       title,
       summary,
       childName,
       protoDesc,
-      supportingDesc,
       styleHint,
       hasStyleReference: !!styleReferenceImage,
       heroPhotoCount: heroPhotos.length,
-      supportingPhotoCount: supportingPhotos.length,
     });
 
     const userContent: any[] = [{ type: "text", text: promptText }];
     // Image order MUST match the prompt's "Image #N" references:
-    //   [styleRef?] [heroPhotos…] [supportingPhotos…]
+    //   [styleRef?] [heroPhotos…]
     if (styleReferenceImage) {
       userContent.push({
         type: "image_url",
@@ -120,9 +88,6 @@ Deno.serve(async (req) => {
       });
     }
     for (const url of heroPhotos) {
-      userContent.push({ type: "image_url", image_url: { url } });
-    }
-    for (const url of supportingPhotos) {
       userContent.push({ type: "image_url", image_url: { url } });
     }
 
