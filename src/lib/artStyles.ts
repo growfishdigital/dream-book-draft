@@ -27,7 +27,7 @@ export const ART_STYLES: ArtStyle[] = [
     desc: "Soft, painterly, classic",
     prompt:
       "soft watercolor children's book illustration, hand-painted texture, gentle washes, warm muted palette, paper grain visible, classic storybook feel",
-    preview: "/art-styles/watercolor.webp",
+    preview: "/art-styles/watercolor.jpg",
   },
   {
     value: "cozy-sketch",
@@ -36,7 +36,7 @@ export const ART_STYLES: ArtStyle[] = [
     desc: "Charming hand-drawn linework",
     prompt:
       "charming hand-drawn children's book illustration, visible pencil and ink linework, light watercolor wash fill, warm earthy tones, sketchbook feel",
-    preview: "/art-styles/cozy-sketch.webp",
+    preview: "/art-styles/cozy-sketch.jpg",
   },
   {
     value: "bold-bright",
@@ -45,7 +45,7 @@ export const ART_STYLES: ArtStyle[] = [
     desc: "Vivid colors, modern and punchy",
     prompt:
       "modern vibrant children's book illustration, bold black outlines, flat saturated colors, playful punchy palette, contemporary cartoon style",
-    preview: "/art-styles/bold-bright.webp",
+    preview: "/art-styles/bold-bright.jpg",
   },
   {
     value: "dreamy-pastel",
@@ -54,7 +54,7 @@ export const ART_STYLES: ArtStyle[] = [
     desc: "Soft tones, gentle and ethereal",
     prompt:
       "dreamy pastel children's book illustration, soft glowing light, gentle pinks lavenders and creams, ethereal and calm, bedtime story feel",
-    preview: "/art-styles/dreamy-pastel.webp",
+    preview: "/art-styles/dreamy-pastel.jpg",
   },
 ];
 
