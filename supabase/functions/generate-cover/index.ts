@@ -32,16 +32,21 @@ Deno.serve(async (req) => {
     const proto = brief.protagonist || {};
     const photoDataUrl: string | undefined = proto.photoDataUrl;
 
+    // Keep this map in sync with src/lib/artStyles.ts — same prompt fragments
+    // are used to generate the picker preview images on Step 6, so the cover
+    // model receives the exact descriptor the user previewed.
+    const ART_STYLE_PROMPTS: Record<string, string> = {
+      "watercolor":
+        "soft watercolor children's book illustration, hand-painted texture, gentle washes, warm muted palette, paper grain visible, classic storybook feel",
+      "cozy-sketch":
+        "charming hand-drawn children's book illustration, visible pencil and ink linework, light watercolor wash fill, warm earthy tones, sketchbook feel",
+      "bold-bright":
+        "modern vibrant children's book illustration, bold black outlines, flat saturated colors, playful punchy palette, contemporary cartoon style",
+      "dreamy-pastel":
+        "dreamy pastel children's book illustration, soft glowing light, gentle pinks lavenders and creams, ethereal and calm, bedtime story feel",
+    };
     const styleHint =
-      brief.artStyle === "watercolor"
-        ? "soft watercolor children's book illustration, warm palette, gentle washes"
-        : brief.artStyle === "cartoon"
-          ? "modern cartoon children's book illustration, bold outlines, cheerful palette"
-          : brief.artStyle === "pastel"
-            ? "soft pastel children's book illustration, dreamy and gentle"
-            : brief.artStyle === "realistic"
-              ? "semi-realistic painterly children's book illustration"
-              : "warm children's book illustration";
+      ART_STYLE_PROMPTS[brief.artStyle as string] ?? ART_STYLE_PROMPTS.watercolor;
 
     const protoDesc = [
       proto.hair && `hair: ${proto.hair}`,
