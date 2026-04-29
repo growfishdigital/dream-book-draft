@@ -264,9 +264,9 @@ export default function Step11Generating() {
           <ChecklistRow state={done ? "done" : coverDone ? "active" : "pending"} label={done ? "Pages bound" : "Binding the pages"} />
         </ul>
 
-        {done && (
+        {done && !errored && (
           <button
-            onClick={() => navigate("/step/11")}
+            onClick={() => navigate("/step/10")}
             className="px-8 py-4 rounded-full text-base font-semibold"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
@@ -278,11 +278,32 @@ export default function Step11Generating() {
           </button>
         )}
 
-        {errored && done && (
-          <p className="text-xs text-center mt-4 max-w-xs text-[#2b4e18]/60">
-            We had trouble drawing the cover, but your story is safe. You can
-            continue and we'll try again later.
-          </p>
+        {errored && (
+          <div
+            className="flex flex-col items-center gap-3 max-w-xs text-center"
+            style={{ animation: "btn-fade 0.4s ease-out" }}
+          >
+            <p className="text-sm text-[#2b4e18]/70">
+              We had a little trouble painting the cover. Let's try again —
+              your story is safe.
+            </p>
+            <button
+              onClick={() => setAttempt((n) => n + 1)}
+              className="px-6 py-3 rounded-full text-sm font-semibold"
+              style={{
+                backgroundColor: "hsl(var(--wizard-primary))",
+                color: "#fff",
+              }}
+            >
+              ✨ Try again
+            </button>
+            <button
+              onClick={() => navigate("/step/8")}
+              className="text-xs underline text-[#2b4e18]/60"
+            >
+              Back to the story
+            </button>
+          </div>
         )}
       </div>
     </div>
