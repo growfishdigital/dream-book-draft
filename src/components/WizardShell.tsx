@@ -6,7 +6,19 @@ import type { ReactNode } from "react";
 
 const TOTAL_STEPS = 10;
 
-export default function WizardShell({ children, showSkip = false, maxWidth = 700 }: { children: ReactNode; showSkip?: boolean; maxWidth?: number }) {
+export default function WizardShell({
+  children,
+  showSkip = false,
+  maxWidth = 700,
+  onBeforeContinue,
+}: {
+  children: ReactNode;
+  showSkip?: boolean;
+  maxWidth?: number;
+  /** Optional gate. Return false (or a Promise resolving to false) to block
+   *  navigation — useful for "are you sure?" confirmations. */
+  onBeforeContinue?: () => boolean | Promise<boolean>;
+}) {
   const { step } = useParams<{ step: string }>();
   const location = useLocation();
   const currentStep = Number(step ?? location.pathname.match(/^\/step\/(\d+)$/)?.[1]) || 1;
@@ -19,6 +31,15 @@ export default function WizardShell({ children, showSkip = false, maxWidth = 700
 
   const goNext = () => {
     if (currentStep < TOTAL_STEPS) navigate(`/step/${currentStep + 1}`);
+  };
+
+  const handleContinue = async () => {
+    if (!canContinue) return;
+    if (onBeforeContinue) {
+      const ok = await onBeforeContinue();
+      if (!ok) return;
+    }
+    goNext();
   };
 
   return (
@@ -59,7 +80,7 @@ export default function WizardShell({ children, showSkip = false, maxWidth = 700
           )}
           <button
             type="button"
-            onClick={() => { if (canContinue) goNext(); }}
+            onClick={handleContinue}
             disabled={!canContinue}
             className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{

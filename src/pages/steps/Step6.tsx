@@ -553,9 +553,26 @@ export default function Step6() {
   const [warnings, setWarnings] = useState<Set<string>>(new Set());
   const [showRemoveDialog, setShowRemoveDialog] = useState<string | null>(null);
   const [showUpsell, setShowUpsell] = useState(false);
+  const [showNoCharsDialog, setShowNoCharsDialog] = useState(false);
+  const noCharsResolver = useRef<((ok: boolean) => void) | null>(null);
 
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
+
+  // Intercept Continue: if no supporting characters, ask "are you sure?"
+  const handleBeforeContinue = useCallback(() => {
+    if (supportingCharacters.length > 0) return true;
+    return new Promise<boolean>((resolve) => {
+      noCharsResolver.current = resolve;
+      setShowNoCharsDialog(true);
+    });
+  }, [supportingCharacters.length]);
+
+  const resolveNoChars = (ok: boolean) => {
+    setShowNoCharsDialog(false);
+    noCharsResolver.current?.(ok);
+    noCharsResolver.current = null;
+  };
 
   const setProtagonist = useCallback((p: Protagonist) => setAnswer("protagonist", p), [setAnswer]);
   const setSupportingCharacters = useCallback((s: SupportingCharacter[]) => setAnswer("supportingCharacters", s), [setAnswer]);
@@ -610,7 +627,7 @@ export default function Step6() {
       : <User className="w-4 h-4" />;
 
   return (
-    <WizardShell maxWidth={800}>
+    <WizardShell maxWidth={800} onBeforeContinue={handleBeforeContinue}>
       <div className="space-y-6">
         {/* heading */}
         <div className="text-center space-y-2">
@@ -672,6 +689,111 @@ export default function Step6() {
             </div>
           );
         })()}
+
+        {/* Cast roster + big "Add another character" CTA — sits just above the
+            sticky Continue bar so users always see who's in their book. */}
+        <div className="space-y-3">
+          <div className="flex items-baseline justify-between px-1">
+            <p className="text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
+              Your cast
+            </p>
+            <p className="text-xs text-muted-foreground">
+              {supportingCharacters.length === 0
+                ? "Just the star so far"
+                : `${supportingCharacters.length + 1} character${supportingCharacters.length + 1 === 1 ? "" : "s"}`}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            {/* Protagonist tile (always present) */}
+            <button
+              type="button"
+              onClick={() => setActiveTab({ kind: "protagonist" })}
+              className={`flex flex-col items-center text-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+                activeTab.kind === "protagonist"
+                  ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
+                  : "border-border bg-background hover:border-primary/40"
+              }`}
+            >
+              <div className="relative w-14 h-14 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                {protagonist.photos.length > 0 ? (
+                  <img src={protagonist.photos[0]} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <Star className="w-6 h-6" style={{ color: "hsl(var(--wizard-primary))" }} />
+                )}
+                <span className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-yellow-400 flex items-center justify-center shadow-sm">
+                  <Star className="w-3 h-3 text-white" />
+                </span>
+              </div>
+              <span className="text-sm font-semibold truncate w-full" style={{ color: "hsl(var(--wizard-primary))" }}>
+                {protoName}
+              </span>
+              <span className="text-[11px] text-muted-foreground">The star</span>
+            </button>
+
+            {/* Supporting character tiles */}
+            {supportingCharacters.map((sc) => {
+              const isActive = activeTab.kind === "supporting" && activeTab.id === sc.id;
+              const role = sc.relationship === "Other"
+                ? (sc.relationshipOther || "Friend")
+                : (sc.relationship || "Friend");
+              return (
+                <div key={sc.id} className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab({ kind: "supporting", id: sc.id })}
+                    className={`w-full flex flex-col items-center text-center gap-2 p-3 rounded-2xl border-2 transition-all ${
+                      isActive
+                        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
+                        : "border-border bg-background hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="w-14 h-14 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                      {sc.photos.length > 0 ? (
+                        <img src={sc.photos[0]} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <User className="w-6 h-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <span className="text-sm font-semibold truncate w-full" style={{ color: "hsl(var(--wizard-primary))" }}>
+                      {sc.name || "New character"}
+                    </span>
+                    <span className="text-[11px] text-muted-foreground truncate w-full">{role}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => { e.stopPropagation(); confirmRemove(sc.id); }}
+                    aria-label={`Remove ${sc.name || "character"}`}
+                    className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/80"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Big, obvious "add another" CTA — sits right above sticky Continue */}
+          <button
+            type="button"
+            onClick={addSupporting}
+            className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl border-2 border-dashed text-base font-semibold transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)]"
+            style={{
+              borderColor: "hsl(var(--wizard-primary) / 0.5)",
+              color: "hsl(var(--wizard-primary))",
+            }}
+          >
+            <Plus className="w-5 h-5" />
+            {supportingCharacters.length === 0
+              ? "Add a character to the story"
+              : "Add another character"}
+          </button>
+          {supportingCharacters.length >= 3 && (
+            <p className="text-xs text-center text-muted-foreground italic">
+              That's a full cast! (3 character max)
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Remove confirmation dialog */}
@@ -712,6 +834,32 @@ export default function Step6() {
               className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-colors"
               style={{ backgroundColor: "hsl(var(--wizard-primary))" }}>
               Add for $3.00
+            </button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* "Are you sure?" when continuing without any supporting characters */}
+      <Dialog open={showNoCharsDialog} onOpenChange={(open) => { if (!open) resolveNoChars(false); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Continue without any extra characters?</DialogTitle>
+            <DialogDescription>
+              Stories feel extra magical with friends, family, or favorite people
+              alongside {protoName}. You can always add a sibling, grandparent,
+              or best friend now.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <button type="button" onClick={() => resolveNoChars(true)}
+              className="px-4 py-2 rounded-xl text-sm font-medium border border-border hover:bg-muted transition-colors">
+              Continue anyway
+            </button>
+            <button type="button"
+              onClick={() => { resolveNoChars(false); addSupporting(); }}
+              className="px-4 py-2 rounded-xl text-sm font-medium text-white transition-colors"
+              style={{ backgroundColor: "hsl(var(--wizard-primary))" }}>
+              Add a character
             </button>
           </DialogFooter>
         </DialogContent>
