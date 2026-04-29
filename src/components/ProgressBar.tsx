@@ -6,7 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 10;
 
 const STEP_LABELS: Record<number, string> = {
   1: "Who's it for?",
