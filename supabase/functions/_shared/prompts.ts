@@ -161,32 +161,31 @@ export interface CoverPromptCtx {
   childName: string;
   /** Pre-joined "hair: brown, skin: medium, …". May be empty. */
   protoDesc: string;
-  /** Pre-joined description of supporting characters who appear on the cover. */
-  supportingDesc?: string;
   /** Style fragment from ART_STYLE_PROMPTS. */
   styleHint: string;
   /** True if a style reference image is attached. */
   hasStyleReference: boolean;
   /** Number of hero likeness photos attached (0 if none). */
   heroPhotoCount: number;
-  /** Number of supporting-character likeness photos attached. */
-  supportingPhotoCount: number;
 }
 
 // Builds the cover image prompt.
-// DON'T BREAK: the "no visible name on the cover" and "no author byline"
-// rules — Step 11 renders "written for: <child>" client-side instead.
+// DON'T BREAK:
+//  - The "no visible name on the cover" and "no author byline" rules
+//    (Step 11 renders "written for: <child>" client-side instead).
+//  - HERO ONLY: the cover features just the hero child in a scene from the
+//    story. Supporting characters NEVER appear on the cover (they still show
+//    up in the story summary and inside the book). Do not reintroduce
+//    supporting-character text or photos here.
 export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
   const {
     title,
     summary,
     childName,
     protoDesc,
-    supportingDesc,
     styleHint,
     hasStyleReference,
     heroPhotoCount,
-    supportingPhotoCount,
   } = ctx;
 
   // Build a positional reference guide so the model knows which image is which.
@@ -201,19 +200,10 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
   if (heroPhotoCount > 0) {
     const start = pos + 1;
     const end = pos + heroPhotoCount;
-    pos = end;
     refParts.push(
       heroPhotoCount === 1
         ? `Image #${start} is a LIKENESS REFERENCE for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically. Keep it kind, warm, and age-appropriate.`
         : `Images #${start}–#${end} are LIKENESS REFERENCES for the hero child from different angles. Use them together to capture face shape, hair, and skin tone. Render in the chosen art style — not photo-realistically.`,
-    );
-  }
-  if (supportingPhotoCount > 0) {
-    const start = pos + 1;
-    const end = pos + supportingPhotoCount;
-    pos = end;
-    refParts.push(
-      `Image${supportingPhotoCount > 1 ? "s" : ""} #${start}${end > start ? `–#${end}` : ""} ${supportingPhotoCount > 1 ? "are likeness references" : "is a likeness reference"} for supporting character${supportingPhotoCount > 1 ? "s" : ""}. Render them in the chosen art style alongside the hero.`,
     );
   }
 
@@ -221,8 +211,7 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
     `Children's book cover illustration in ${styleHint}.`,
     ...refParts,
     `Title to display on the cover: "${title}". Render this title text exactly as given — do NOT add the child's name or any first name to the title.`,
-    `Hero (depicted in the art only, NOT named in any visible text): ${childName}.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
-    supportingDesc ? `Also depict supporting characters: ${supportingDesc}.` : "",
+    `Subject: ONLY the hero child — ${childName} — alone in a single evocative scene drawn from the story. Do NOT depict any other people, friends, family members, pets, or supporting characters; the cover features the hero solo.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
     `Scene inspired by: ${summary.slice(0, 600)}`,
     `Composition: portrait orientation (2:3), the title clearly readable at the top or centered, no extra text, no author byline, no watermarks. Do NOT include "${childName}" or any name as visible text on the cover.`,
     `Tone: magical, hopeful, suitable for young children.`,
