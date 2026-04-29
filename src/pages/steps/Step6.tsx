@@ -73,6 +73,7 @@ interface SupportingCharacter {
   ageRange: string;
   photos: string[];
   appearance: Appearance;
+  traits: Array<{ word: string; emoji?: string }>;
 }
 
 type ActiveTab = { kind: "protagonist" } | { kind: "supporting"; id: string };
