@@ -19,6 +19,9 @@
 export const MODELS = {
   summary: "openai/gpt-5-mini",
   cover: "google/gemini-3-pro-image-preview",
+  // Full-book engine. Long context + strong reasoning. Swappable to
+  // "anthropic/claude-sonnet-4-5" once an Anthropic key is wired in.
+  book: "google/gemini-2.5-pro",
 } as const;
 
 // ---- Story length knobs -----------------------------------------------------
@@ -219,4 +222,622 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
     .filter(Boolean)
     .join(" ");
 }
+
+// =============================================================================
+//  STORY ENGINE — generate-book edge function (full hardcover-book generation)
+// =============================================================================
+//
+//  The KERNEL + 5 FRAMEWORK blocks below are ported VERBATIM (with light
+//  TypeScript-template adaptations) from the Thistlebook Story Generation
+//  Template authored by the product owner. Do not paraphrase — these
+//  instructions encode hard-won quality rules. To tweak prompt behavior,
+//  edit the strings in this file.
+//
+//  Adaptation note vs original brief:
+//   - Brief expected Anthropic Claude Sonnet 4.5; we run on Lovable AI Gateway.
+//     `MODELS.book` is the single swap point.
+//   - Brief stored the template as a `.md` file; we embed it as TS so it
+//     deploys atomically and is type-checked alongside the engine code.
+//   - Brief specified Stage 3 validation + 2 retries; v1 ships with a stub
+//     validator (`validateBook`) that always returns valid. Add real rules
+//     when we see real failure modes in production.
+
+// ---- Engine input shape -----------------------------------------------------
+// This is the brief's `Order` shape, mapped from our wizard. Optional fields
+// follow the brief; absent fields are skipped in the prompt.
+
+export type FrameworkId =
+  | "curiosity_journey"
+  | "bedtime_wind_down"
+  | "brave_choice"
+  | "generous_heart"
+  | "silly_escalation";
+
+export interface SupportingCharacterIn {
+  name: string;
+  role: "character" | "companion";
+  relationship?: string;
+  age?: number;
+  description?: string;
+  personality_traits?: string[];
+}
+
+export interface BookEngineInput {
+  // Identifiers (optional for v1 — no orders table)
+  order_id?: string;
+
+  // Recipient
+  child_name: string;
+  child_age: number;
+  child_pronouns: "he" | "she" | "they";
+  child_appearance_notes?: string | null;
+  child_special?: string | null;
+  personality_traits?: string[];
+
+  // Buyer + occasion
+  buyer_relationship?: "parent" | "grandparent" | "teacher" | "friend" | "other";
+  occasion?:
+    | "birthday" | "christmas" | "easter" | "new_sibling" | "first_day"
+    | "graduation" | "baptism" | "just_because" | "other"
+    | null;
+  include_belongs_to_page: boolean;
+
+  // Story spec
+  genre:
+    | "adventure" | "fantasy" | "sci_fi" | "mystery" | "everyday"
+    | "bedtime" | "sports" | "fairy_tale" | "animals" | "superhero";
+  mood_tags: string[];
+  value:
+    | "courage" | "kindness" | "resilience" | "friendship" | "curiosity"
+    | "self_confidence" | "sharing" | "nature" | "empathy" | "just_for_fun";
+
+  // World
+  interests: string[];
+  cameo_type?: string | null;
+  cameo_detail?: string | null;
+
+  // Cast
+  supporting_cast?: SupportingCharacterIn[];
+
+  // Style (passed through; not used by the text engine)
+  art_style?: string;
+
+  // Gap fields (template-supported, wizard does not yet collect)
+  things_already_good_at?: string | null;
+  things_currently_tricky?: string | null;
+  recent_meaningful_moment?: string | null;
+
+  // Forward-compat: refine loop hook (not used in v1)
+  revision_note?: string | null;
+}
+
+// ---- Lookup tables (verbatim from the brief) -------------------------------
+
+export type AgeBand = "0-2" | "3-4" | "5-6" | "7-8" | "9-10" | "11+";
+
+export const WORD_COUNT_BY_AGE: Record<AgeBand, [number, number]> = {
+  "0-2":  [50, 150],
+  "3-4":  [150, 300],
+  "5-6":  [300, 500],
+  "7-8":  [400, 700],
+  "9-10": [500, 800],
+  "11+":  [600, 900],
+};
+
+export const VOCAB_TIER_BY_AGE: Record<AgeBand, "basic" | "simple" | "moderate" | "rich"> = {
+  "0-2":  "basic",
+  "3-4":  "simple",
+  "5-6":  "moderate",
+  "7-8":  "rich",
+  "9-10": "rich",
+  "11+":  "rich",
+};
+
+export const SPREAD_COUNT_BY_AGE_AND_FRAMEWORK: Record<AgeBand, Record<FrameworkId, number>> = {
+  "0-2":  { curiosity_journey: 8,  bedtime_wind_down: 10, brave_choice: 8,  generous_heart: 8,  silly_escalation: 8  },
+  "3-4":  { curiosity_journey: 10, bedtime_wind_down: 10, brave_choice: 10, generous_heart: 10, silly_escalation: 10 },
+  "5-6":  { curiosity_journey: 12, bedtime_wind_down: 12, brave_choice: 12, generous_heart: 12, silly_escalation: 12 },
+  "7-8":  { curiosity_journey: 12, bedtime_wind_down: 12, brave_choice: 12, generous_heart: 12, silly_escalation: 12 },
+  "9-10": { curiosity_journey: 14, bedtime_wind_down: 12, brave_choice: 14, generous_heart: 14, silly_escalation: 12 },
+  "11+":  { curiosity_journey: 14, bedtime_wind_down: 12, brave_choice: 14, generous_heart: 14, silly_escalation: 12 },
+};
+
+export function ageToBand(age: number): AgeBand {
+  if (age <= 2) return "0-2";
+  if (age <= 4) return "3-4";
+  if (age <= 6) return "5-6";
+  if (age <= 8) return "7-8";
+  if (age <= 10) return "9-10";
+  return "11+";
+}
+
+// ---- Framework selection (verbatim — value wins; bedtime is a setting modifier)
+
+export function selectFramework(input: {
+  value: BookEngineInput["value"];
+  genre: BookEngineInput["genre"];
+  mood_tags: string[];
+}): FrameworkId {
+  const { value, genre, mood_tags } = input;
+  if (["courage", "resilience", "self_confidence"].includes(value)) return "brave_choice";
+  if (["kindness", "sharing", "friendship", "empathy", "nature"].includes(value)) return "generous_heart";
+  if (value === "just_for_fun" && mood_tags.includes("funny")) return "silly_escalation";
+  if (genre === "bedtime") return "bedtime_wind_down";
+  return "curiosity_journey";
+}
+
+// ---- Pronoun helpers (subject/object/possessive/Subject_capitalized) -------
+
+export interface Pronouns {
+  subject: string;            // she / he / they
+  object: string;             // her / him / them
+  possessive: string;         // her / his / their
+  subject_capitalized: string; // She / He / They
+}
+
+export function pronounsFor(p: BookEngineInput["child_pronouns"]): Pronouns {
+  if (p === "she") return { subject: "she", object: "her", possessive: "her", subject_capitalized: "She" };
+  if (p === "he")  return { subject: "he",  object: "him", possessive: "his", subject_capitalized: "He"  };
+  return            { subject: "they", object: "them", possessive: "their", subject_capitalized: "They" };
+}
+
+// ---- Small formatting helpers ----------------------------------------------
+
+export function grammaticalJoin(items: string[]): string {
+  const list = items.filter(Boolean);
+  if (list.length === 0) return "";
+  if (list.length === 1) return list[0];
+  if (list.length === 2) return `${list[0]} and ${list[1]}`;
+  return `${list.slice(0, -1).join(", ")}, and ${list[list.length - 1]}`;
+}
+
+export function formatCastSummary(cast: SupportingCharacterIn[] | undefined): string {
+  if (!cast || cast.length === 0) return "";
+  return cast
+    .map((c) => {
+      const name = c.name?.trim();
+      const rel = c.relationship?.trim();
+      const desc = c.description?.trim();
+      const traits = (c.personality_traits || []).filter(Boolean).join(", ");
+      const head = name && rel ? `${name} (${rel})` : name || rel || "";
+      const tail = [desc, traits ? `personality: ${traits}` : ""].filter(Boolean).join(" — ");
+      return head + (tail ? `: ${tail}` : "");
+    })
+    .filter(Boolean)
+    .join("; ");
+}
+
+// ---- Variable bag (everything the templates substitute) --------------------
+
+export interface KernelVars {
+  child_name: string;
+  child_age: number;
+  child_pronouns: string;
+  child_pronouns_subject: string;
+  child_pronouns_object: string;
+  child_pronouns_possessive: string;
+  child_pronouns_subject_capitalized: string;
+  buyer_relationship: string;
+  personality_traits?: string;        // comma-joined
+  child_special?: string;
+  child_appearance_notes?: string;
+  interest_phrase: string;
+  cameo_detail?: string;
+  cameo_type?: string;
+  things_already_good_at?: string;
+  things_currently_tricky?: string;
+  recent_meaningful_moment?: string;
+  cast_summary?: string;
+  framework_id: FrameworkId;
+  value: string;
+  mood_tags: string;                  // comma-joined
+  occasion: string;                   // human label, or "none specified"
+  bedtime_setting_modifier: boolean;
+  word_count_target: string;          // "X-Y"
+  spread_count: number;
+  vocab_tier: string;
+  age_band: AgeBand;
+  include_belongs_to_page: boolean;
+}
+
+// ---- The KERNEL (verbatim, with TS template substitutions) -----------------
+
+const ifBlock = (cond: unknown, body: string) => (cond ? body : "");
+
+export function STORY_KERNEL(v: KernelVars): string {
+  return `You are writing a personalized hardcover children's picture book for ${v.child_name}, age ${v.child_age}, who uses ${v.child_pronouns} pronouns. The book is being made by ${v.child_name}'s ${v.buyer_relationship} as a one-of-a-kind keepsake. ${v.child_name} is the hero of this story.
+
+# Who ${v.child_name} is
+
+- Name: ${v.child_name}
+- Age: ${v.child_age}
+- Pronouns: ${v.child_pronouns}
+${ifBlock(v.personality_traits, `- Personality (must be shown through actions, never stated as adjectives): ${v.personality_traits}`)}
+${ifBlock(v.child_special, `- What makes ${v.child_pronouns_subject} special: ${v.child_special}`)}
+${ifBlock(v.child_appearance_notes, `- Appearance notes (use sparingly in prose; mostly handled in illustrations): ${v.child_appearance_notes}`)}
+- Things ${v.child_pronouns_subject} loves: ${v.interest_phrase}
+${ifBlock(v.cameo_detail, `- A specific detail to weave in meaningfully: ${v.cameo_detail}${v.cameo_type ? ` (${v.cameo_type})` : ""}`)}
+${ifBlock(v.things_already_good_at, `- Things ${v.child_pronouns_subject} is ALREADY good at (do NOT make these the obstacle, brave moment, or new discovery — they would feel inauthentic): ${v.things_already_good_at}`)}
+${ifBlock(v.things_currently_tricky, `- Things ${v.child_pronouns_subject} finds tricky right now (use this as the seed for the growth/brave/discovery moment if it fits the framework): ${v.things_currently_tricky}`)}
+${ifBlock(v.recent_meaningful_moment, `- A recent meaningful moment to weave in if natural: ${v.recent_meaningful_moment}`)}
+
+# Supporting cast
+
+${v.cast_summary
+  ? `${v.cast_summary}\n\nEach supporting character should appear in 1–3 spreads. Pets, stuffed animals, and non-human companions don't speak in dialogue but can be present, react, and have personality through behavior. Human supporting characters can speak, but dialogue should be sparing — at most one short line per appearance.`
+  : `This is a solo-protagonist story. No named supporting characters.`}
+
+# Story spec
+
+- Framework: ${v.framework_id}
+- Emotional value to land on the final spread: ${v.value}
+- Mood: ${v.mood_tags}
+- Occasion (use as light flavor only, never as central plot): ${v.occasion}
+${ifBlock(v.bedtime_setting_modifier, `- BEDTIME SETTING MODIFIER: This story should be set at evening or night and end with ${v.child_name} going to sleep. The framework's structural beats remain unchanged — only the time-of-day setting and final scene are adjusted. The dedication's emotional value still lands.`)}
+- Word count target: ${v.word_count_target} words total across all spreads (±20% tolerance)
+- Spread count: exactly ${v.spread_count} spreads
+- Vocabulary tier: ${v.vocab_tier}
+
+# How to write ${v.child_name}
+
+Personality is shown through ACTIONS, not adjectives. If ${v.child_name} is "fiery," do not write "${v.child_name} was fiery." Write what ${v.child_name} does that reveals fire — "${v.child_pronouns_subject} didn't hesitate. That wasn't ${v.child_pronouns_possessive} style." If ${v.child_name} is "curious," show ${v.child_pronouns_object} cataloging what ${v.child_pronouns_subject} sees, asking questions, looking closer. The reader should know who ${v.child_name} is from the way ${v.child_pronouns_subject} moves through the story, not from labels.
+
+The growth/brave/discovery moment must be authentic to who ${v.child_name} actually is. If ${v.child_name} already rides horses, the brave moment cannot be "scared of a horse." If ${v.child_name} loves the dark, the brave moment cannot be "afraid of bedtime." Use the personality traits and the things-tricky/things-good-at fields to find a brave moment that's actually hard for THIS child specifically.
+
+# Voice and prose rules
+
+- Mandatory contractions throughout (it's, don't, wasn't). Uncontracted speech sounds robotic when read aloud.
+- Never rhyme unless the framework specifically calls for it. Forced rhyme is the #1 quality killer in AI-generated children's books.
+- Sentence length variation: mix short punchy sentences (3–6 words) with longer flowing ones (12–18 words). Never exceed 20 words in a sentence.
+- Every spread ends with a micro-cliffhanger — a question, a moment, an image — that drives the page turn.
+- Use ${v.child_name}'s name 1–3 times per spread. Never more than twice in one sentence. Never less than once per spread.
+- Vary openings: don't start every spread with "${v.child_name} did X." Use sensory hooks, sounds, dialogue, atmosphere.
+- Use italics sparingly for emphasis (rendered in the final book as italic text).
+- Use em dashes for narrative rhythm.
+- Sprinkle a few ALL-CAPS words for emphasis in dialogue or thoughts only when it feels natural.
+
+# Banned words
+
+Never use any of these — they are dead words in AI-generated children's content and signal cheapness immediately:
+- magical
+- adventure (the word; adventure stories are fine, but never the word itself)
+- wonderful
+- journey
+- special
+
+# Authenticity rules
+
+- Do NOT specify the child's geographic location, neighborhood, climate, or biome unless the customer provided it. Don't write "the field behind their house" when you don't know they have a field. Don't specify cottonwood trees, pine trees, palm trees, etc. unless told.
+- Do NOT invent family members, pets, or details not provided by the customer.
+- Do NOT assume the child is anything (rural, urban, only child, has siblings) unless the inputs say so.
+- The story should work for any family — specific only where the inputs make it specific.
+
+# Repeating phrase rules
+
+A repeating phrase is the verbal "chorus" of the book — the line a kid will memorize and join in on. Every story must have one.
+
+Rules:
+- 5–8 words long
+- Must contain a specific noun related to ${v.child_name}'s interests, the cameo, or the central question of the story
+- Must be a question OR an exclamation, with a sensory word (sound, sight, smell, touch)
+- Must sound natural for a ${v.child_age}-year-old to say or hear
+- Must appear at least 3 times in the story, distributed across the arc (early, middle, near-end)
+- Should evolve or resolve on its final appearance — slight variation, or a payoff that answers the question
+
+# Age calibration (${v.age_band}, ${v.vocab_tier})
+
+Match ${v.child_age}-year-old vocabulary and sentence complexity. Refer to this table:
+
+| Age | Word count | Sentence length | Vocabulary |
+|---|---|---|---|
+| 0–2 | 50–150 | 1–4 words | Basic — sound words, names, simple actions |
+| 3–4 | 150–300 | 4–8 words | Simple — rhyme, repetition, concrete nouns |
+| 5–6 | 300–500 | 6–12 words | Moderate — adjectives, some dialogue, 1–2 new words |
+| 7–8 | 400–700 | 8–15 words | Rich — compound sentences, emotional vocabulary, metaphor |
+| 9–10 | 500–800 | up to 18 words | Rich — nuance, subtlety, more complex emotional terrain |
+| 11+ | 600–900 | up to 20 words | Rich — coming-of-age tone okay, more sophisticated themes |
+
+For ${v.child_age}: aim for ${v.word_count_target} total words.
+
+# What this book is FOR
+
+This is a keepsake from ${v.buyer_relationship}. The dedication will be the line a parent reads to their child a hundred times. The final spread is what the kid will remember years from now. Write toward that — every spread earning the final emotional payload of ${v.value}.
+
+# Output format
+
+You will produce ONE single response, formatted EXACTLY as below. No preamble, no commentary, no notes — just the book.
+
+[COVER TEXT]: <max 8 words, book title>
+
+[OUTFIT]: <max 10 words, one distinctive visible outfit description that the child wears throughout the entire book — sneakers/shorts/shirt/accessory level of detail. This is locked across all spreads.>
+
+[DEDICATION]: <1–2 sentence dedication. If buyer_relationship was provided, the tone matches (parent = warm and intimate, grandparent = warm and timeless, teacher = encouraging, friend = playful).>
+
+[REPEATING PHRASE]: <the 5–8 word phrase that appears 3+ times in the story. Listed here so it can be tracked.>
+${ifBlock(v.include_belongs_to_page, `\n[BELONGS TO PAGE]: <single sentence for the inside cover, e.g., "This book belongs to ${v.child_name}.">`)}
+
+[SPREAD 1] [BEAT: <which framework beat>]
+<the prose text for spread 1>
+
+[SPREAD 2] [BEAT: <which framework beat>]
+<the prose text for spread 2>
+
+...continue through [SPREAD ${v.spread_count}].
+
+Each spread is one self-contained prose passage — what would be printed on one two-page spread of the book. No bullet points, no headers within a spread, no stage directions. Just prose.
+
+Start writing now.`;
+}
+
+// ---- The 5 frameworks (verbatim from template) ------------------------------
+
+export const STORY_FRAMEWORKS: Record<FrameworkId, (v: KernelVars) => string> = {
+  curiosity_journey: (v) => `# Framework: Curiosity Journey
+
+This is a wonder/discovery story. ${v.child_name} follows a thread of curiosity into something new and arrives at a satisfying expansion of their world.
+
+Source pattern: The Very Hungry Caterpillar, Brown Bear Brown Bear, The Poky Little Puppy, Corduroy, If You Give a Mouse a Cookie.
+
+# Beats (distribute across ${v.spread_count} spreads)
+
+1. **THE SPARK (1–2 spreads)** — Establish ${v.child_name} in a familiar setting. Something catches ${v.child_pronouns_possessive} attention: a sound, a color, a creature, a trail, a question. The thing that pulls ${v.child_pronouns_object} forward.
+
+2. **THE FIRST DISCOVERY (1–2 spreads)** — Following the spark leads to a new thing. Name it. Render it with sensory detail. ${v.child_name} is delighted.
+
+3. **THE CHAIN (3–5 spreads — the engine of the story)** — Each discovery leads to the next, escalating in wonder, scale, or strangeness. Use a repeating structure or repeating phrase to anchor the chain. This is where the personalization shines: the chain should be built from ${v.child_name}'s specific interests (${v.interest_phrase}). Each link in the chain should reveal something — a fact, a feeling, a new question.
+
+4. **THE OVERWHELM (1–2 spreads)** — The discoveries reach a peak. Briefly: too much, too many, too fast. A small moment of pause or pull-back. NOT a real obstacle — a wonder-overload, a comma in the sentence.
+
+5. **THE TRANSFORMATION (2 spreads)** — Rest, reflection, or return. ${v.child_name} integrates what ${v.child_pronouns_subject} learned. ${v.child_pronouns_subject_capitalized} is bigger than ${v.child_pronouns_subject} was. The world is bigger too. The dedication's value of ${v.value} lands here, earned by everything that came before.
+
+# Tone
+
+Bright, lit, alive. The sun is up. The world is bigger than ${v.child_name} thought it was.
+
+# Spread allocation guide
+
+For 12 spreads: spreads 1–2 spark, 3–4 first discovery, 5–9 chain, 10 overwhelm, 11–12 transformation.
+For 10 spreads: 1 spark, 2 first discovery, 3–7 chain, 8 overwhelm, 9–10 transformation.
+
+# What to avoid
+
+- Don't introduce conflict or fear — this is a wonder story, not a brave story. The "overwhelm" is not threat, just a pull-back.
+- Don't moralize. The lesson lands through experience, not statement.
+- Don't have ${v.child_name} return home unchanged. Something inside ${v.child_pronouns_object} grew.`,
+
+  bedtime_wind_down: (v) => `# Framework: Bedtime Wind-Down
+
+This is a ritual story. The world is winding down toward sleep, and the rhythm of the prose carries the child toward rest.
+
+Source pattern: Goodnight Moon, Goodnight Goodnight Construction Site, Love You Forever, Guess How Much I Love You.
+
+# Beats (distribute across ${v.spread_count} spreads)
+
+1. **THE WORLD AWAKE (1–2 spreads)** — Establish ${v.child_name}'s world while it's still active. Show the things ${v.child_pronouns_subject} loves in motion — toys, pets, favorite spaces, the day's energy.
+
+2. **THE SIGNAL (1 spread)** — Something signals it's time to slow down. The sun sets. The stars appear. A parent's voice. The quiet starts to settle in.
+
+3. **THE NAMING RITUAL (4–8 spreads — the engine of the story)** — One by one, say goodnight to (or express love for) each element of ${v.child_name}'s world. This is a litany — each beat follows the same structure but with a different subject: a toy, a pet, a sibling, an interest, a place. The repeating phrase anchors every beat. Personalization is everything: name the actual things ${v.child_name} loves from the wizard inputs.
+
+4. **THE SOFT CLOSE (1–2 spreads)** — The world grows quieter. Colors dim. Sounds hush. The rhythm of the prose slows — shorter sentences, softer images, lower energy.
+
+5. **THE LOVE SEAL (1 spread)** — A final whispered declaration. The dedication's value of ${v.value} lands here, expressed as warmth, safety, or belonging. The last image is still and warm.
+
+# Tone
+
+Hushed. Honey-light. A voice that's already half a whisper. Sentence lengths shorten across the arc — by the final spread, prose is at its quietest.
+
+# Spread allocation guide
+
+For 12 spreads: 1–2 world awake, 3 signal, 4–10 naming ritual (7 named elements), 11 soft close, 12 love seal.
+For 10 spreads: 1 awake, 2 signal, 3–8 naming (6 elements), 9 soft close, 10 love seal.
+
+# What to avoid
+
+- Don't introduce conflict, threat, or any beat that quickens the energy. The whole arc is a slow exhale.
+- Don't make it didactic. No lessons. Just love and rest.
+- Don't end on a question or cliffhanger — the final spread is the only spread that doesn't end on a page-turn hook. It ends on stillness.`,
+
+  brave_choice: (v) => `# Framework: Brave Choice
+
+This is a courage story. ${v.child_name} faces something hard, makes a brave choice, and grows.
+
+Source pattern: Where the Wild Things Are, The Tale of Peter Rabbit, The Cat in the Hat, Don't Let the Pigeon Drive the Bus, Oh the Places You'll Go.
+
+# Beats (distribute across ${v.spread_count} spreads)
+
+1. **THE SAFE WORLD (1–2 spreads)** — ${v.child_name} in ${v.child_pronouns_possessive} familiar world. Comfortable. Known. But something inside ${v.child_pronouns_object} wants more — or a moment is approaching ${v.child_pronouns_subject} can't avoid.
+
+2. **THE THRESHOLD (1 spread)** — An invitation, a dare, a door, a path. ${v.child_name} crosses into the unknown.
+
+3. **THE WILD SPACE (3–5 spreads — the engine of the story)** — Things in the new space escalate. Each beat raises the emotional stakes. ${v.child_name} has to respond with growing courage or cleverness. The "wild space" should be tailored to what's actually hard for THIS child — pulled from the things-tricky field if available, otherwise inferred from age, personality, and the value of ${v.value}.
+
+   Important: the brave moment must NOT be something ${v.child_name} has already mastered. Don't make the obstacle horses if ${v.child_pronouns_subject} rides; don't make it the dark if ${v.child_pronouns_subject} sleeps with the lights off; don't make it speaking up if ${v.child_pronouns_subject} is naturally outgoing. The brave moment must be authentic.
+
+4. **THE TURNING POINT (1–2 spreads)** — A moment of choice. ${v.child_name} could retreat or stay. ${v.child_pronouns_subject_capitalized} chooses bravely — but the brave choice may be quieter than expected. Sometimes brave is staying still. Sometimes brave is taking a breath. Sometimes brave is asking for help. The choice should match ${v.child_name}'s personality — if ${v.child_pronouns_subject} is fiery, brave might be the pause; if ${v.child_pronouns_subject} is shy, brave might be the step forward.
+
+5. **THE RETURN (1–2 spreads)** — ${v.child_name} comes back to ${v.child_pronouns_possessive} world. Same place. Different ${v.child_pronouns_subject}. The dedication's value of ${v.value} lands here — earned by the brave choice, integrated into who ${v.child_pronouns_subject} now is. End on warmth, evidence of growth, or readiness for what comes next.
+
+# Tone
+
+Real. Stakes are present but never crushing. The world stays beautiful even when it's hard — visible weather can be sunny, tension comes from inside ${v.child_name}'s experience, not from darkness in the world.
+
+# Spread allocation guide
+
+For 12 spreads: 1–2 safe world, 3 threshold, 4–7 wild space (4 escalating beats), 8 turning point, 9 brave choice, 10–11 return, 12 love seal.
+For 10 spreads: 1 safe world, 2 threshold, 3–6 wild space, 7 turning point, 8 brave choice, 9–10 return.
+
+# What to avoid
+
+- Don't make the wild space genuinely scary or traumatic. This is courage, not horror.
+- Don't have an adult solve the problem. ${v.child_name} chooses bravely — others can support, but ${v.child_pronouns_subject} is the agent.
+- Don't moralize the brave choice. Show what ${v.child_pronouns_subject} did. Let the reader feel the courage.
+- Don't make the brave moment about a thing the child has already mastered (see "things_already_good_at" field).`,
+
+  generous_heart: (v) => `# Framework: Generous Heart
+
+This is a connection story. ${v.child_name} has something — a quality, a possession, a skill — and discovers that giving creates belonging.
+
+Source pattern: The Rainbow Fish, The Giving Tree, The Little Engine That Could, Guess How Much I Love You.
+
+# Beats (distribute across ${v.spread_count} spreads)
+
+1. **THE TREASURE (1–2 spreads)** — ${v.child_name} has something special. A talent, a possession, a quality. ${v.child_pronouns_subject_capitalized} is proud of it. Show the thing through ${v.child_name}'s pride and care for it.
+
+2. **THE ISOLATION (1 spread)** — Holding too tightly, or noticing that someone else needs help, creates a small wrong-feeling. Something is off. ${v.child_name} feels it.
+
+3. **THE ASK (1–2 spreads)** — Someone needs help — or ${v.child_name} notices someone else's need on ${v.child_pronouns_possessive} own. Internal conflict: keep what's mine, or share?
+
+4. **THE GIFT (3–5 spreads — the engine of the story)** — ${v.child_name} gives, helps, or shares. Tentatively at first, then with growing joy. Each act of generosity is rewarded NOT with material return but with connection — friendship, belonging, warmth, recognition. Multiple beats of giving, each one a little easier than the last.
+
+5. **THE FULLNESS (2 spreads)** — ${v.child_name} has "less" than ${v.child_pronouns_subject} started with. ${v.child_pronouns_subject_capitalized} feels richer. Final image: ${v.child_pronouns_object} surrounded by friends, warmth, or love. The dedication's value of ${v.value} lands — earned by the generosity, not stated.
+
+# Tone
+
+Warm, growing-warmer. The story should feel like a slow widening — ${v.child_name}'s world expands as ${v.child_pronouns_subject} gives.
+
+# Spread allocation guide
+
+For 12 spreads: 1–2 treasure, 3 isolation, 4–5 ask, 6–10 gift (5 beats), 11–12 fullness.
+For 10 spreads: 1–2 treasure, 3 isolation, 4 ask, 5–8 gift (4 beats), 9–10 fullness.
+
+# What to avoid
+
+- Don't reward generosity with stuff. The reward is connection, never a bigger pile of toys.
+- Don't shame the initial holding-tight. ${v.child_name} loving what ${v.child_pronouns_subject} has is fine. Growth is in the discovery that giving makes more.
+- Don't have an adult instruct ${v.child_name} to share. ${v.child_pronouns_subject_capitalized} arrives at it.`,
+
+  silly_escalation: (v) => `# Framework: Silly Escalation
+
+This is a comedy story. A tiny absurd premise compounds beat after beat into beautiful nonsense, then snaps back to warmth.
+
+Source pattern: Green Eggs and Ham, The Cat in the Hat, Don't Let the Pigeon Drive the Bus, Chicka Chicka Boom Boom, If You Give a Mouse a Cookie.
+
+# Beats (distribute across ${v.spread_count} spreads)
+
+1. **THE PREMISE (1–2 spreads)** — A simple, slightly absurd setup. Something is asked, proposed, or set in motion that shouldn't quite work but does. The premise should be built from ${v.child_name}'s interests or interests-twisted: what if ${v.interest_phrase} did the thing they shouldn't?${v.cameo_detail ? ` What if ${v.child_pronouns_possessive} ${v.cameo_detail} could do something it shouldn't?` : ""}
+
+2. **THE ESCALATION (5–8 spreads — the engine of the story)** — Each beat adds a new layer of absurdity, building on the last. The rhythm is predictable; each new addition is a surprise. Text accelerates. Energy climbs. Each beat is funnier than the last because the previous beats are stacking.
+
+3. **THE PEAK OF CHAOS (1 spread)** — Maximum absurdity. The scene is at its most ridiculous. The reader laughs because everything has piled up just so.
+
+4. **THE SNAP (1 spread)** — Sudden, satisfying resolution. Either circular ("we're back where we started, but..."), reversal ("turns out..."), or a character finally giving in. The tension breaks with a laugh.
+
+5. **THE WINK (1 spread)** — A final tiny beat that hints the whole thing might start again. This is what drives re-reading.
+
+# Tone
+
+Mischievous. Light. The voice is having as much fun as the story is. Use sound words, capitalized words for emphasis, em dashes for comic timing.
+
+# Spread allocation guide
+
+For 12 spreads: 1–2 premise, 3–9 escalation (7 beats), 10 peak, 11 snap, 12 wink.
+For 10 spreads: 1 premise, 2–7 escalation (6 beats), 8 peak, 9 snap, 10 wink.
+
+# What to avoid
+
+- Don't moralize. There is no lesson here other than "the world is funny and ${v.child_name} is part of the funny."
+- Don't slow down for emotional beats. This framework is energy from the premise to the snap.
+- Don't end on a wholesome moral. End on the WINK — the suggestion of the whole thing about to happen again.`,
+};
+
+// User message is fixed by the brief.
+export const STORY_BOOK_USER_MESSAGE =
+  "Write the book according to the framework above. Output in the exact format specified.";
+
+// ---- Output type + parser ---------------------------------------------------
+
+export interface GeneratedBook {
+  framework_id: FrameworkId;
+  cover_text: string;
+  outfit_description: string;
+  dedication_text: string;
+  repeating_phrase: string;
+  belongs_to_page_text: string | null;
+  spreads: Array<{
+    spread_number: number;
+    beat_label: string;
+    text: string;
+  }>;
+  generated_at: string;
+  model: string;
+  prompt_version: string;
+  generation_time_ms: number;
+}
+
+function extractField(raw: string, marker: string): string {
+  // matches "[MARKER]: value" up to next [SECTION] or end
+  const re = new RegExp(
+    `\\[${marker.replace(/[.*+?^${}()|[\\]\\\\]/g, "\\$&")}\\]\\s*:?\\s*([\\s\\S]*?)(?=\\n\\s*\\[[A-Z][A-Z \\d:]*\\]|$)`,
+    "i",
+  );
+  const m = raw.match(re);
+  return (m?.[1] ?? "").trim();
+}
+
+export function parseBookOutput(raw: string, framework_id: FrameworkId): Omit<
+  GeneratedBook,
+  "generated_at" | "model" | "prompt_version" | "generation_time_ms"
+> {
+  const cover_text = extractField(raw, "COVER TEXT");
+  const outfit_description = extractField(raw, "OUTFIT");
+  const dedication_text = extractField(raw, "DEDICATION");
+  const repeating_phrase = extractField(raw, "REPEATING PHRASE");
+  const belongsRaw = extractField(raw, "BELONGS TO PAGE");
+  const belongs_to_page_text = belongsRaw ? belongsRaw : null;
+
+  // Spreads: "[SPREAD N] [BEAT: ...]\n<prose>"
+  const spreadRe =
+    /\[SPREAD\s+(\d+)\]\s*\[BEAT:\s*([^\]]+)\]\s*([\s\S]*?)(?=\[SPREAD\s+\d+\]|$)/gi;
+  const spreads: GeneratedBook["spreads"] = [];
+  let m: RegExpExecArray | null;
+  while ((m = spreadRe.exec(raw)) !== null) {
+    spreads.push({
+      spread_number: parseInt(m[1], 10),
+      beat_label: m[2].trim(),
+      text: m[3].trim(),
+    });
+  }
+  spreads.sort((a, b) => a.spread_number - b.spread_number);
+
+  return {
+    framework_id,
+    cover_text,
+    outfit_description,
+    dedication_text,
+    repeating_phrase,
+    belongs_to_page_text,
+    spreads,
+  };
+}
+
+// ---- Stage 3 validator (STUBBED — see plan §2; wire real rules later) ------
+export function validateBook(_book: unknown, _input: unknown): {
+  valid: boolean;
+  issues: string[];
+} {
+  return { valid: true, issues: [] };
+}
+
+// ---- Display labels for the optional buyer/occasion fields -----------------
+
+export const BUYER_RELATIONSHIP_LABEL: Record<string, string> = {
+  parent: "parent",
+  grandparent: "grandparent",
+  teacher: "teacher",
+  friend: "friend",
+  other: "loved one",
+};
+
+export const OCCASION_LABEL: Record<string, string> = {
+  birthday: "birthday",
+  christmas: "Christmas",
+  easter: "Easter",
+  new_sibling: "new sibling",
+  first_day: "first day",
+  graduation: "graduation",
+  baptism: "baptism",
+  just_because: "just because",
+  other: "other",
+};
 
