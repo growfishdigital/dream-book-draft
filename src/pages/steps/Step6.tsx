@@ -366,6 +366,12 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
         <PillSelector options={AGE_RANGES} value={data.ageRange} onChange={(v) => upd({ ageRange: v })} />
       </div>
 
+      <MiniPersonality
+        value={data.traits || []}
+        onChange={(t) => upd({ traits: t })}
+        name={data.name}
+      />
+
       {data.mode === "real" && (
         <AppearanceAccordion appearance={data.appearance} onChange={(a) => upd({ appearance: a })}
           name={data.name || "this character"} defaultExpanded={false} />
