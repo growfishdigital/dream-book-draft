@@ -20,6 +20,7 @@ import StepPersonality from "./pages/steps/StepPersonality";
 import StepWhoIsItFor from "./pages/steps/StepWhoIsItFor";
 import StepPlaceholder from "./pages/steps/StepPlaceholder";
 import Login from "./pages/Login";
+import DevStoryPreview from "./pages/DevStoryPreview";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
