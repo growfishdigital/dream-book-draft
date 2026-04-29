@@ -461,7 +461,10 @@ export default function Step11() {
             const genreLabel = GENRE_LABEL[answers.genre as string];
             const moodLabel = MOOD_LABEL[answers.mood as string];
             const lessonLabel = LESSON_LABEL[answers.lesson as string];
-            const interests = (answers.interests as string[]) || [];
+            const interestsRaw = (answers.interestsList as Array<{ word?: string; emoji?: string }>) || [];
+            const interests = interestsRaw
+              .map((e) => ({ word: (e?.word || "").trim(), emoji: e?.emoji }))
+              .filter((e) => e.word.length > 0);
             const customInterest = (answers.customInterest as string)?.trim();
             const specialThing = formatSpecialThing(answers.specialThing);
             const charactersLine = formatCharacters(answers);
@@ -504,20 +507,21 @@ export default function Step11() {
                   <SummaryRow label="Interests" artHsl={artHsl}>
                     {interests.length > 0 || customInterest ? (
                       <div className="flex flex-wrap gap-1.5">
-                        {interests.map((v) => {
-                          const info = INTEREST_INFO[v];
-                          if (!info) return null;
+                        {interests.map((entry) => {
+                          const info = INTEREST_INFO[entry.word];
+                          const emoji = entry.emoji || info?.emoji || "✨";
+                          const label = info?.label || entry.word;
                           return (
                             <span
-                              key={v}
+                              key={entry.word}
                               className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
                               style={{
                                 backgroundColor: `hsl(${artHsl} / 0.18)`,
                                 color: "hsl(var(--wizard-primary))",
                               }}
                             >
-                              <span>{info.emoji}</span>
-                              <span>{info.label}</span>
+                              <span>{emoji}</span>
+                              <span>{label}</span>
                             </span>
                           );
                         })}
