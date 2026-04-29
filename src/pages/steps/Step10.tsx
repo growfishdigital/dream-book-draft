@@ -33,6 +33,27 @@ export default function Step11Generating() {
       const concept = answers.selectedConcept || {};
       try {
         const brief = buildBrief(answers);
+
+        // Load the picked art-style preview as a data URL so the cover model
+        // gets the same image the user picked on Step 6 as a visual reference.
+        let styleReferenceImage: string | undefined;
+        try {
+          const { ART_STYLES } = await import("@/lib/artStyles");
+          const style = ART_STYLES.find((s) => s.value === brief.artStyle);
+          if (style?.preview) {
+            const resp = await fetch(style.preview);
+            const blob = await resp.blob();
+            styleReferenceImage = await new Promise<string>((resolve, reject) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.onerror = reject;
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (e) {
+          console.warn("Could not load style reference image", e);
+        }
+
         const { data, error: fnError } = await supabase.functions.invoke(
           "generate-cover",
           {
@@ -40,6 +61,7 @@ export default function Step11Generating() {
               brief,
               title: concept.title || "",
               summary: concept.summary || "",
+              styleReferenceImage,
             },
           },
         );

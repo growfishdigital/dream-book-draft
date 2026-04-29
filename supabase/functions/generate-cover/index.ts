@@ -22,10 +22,12 @@ Deno.serve(async (req) => {
       brief = {},
       title = "",
       summary = "",
+      styleReferenceImage,
     }: {
       brief?: any;
       title?: string;
       summary?: string;
+      styleReferenceImage?: string;
     } = body;
 
     const childName = brief.child?.name || "the child";
@@ -61,10 +63,13 @@ Deno.serve(async (req) => {
 
     const promptText = [
       `Children's book cover illustration in ${styleHint}.`,
+      styleReferenceImage
+        ? `The FIRST attached image is a STYLE REFERENCE — match its illustration technique, line quality, color palette, and overall finish exactly. Do NOT copy its subject, pose, or composition; only mimic its visual style.`
+        : "",
       `Title to display on the cover: "${title}". Render this title text exactly as given — do NOT add the child's name or any first name to the title.`,
       `Hero (depicted in the art only, NOT named in any visible text): ${childName}.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
       photoDataUrl
-        ? `Use the attached reference photo for the child's likeness (face shape, hair, skin tone). Keep it kind, warm, and age-appropriate.`
+        ? `The ${styleReferenceImage ? "SECOND" : "attached"} image is a likeness reference for the child (face shape, hair, skin tone) — render the child in the chosen art style, not photo-realistically. Keep it kind, warm, and age-appropriate.`
         : "",
       `Scene inspired by: ${summary.slice(0, 600)}`,
       `Composition: portrait orientation (2:3), the title clearly readable at the top or centered, no extra text, no author byline, no watermarks. Do NOT include "${childName}" or any name as visible text on the cover.`,
@@ -74,6 +79,13 @@ Deno.serve(async (req) => {
       .join(" ");
 
     const userContent: any[] = [{ type: "text", text: promptText }];
+    // Order matters — references are introduced in the prompt as FIRST/SECOND.
+    if (styleReferenceImage) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url: styleReferenceImage },
+      });
+    }
     if (photoDataUrl) {
       userContent.push({
         type: "image_url",
