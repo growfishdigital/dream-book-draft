@@ -65,7 +65,7 @@ export default function WizardShell({
                 backgroundColor: "transparent",
               }}
             >
-              Back
+              ← Back
             </button>
           )}
           {showSkip && (
@@ -88,7 +88,7 @@ export default function WizardShell({
               color: "#fff",
             }}
           >
-            Continue
+            Continue →
           </button>
         </div>
         {/* Dev-only bypass: ignores validation, always advances */}
