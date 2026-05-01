@@ -163,7 +163,7 @@ export default function Step4b() {
         {/* Filled pills + add button */}
         <div className="flex flex-wrap gap-2 min-h-[44px]">
           {list.map((entry, idx) => {
-            const size = Math.max((entry.word || "").length, PLACEHOLDER.length);
+            const size = entry.word ? Math.max(entry.word.length, 1) : PLACEHOLDER.length;
             return (
               <div key={idx} className={pillBase} style={pillFilledStyle}>
                 {entry.emoji && <span aria-hidden>{entry.emoji}</span>}
