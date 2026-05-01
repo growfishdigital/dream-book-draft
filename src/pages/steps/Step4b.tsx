@@ -163,7 +163,7 @@ export default function Step4b() {
         {/* Filled pills + add button */}
         <div className="flex flex-wrap gap-2 min-h-[44px]">
           {list.map((entry, idx) => {
-            const size = Math.max((entry.word || "").length, PLACEHOLDER.length);
+            const size = entry.word ? Math.max(entry.word.length, 1) : PLACEHOLDER.length;
             return (
               <div key={idx} className={pillBase} style={pillFilledStyle}>
                 {entry.emoji && <span aria-hidden>{entry.emoji}</span>}
@@ -180,7 +180,7 @@ export default function Step4b() {
                   type="button"
                   onClick={() => removeEntry(idx)}
                   aria-label="Remove interest"
-                  className="ml-1 opacity-50 hover:opacity-100 transition-opacity"
+                  className="-ml-1 opacity-50 hover:opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -210,15 +210,18 @@ export default function Step4b() {
 
         {!atCap && visibleChips.length > 0 && (
           <div className="space-y-3">
-            <h2 className="font-medium text-muted-foreground text-base">Tap for inspiration:</h2>
+            <h2 className="font-medium text-muted-foreground text-base">Click to add:</h2>
             <div className="flex flex-wrap gap-2">
               {visibleChips.map((it) => (
                 <button
                   key={it.word}
                   type="button"
                   onClick={() => addEntry(it.word, it.emoji)}
-                  className={`${pillBase} hover:shadow-md hover:-translate-y-0.5`}
-                  style={pillFilledStyle}
+                  className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium border-2 border-dashed transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)] hover:-translate-y-0.5"
+                  style={{
+                    borderColor: "hsl(var(--wizard-primary) / 0.4)",
+                    color: "hsl(var(--wizard-primary))",
+                  }}
                 >
                   <span aria-hidden>{it.emoji}</span>
                   <span>{it.word}</span>
