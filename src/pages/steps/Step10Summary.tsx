@@ -124,8 +124,8 @@ export default function Step10Summary() {
     >
       <WizardHeader currentStep={9} />
 
-      <main className="flex-1 px-4 pt-8 pb-32">
-        <div className="w-full">
+      <main className="flex-1 flex justify-center px-4 pt-8 pb-32">
+        <div className="w-full" style={{ maxWidth: "700px" }}>
           <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[hsl(var(--wizard-primary))]">
             Here's {name}'s story
           </h1>
