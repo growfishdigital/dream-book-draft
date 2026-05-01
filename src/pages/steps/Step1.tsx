@@ -96,7 +96,7 @@ export default function Step1() {
 
         {/* Name input */}
         <div className="flex flex-col items-center gap-3">
-          <label className="block text-sm font-medium text-muted-foreground">
+          <label className="block text-muted-foreground text-xl font-bold">
             Their name
           </label>
           <Input

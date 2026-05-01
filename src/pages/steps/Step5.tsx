@@ -198,7 +198,7 @@ export default function Step5() {
             </h2>
             {activeCategoryDef.fields.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <label className="block text-sm font-medium text-muted-foreground">
+                <label className="block text-muted-foreground text-xl font-bold">
                   {field.label}
                 </label>
                 {field.type === "dropdown" ? (
