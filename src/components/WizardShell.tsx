@@ -53,12 +53,12 @@ export default function WizardShell({
 
       {/* Bottom bar */}
       <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
-        <div className="flex justify-center items-center gap-3 w-full">
+        <div className="flex justify-center items-center gap-3 w-full" style={{ maxWidth: "700px" }}>
           {currentStep > 1 && (
             <button
               type="button"
               onClick={goBack}
-              className="py-4 px-8 rounded-full text-base font-semibold transition-all border-2"
+              className="flex-1 basis-0 py-4 rounded-full text-base font-semibold transition-all border-2"
               style={{
                 borderColor: "hsl(var(--wizard-primary))",
                 color: "hsl(var(--wizard-primary))",
@@ -82,7 +82,7 @@ export default function WizardShell({
             type="button"
             onClick={handleContinue}
             disabled={!canContinue}
-            className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
               color: "#fff",
