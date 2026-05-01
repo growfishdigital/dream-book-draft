@@ -180,7 +180,7 @@ export default function Step4b() {
                   type="button"
                   onClick={() => removeEntry(idx)}
                   aria-label="Remove interest"
-                  className="ml-1 opacity-50 hover:opacity-100 transition-opacity"
+                  className="-ml-1 opacity-50 hover:opacity-100 transition-opacity"
                 >
                   <X className="w-4 h-4" />
                 </button>
