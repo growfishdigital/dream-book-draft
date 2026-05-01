@@ -27,17 +27,17 @@ const STEP_LABELS: Record<number, string> = {
 // Warm, child-focused encouragement that swaps as the user advances.
 // Keep these short — they sit in a tiny caption under the dots.
 const PROGRESS_MESSAGES: Record<number, string> = {
-  1: "Your book is taking shape ✨",
+  1: "Let's meet the star of the show ⭐",
   2: "What a thoughtful gift 💛",
-  3: "Lovely — let's pick the vibe 🌱",
-  4: "Beautiful choice — what should they learn? 💛",
-  5: "You're sparking ideas already ✨",
-  6: "Bringing their personality to life 🌟",
-  7: "Painting the perfect look 🎨",
-  8: "Filling the world with friends 🧸",
-  9: "Your story is almost written 📖",
+  3: "Time to choose the adventure 🌱",
+  4: "Every great story teaches something 📚",
+  5: "Their favorite things, woven in ✨",
+  6: "Capturing exactly who they are 🌟",
+  7: "Picking the perfect look 🎨",
+  8: "Gathering their cast of friends 🧸",
+  9: "Your story is taking shape 📖",
   10: "Stitching every page together ✨",
-  11: "Tada! Meet your storybook 🎉",
+  11: "Tada — meet your storybook 🎉",
 };
 
 export default function ProgressBar({ currentStep }: { currentStep: number }) {
@@ -91,7 +91,7 @@ export default function ProgressBar({ currentStep }: { currentStep: number }) {
           a soft fade-in instead of an abrupt text swap. */}
       <span
         key={safeStep}
-        className="text-xs text-muted-foreground font-medium tracking-wide opacity-0 animate-[fadeIn_400ms_ease-out_forwards]"
+        className="text-xs text-muted-foreground font-medium tracking-wide opacity-0 animate-[fadeIn_400ms_ease-out_forwards] mt-[3px]"
       >
         {message}
       </span>
