@@ -94,7 +94,7 @@ export default function Step1() {
 
         {/* Name input */}
         {/* Name + Gender side by side */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-[820px] mx-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
           {/* Name */}
           <div className="space-y-2">
             <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
@@ -137,7 +137,7 @@ export default function Step1() {
         </div>
 
         {/* Book language — own row */}
-        <div className="space-y-2 max-w-[820px] mx-auto">
+        <div className="space-y-2 w-full">
           <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
             What language do they speak?
           </label>
@@ -173,7 +173,7 @@ export default function Step1() {
               Choose the format that fits them best.
             </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 max-w-[820px] mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 w-full">
             {AGE_RANGES.map((a) => {
               const selected = age === a.value;
               return (
