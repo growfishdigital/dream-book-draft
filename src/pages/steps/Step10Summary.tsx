@@ -264,33 +264,35 @@ export default function Step10Summary() {
 
       {/* Sticky bottom CTA */}
       <div
-        className="sticky bottom-0 z-30 px-4 py-4 flex justify-center items-center gap-3 border-t border-black/10"
+        className="sticky bottom-0 z-30 px-4 py-4 flex justify-center border-t border-black/10"
         style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}
       >
-        <button
-          type="button"
-          onClick={() => navigate("/step/8")}
-          className="py-4 px-8 rounded-full text-base font-semibold border-2"
-          style={{
-            borderColor: "hsl(var(--wizard-primary))",
-            color: "hsl(var(--wizard-primary))",
-            backgroundColor: "transparent",
-          }}
-        >
-          Back
-        </button>
-        <button
-          type="button"
-          onClick={approve}
-          disabled={!summary || loading || editing}
-          className="flex-1 sm:flex-none sm:min-w-[320px] py-4 rounded-full text-base font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{
-            backgroundColor: "hsl(var(--wizard-primary))",
-            color: "#fff",
-          }}
-        >
-          Approve & illustrate →
-        </button>
+        <div className="w-full flex items-center gap-3" style={{ maxWidth: "700px" }}>
+          <button
+            type="button"
+            onClick={() => navigate("/step/8")}
+            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold border-2"
+            style={{
+              borderColor: "hsl(var(--wizard-primary))",
+              color: "hsl(var(--wizard-primary))",
+              backgroundColor: "transparent",
+            }}
+          >
+            Back
+          </button>
+          <button
+            type="button"
+            onClick={approve}
+            disabled={!summary || loading || editing}
+            className="flex-1 basis-0 py-4 rounded-full text-base font-semibold disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: "hsl(var(--wizard-primary))",
+              color: "#fff",
+            }}
+          >
+            Approve & illustrate →
+          </button>
+        </div>
       </div>
     </div>
   );
