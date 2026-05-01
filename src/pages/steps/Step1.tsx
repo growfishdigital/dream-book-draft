@@ -93,28 +93,29 @@ export default function Step1() {
         </div>
 
         {/* Name input */}
-        <div className="flex flex-col items-center gap-3">
-          <label className="block text-muted-foreground text-xl font-bold">
-            Their name
-          </label>
-          <Input
-            value={name}
-            onChange={(e) => setAnswer("childName", e.target.value)}
-            placeholder="e.g. Emma, John, etc."
-            className="text-center text-base font-medium h-10 max-w-[420px] w-full rounded-xl border-input bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
-          />
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <Checkbox
-              checked={bookBelongsTo}
-              onCheckedChange={(checked) => setAnswer("bookBelongsTo", !!checked)}
-              className="border-[hsl(var(--wizard-primary))] data-[state=checked]:bg-[hsl(var(--wizard-primary))]"
-            />
-            <span className="text-sm text-muted-foreground">Add "This book belongs to" page</span>
-          </label>
-        </div>
-
-        {/* Gender + Language side by side */}
+        {/* Name + Gender side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-[820px] mx-auto">
+          {/* Name */}
+          <div className="space-y-2">
+            <label className="block text-muted-foreground text-center text-xl font-bold">
+              Their name
+            </label>
+            <Input
+              value={name}
+              onChange={(e) => setAnswer("childName", e.target.value)}
+              placeholder="e.g. Emma, John, etc."
+              className="text-center text-base font-medium h-10 w-full rounded-xl border-input bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
+            />
+            <label className="flex items-center justify-center gap-2 cursor-pointer select-none">
+              <Checkbox
+                checked={bookBelongsTo}
+                onCheckedChange={(checked) => setAnswer("bookBelongsTo", !!checked)}
+                className="border-[hsl(var(--wizard-primary))] data-[state=checked]:bg-[hsl(var(--wizard-primary))]"
+              />
+              <span className="text-sm text-muted-foreground">Add "This book belongs to" page</span>
+            </label>
+          </div>
+
           {/* Gender */}
           <div className="space-y-2">
             <label className="block text-muted-foreground text-center text-xl font-sans font-bold">
@@ -133,28 +134,28 @@ export default function Step1() {
               </SelectContent>
             </Select>
           </div>
+        </div>
 
-          {/* Book language */}
-          <div className="space-y-2">
-            <label className="block text-muted-foreground text-center text-xl font-sans font-bold">
-              What language do they speak?
-            </label>
-            <div className="flex flex-wrap justify-center gap-2">
-              {LANGUAGES.map((l) => (
-                <button
-                  key={l.value}
-                  type="button"
-                  onClick={() => setAnswer("language", l.value)}
-                  className={pillClass(language === l.value)}
-                >
-                  <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
-                    {l.label}
-                  </span>
-                </button>
-              ))}
-              <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
-                <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
-              </div>
+        {/* Book language — own row */}
+        <div className="space-y-2 max-w-[820px] mx-auto">
+          <label className="block text-muted-foreground text-center text-xl font-sans font-bold">
+            What language do they speak?
+          </label>
+          <div className="flex flex-wrap justify-center gap-3">
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.value}
+                type="button"
+                onClick={() => setAnswer("language", l.value)}
+                className={pillClass(language === l.value)}
+              >
+                <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
+                  {l.label}
+                </span>
+              </button>
+            ))}
+            <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
+              <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
             </div>
           </div>
         </div>
