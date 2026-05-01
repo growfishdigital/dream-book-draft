@@ -117,7 +117,7 @@ export default function Step1() {
 
         {/* Gender */}
         <div className="space-y-2 max-w-[420px] mx-auto">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
+          <label className="block text-muted-foreground text-center text-xl font-sans font-bold">
             Gender
           </label>
           <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
@@ -136,7 +136,7 @@ export default function Step1() {
 
         {/* Book language */}
         <div className="space-y-3">
-          <label className="block text-sm font-medium text-muted-foreground text-center">
+          <label className="block text-muted-foreground text-center text-xl font-sans font-bold">
             What language do they speak?
           </label>
           <div className="flex flex-wrap justify-center gap-3">
