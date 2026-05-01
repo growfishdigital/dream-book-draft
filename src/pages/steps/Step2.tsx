@@ -66,7 +66,7 @@ export default function Step2() {
 
         {/* Genre grid */}
         <div className="space-y-3">
-          <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
+          <label className="block text-center text-xl font-sans text-secondary-foreground font-semibold">
             Genre
           </label>
           <div className="grid grid-cols-2 gap-3">
@@ -94,7 +94,7 @@ export default function Step2() {
 
         {/* Mood pills */}
         <div className="space-y-3">
-          <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
+          <label className="block text-center text-xl font-sans text-secondary-foreground font-semibold">
             Mood
           </label>
           <div className="flex justify-center gap-2 pb-1">
