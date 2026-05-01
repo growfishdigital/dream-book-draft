@@ -126,7 +126,7 @@ export default function Step10Summary() {
 
       <main className="flex-1 px-4 pt-8 pb-32">
         <div className="mx-auto w-full max-w-[640px]">
-          <h1 className="font-heading font-bold text-center mb-1 text-4xl md:text-3xl text-[#2b4e18]">
+          <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[#2b4e18]">
             Here's {name}'s story
           </h1>
           <p
@@ -163,7 +163,7 @@ export default function Step10Summary() {
                   onChange={(e) => setDraftTitle(e.target.value)}
                   maxLength={80}
                   placeholder="Working title"
-                  className="font-heading text-2xl font-bold text-[#2b4e18] bg-transparent border-b border-black/10 focus:outline-none focus:border-[#2b4e18] px-1 py-1"
+                  className="font-heading text-2xl font-semibold text-[#2b4e18] bg-transparent border-b border-black/10 focus:outline-none focus:border-[#2b4e18] px-1 py-1"
                 />
                 <textarea
                   value={draft}
@@ -207,7 +207,7 @@ export default function Step10Summary() {
                     </p>
                   </div>
                 )}
-                <h2 className="font-heading text-2xl font-bold text-center text-[#2b4e18] mb-3">
+                <h2 className="font-heading text-2xl font-semibold text-center text-[#2b4e18] mb-3">
                   {title || `${name}'s Adventure`}
                 </h2>
                 <p className="text-base font-serif leading-relaxed whitespace-pre-wrap text-[#2b4e18]/90">

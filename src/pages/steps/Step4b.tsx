@@ -150,7 +150,7 @@ export default function Step4b() {
       <div className="space-y-8">
         <div className="space-y-2">
           <h1
-            className="font-heading text-3xl sm:text-4xl font-bold"
+            className="font-heading text-3xl sm:text-4xl font-semibold"
             style={{ color: "hsl(var(--wizard-primary))" }}
           >
             What does {name} love?
