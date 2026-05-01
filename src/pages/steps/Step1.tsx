@@ -26,8 +26,6 @@ const GENDERS = [
 const LANGUAGES = [
   { value: "english", label: "English" },
   { value: "español", label: "Español" },
-  { value: "français", label: "Français" },
-  { value: "deutsch", label: "Deutsch" },
 ];
 
 export default function Step1() {
