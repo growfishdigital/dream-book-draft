@@ -278,7 +278,7 @@ export default function Step10Summary() {
               backgroundColor: "transparent",
             }}
           >
-            Back
+            ← Back
           </button>
           <button
             type="button"
