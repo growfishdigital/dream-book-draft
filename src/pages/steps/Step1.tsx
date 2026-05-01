@@ -97,7 +97,7 @@ export default function Step1() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-[820px] mx-auto">
           {/* Name */}
           <div className="space-y-2">
-            <label className="block text-muted-foreground text-center text-xl font-bold">
+            <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
               Their name
             </label>
             <Input
@@ -118,7 +118,7 @@ export default function Step1() {
 
           {/* Gender */}
           <div className="space-y-2">
-            <label className="block text-muted-foreground text-center text-xl font-sans font-bold">
+            <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
               Gender
             </label>
             <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
@@ -138,7 +138,7 @@ export default function Step1() {
 
         {/* Book language — own row */}
         <div className="space-y-2 max-w-[820px] mx-auto">
-          <label className="block text-muted-foreground text-center text-xl font-sans font-bold">
+          <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
             What language do they speak?
           </label>
           <div className="flex flex-wrap justify-center gap-3">
