@@ -98,7 +98,7 @@ export default function Step1() {
           {/* Name */}
           <div className="space-y-2">
             <label className="block text-center text-xl font-sans font-bold text-secondary-foreground">
-              Their name
+              Name
             </label>
             <Input
               value={name}
