@@ -149,7 +149,7 @@ export default function Step11Generating() {
           </p>
           <h1
             className="text-2xl leading-tight"
-            style={{ color: "hsl(var(--wizard-primary))", fontFamily: "'Libre Caslon Text', serif" }}
+            style={{ color: "hsl(var(--wizard-primary))", fontFamily: "'Crimson Pro', serif" }}
           >
             {title ? `"${title}"` : "Your book"}
           </h1>
