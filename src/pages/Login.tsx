@@ -32,7 +32,7 @@ export default function Login() {
         <div className="text-center space-y-2">
           <div className="text-4xl">📖✨</div>
           <h1
-            className="font-heading text-3xl sm:text-4xl font-bold"
+            className="font-heading text-3xl sm:text-4xl font-semibold"
             style={{ color: "hsl(var(--wizard-primary))" }}
           >
             {mode === "signin" ? "Welcome back" : "Create your account"}

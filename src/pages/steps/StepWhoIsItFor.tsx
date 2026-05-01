@@ -48,7 +48,7 @@ export default function StepWhoIsItFor() {
         {/* Heading — warm, encouraging */}
         <div className="text-center space-y-2">
           <h1
-            className="font-heading text-3xl sm:text-4xl font-bold"
+            className="font-heading text-3xl sm:text-4xl font-semibold"
             style={{ color: "hsl(var(--wizard-primary))" }}
           >
             What a thoughtful gift 💛

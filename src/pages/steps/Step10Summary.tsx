@@ -126,7 +126,7 @@ export default function Step10Summary() {
 
       <main className="flex-1 px-4 pt-8 pb-32">
         <div className="mx-auto w-full max-w-[640px]">
-          <h1 className="font-heading font-bold text-center mb-1 text-4xl md:text-3xl text-[#2b4e18]">
+          <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[hsl(var(--wizard-primary))]">
             Here's {name}'s story
           </h1>
           <p
@@ -163,15 +163,15 @@ export default function Step10Summary() {
                   onChange={(e) => setDraftTitle(e.target.value)}
                   maxLength={80}
                   placeholder="Working title"
-                  className="font-heading text-2xl font-bold text-[#2b4e18] bg-transparent border-b border-black/10 focus:outline-none focus:border-[#2b4e18] px-1 py-1"
+                  className="font-heading text-2xl font-semibold text-[hsl(var(--wizard-primary))] bg-transparent border-b border-black/10 focus:outline-none focus:border-[hsl(var(--wizard-primary))] px-1 py-1"
                 />
                 <textarea
                   value={draft}
                   onChange={(e) => setDraft(e.target.value)}
                   rows={10}
-                  className="w-full text-base font-serif leading-relaxed text-[#2b4e18]/90 bg-transparent border border-black/10 rounded-xl p-3 focus:outline-none focus:border-[#2b4e18]"
+                  className="w-full text-base font-serif leading-relaxed text-[hsl(var(--wizard-primary))]/90 bg-transparent border border-black/10 rounded-xl p-3 focus:outline-none focus:border-[hsl(var(--wizard-primary))]"
                 />
-                <div className="flex items-center justify-between text-xs text-[#2b4e18]/60">
+                <div className="flex items-center justify-between text-xs text-[hsl(var(--wizard-primary))]/60">
                   <span>{wordCount(draft)} words</span>
                   <span className="italic">
                     Tip: aim for ~100 words for the best book length.
@@ -181,7 +181,7 @@ export default function Step10Summary() {
                   <button
                     type="button"
                     onClick={cancelEdit}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-black/15 text-[#2b4e18]"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))]"
                   >
                     <X className="w-4 h-4" /> Cancel
                   </button>
@@ -207,13 +207,13 @@ export default function Step10Summary() {
                     </p>
                   </div>
                 )}
-                <h2 className="font-heading text-2xl font-bold text-center text-[#2b4e18] mb-3">
+                <h2 className="font-heading text-2xl font-semibold text-center text-[hsl(var(--wizard-primary))] mb-3">
                   {title || `${name}'s Adventure`}
                 </h2>
-                <p className="text-base font-serif leading-relaxed whitespace-pre-wrap text-[#2b4e18]/90">
+                <p className="text-base font-serif leading-relaxed whitespace-pre-wrap text-[hsl(var(--wizard-primary))]/90">
                   {summary}
                 </p>
-                <p className="text-xs text-[#2b4e18]/45 text-right mt-3">
+                <p className="text-xs text-[hsl(var(--wizard-primary))]/45 text-right mt-3">
                   {wordCount(summary)} words
                 </p>
               </div>
@@ -231,7 +231,7 @@ export default function Step10Summary() {
                 type="button"
                 onClick={fetchSummary}
                 disabled={loading}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[#2b4e18] bg-white disabled:opacity-50"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))] bg-white disabled:opacity-50"
               >
                 <RefreshCw
                   className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -243,7 +243,7 @@ export default function Step10Summary() {
                   type="button"
                   onClick={startEdit}
                   aria-label="Edit summary"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[#2b4e18] bg-white"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))] bg-white"
                 >
                   <Pencil className="w-4 h-4" />
                   Edit

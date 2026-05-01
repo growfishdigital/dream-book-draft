@@ -631,7 +631,7 @@ export default function Step6() {
       <div className="space-y-6">
         {/* heading */}
         <div className="text-center space-y-2">
-          <h1 className="font-heading text-3xl sm:text-4xl font-bold" style={{ color: "hsl(var(--wizard-primary))" }}>
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
             Let's bring the characters to life
           </h1>
           <p className="text-muted-foreground text-lg">

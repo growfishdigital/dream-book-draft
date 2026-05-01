@@ -79,7 +79,7 @@ export default function Step1() {
         {/* Heading */}
         <div className="text-center space-y-2">
           <h1
-            className="font-heading text-3xl sm:text-4xl font-bold transition-opacity duration-300"
+            className="font-heading text-3xl sm:text-4xl font-semibold transition-opacity duration-300"
             style={{
               color: "hsl(var(--wizard-primary))",
               opacity: headingVisible ? 1 : 0,
@@ -164,7 +164,7 @@ export default function Step1() {
         <div className="space-y-4 pt-4">
           <div className="text-center space-y-1">
             <h2
-              className="font-heading text-2xl sm:text-3xl font-bold"
+              className="font-heading text-2xl sm:text-3xl font-semibold"
               style={{ color: "hsl(var(--wizard-primary))" }}
             >
               Pick a book type
