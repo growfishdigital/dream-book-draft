@@ -72,7 +72,7 @@ export default function StepWhoIsItFor() {
               This shapes the voice of the dedication.
             </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 max-w-[640px] mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
             {RELATIONSHIPS.map((r) => (
               <button
                 key={r.value}
@@ -105,7 +105,7 @@ export default function StepWhoIsItFor() {
               A little flavor — never the central plot.
             </p>
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-[640px] mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
             {OCCASIONS.map((o) => (
               <button
                 key={o.value}
@@ -125,7 +125,7 @@ export default function StepWhoIsItFor() {
           </div>
         </section>
 
-        <p className="text-center text-xs text-muted-foreground italic max-w-[480px] mx-auto">
+        <p className="text-center text-xs text-muted-foreground italic w-full">
           You're already making something they'll keep forever ✨
         </p>
       </div>

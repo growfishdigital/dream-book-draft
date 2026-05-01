@@ -627,7 +627,7 @@ export default function Step6() {
       : <User className="w-4 h-4" />;
 
   return (
-    <WizardShell maxWidth={800} onBeforeContinue={handleBeforeContinue}>
+    <WizardShell onBeforeContinue={handleBeforeContinue}>
       <div className="space-y-6">
         {/* heading */}
         <div className="text-center space-y-2">
