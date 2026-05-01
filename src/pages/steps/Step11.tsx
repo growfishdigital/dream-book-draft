@@ -336,7 +336,7 @@ export default function Step11() {
 
       <div className="flex flex-col items-center px-4 py-8">
       {/* Heading */}
-      <h1 className="font-heading md:text-3xl font-semibold text-center mb-1 text-4xl text-[#2b4e18]">
+      <h1 className="font-heading md:text-3xl font-semibold text-center mb-1 text-4xl text-[hsl(var(--wizard-primary))]">
         {name}'s book is ready. ✨
       </h1>
       <p className="text-sm text-center mb-8" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
