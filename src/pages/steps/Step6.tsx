@@ -537,14 +537,18 @@ export default function Step6() {
   const { answers, setAnswer, setCanContinue } = useWizard();
 
   // Pull data from context (or defaults)
-  const protagonist: Protagonist = (answers.protagonist as Protagonist) || {
-    photos: [],
-    name: (answers.childName as string) || "",
-    age: (answers.childAge as string) || "",
-    gender: (answers.childGender as string) || "",
-    special: "",
-    appearance: emptyAppearance(),
-  };
+  const storedProtagonist = answers.protagonist as Protagonist | undefined;
+  const protagonist: Protagonist = storedProtagonist
+    ? { traits: [], ...storedProtagonist }
+    : {
+        photos: [],
+        name: (answers.childName as string) || "",
+        age: (answers.childAge as string) || "",
+        gender: (answers.childGender as string) || "",
+        special: "",
+        appearance: emptyAppearance(),
+        traits: (answers.personalityList as Array<{ word: string; emoji?: string }>) || [],
+      };
 
   const supportingCharacters: SupportingCharacter[] =
     (answers.supportingCharacters as SupportingCharacter[]) || [];
