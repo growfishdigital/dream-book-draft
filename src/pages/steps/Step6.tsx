@@ -20,8 +20,8 @@ const RELATIONSHIPS = [
   "Friend", "Aunt", "Uncle", "Cousin", "Teacher", "Other",
 ] as const;
 
-const GENDERS_PROTO = ["Boy", "Girl", "Non-binary"] as const;
-const GENDERS_SUPPORT = ["Boy/Man", "Girl/Woman", "Non-binary", "Any"] as const;
+const GENDERS_PROTO = ["Boy", "Girl", "Gender neutral"] as const;
+const GENDERS_SUPPORT = ["Boy/Man", "Girl/Woman", "Gender neutral", "Any"] as const;
 
 const AGE_RANGES = ["Child", "Teen", "Adult", "Elderly"] as const;
 const RELATIONSHIP_AGE: Record<string, string> = {
