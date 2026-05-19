@@ -3,8 +3,8 @@ import ProgressBar from "./ProgressBar";
 export default function WizardHeader({ currentStep }: { currentStep: number }) {
   return (
     <header
-      className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 backdrop-blur-sm border-b border-black/10 w-full"
-      style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}
+      className="sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b border-black/10 w-full"
+      style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
       <div className="w-[70px]" />
 
