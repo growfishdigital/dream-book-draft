@@ -16,12 +16,12 @@ const GENRES = [
 ];
 
 const MOODS = [
-  { value: "funny", label: "Funny" },
-  { value: "heartwarming", label: "Heartwarming" },
-  { value: "calm", label: "Calm" },
-  { value: "whimsical", label: "Whimsical" },
-  { value: "brave", label: "Brave" },
-  { value: "mysterious", label: "Mysterious" },
+  { value: "funny", emoji: "😂", label: "Funny" },
+  { value: "heartwarming", emoji: "❤️", label: "Heartwarming" },
+  { value: "calm", emoji: "🧘", label: "Calm" },
+  { value: "whimsical", emoji: "✨", label: "Whimsical" },
+  { value: "brave", emoji: "🦁", label: "Brave" },
+  { value: "mysterious", emoji: "🌑", label: "Mysterious" },
 ];
 
 export default function Step2() {
