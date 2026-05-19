@@ -92,21 +92,22 @@ export default function Step2() {
           </div>
         </div>
 
-        {/* Mood pills */}
+        {/* Mood grid */}
         <div className="space-y-3">
           <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
             Mood
           </label>
-          <div className="flex justify-center gap-2 pb-1">
+          <div className="grid grid-cols-3 gap-3">
             {MOODS.map((m) => (
               <button
                 key={m.value}
                 type="button"
                 onClick={() => setAnswer("mood", m.value)}
-                className={pillClass(mood === m.value)}
+                className={cardClass(mood === m.value)}
               >
+                <span className="text-2xl">{m.emoji}</span>
                 <span
-                  className="block text-sm font-semibold"
+                  className="block text-base font-semibold mt-1"
                   style={{ color: "hsl(var(--wizard-primary))" }}
                 >
                   {m.label}
