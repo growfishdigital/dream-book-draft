@@ -277,6 +277,12 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
         <CharCounter current={data.special.length} max={200} />
       </div>
 
+      <MiniPersonality
+        value={data.traits || []}
+        onChange={(t) => upd({ traits: t })}
+        name={data.name}
+      />
+
       <AppearanceAccordion appearance={data.appearance} onChange={(a) => upd({ appearance: a })}
         name={displayName} defaultExpanded={false} />
     </div>
