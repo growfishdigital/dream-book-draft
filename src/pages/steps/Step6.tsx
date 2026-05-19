@@ -60,6 +60,7 @@ interface Protagonist {
   gender: string;
   special: string;
   appearance: Appearance;
+  traits: Array<{ word: string; emoji?: string }>;
 }
 
 interface SupportingCharacter {
