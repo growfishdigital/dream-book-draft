@@ -60,6 +60,7 @@ interface Protagonist {
   gender: string;
   special: string;
   appearance: Appearance;
+  traits: Array<{ word: string; emoji?: string }>;
 }
 
 interface SupportingCharacter {
@@ -275,6 +276,12 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
           value={data.special} onChange={(e) => upd({ special: e.target.value })} />
         <CharCounter current={data.special.length} max={200} />
       </div>
+
+      <MiniPersonality
+        value={data.traits || []}
+        onChange={(t) => upd({ traits: t })}
+        name={data.name}
+      />
 
       <AppearanceAccordion appearance={data.appearance} onChange={(a) => upd({ appearance: a })}
         name={displayName} defaultExpanded={false} />
@@ -536,14 +543,18 @@ export default function Step6() {
   const { answers, setAnswer, setCanContinue } = useWizard();
 
   // Pull data from context (or defaults)
-  const protagonist: Protagonist = (answers.protagonist as Protagonist) || {
-    photos: [],
-    name: (answers.childName as string) || "",
-    age: (answers.childAge as string) || "",
-    gender: (answers.childGender as string) || "",
-    special: "",
-    appearance: emptyAppearance(),
-  };
+  const storedProtagonist = answers.protagonist as Protagonist | undefined;
+  const protagonist: Protagonist = storedProtagonist
+    ? { traits: [], ...storedProtagonist }
+    : {
+        photos: [],
+        name: (answers.childName as string) || "",
+        age: (answers.childAge as string) || "",
+        gender: (answers.childGender as string) || "",
+        special: "",
+        appearance: emptyAppearance(),
+        traits: (answers.personalityList as Array<{ word: string; emoji?: string }>) || [],
+      };
 
   const supportingCharacters: SupportingCharacter[] =
     (answers.supportingCharacters as SupportingCharacter[]) || [];
