@@ -52,7 +52,7 @@ export default function WizardShell({
       </main>
 
       {/* Bottom bar */}
-      <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg) / 0.9)" }}>
+      <div className="sticky bottom-0 z-30 px-4 py-4 flex flex-col items-center gap-2 border-t border-black/10" style={{ backgroundColor: "hsl(var(--wizard-bg))" }}>
         <div className="flex justify-center items-center gap-3 w-full" style={{ maxWidth: "700px" }}>
           {currentStep > 1 && (
             <button
