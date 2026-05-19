@@ -19,8 +19,7 @@ const AGE_RANGES = [
 const GENDERS = [
   { value: "girl", label: "Girl" },
   { value: "boy", label: "Boy" },
-  { value: "non-binary", label: "Non-binary" },
-  { value: "surprise", label: "Surprise me" },
+  { value: "non-binary", label: "Gender neutral" },
 ];
 
 const LANGUAGES = [
