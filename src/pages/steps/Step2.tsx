@@ -16,12 +16,12 @@ const GENRES = [
 ];
 
 const MOODS = [
-  { value: "funny", label: "Funny" },
-  { value: "heartwarming", label: "Heartwarming" },
-  { value: "calm", label: "Calm" },
-  { value: "whimsical", label: "Whimsical" },
-  { value: "brave", label: "Brave" },
-  { value: "mysterious", label: "Mysterious" },
+  { value: "funny", emoji: "😂", label: "Funny" },
+  { value: "heartwarming", emoji: "❤️", label: "Heartwarming" },
+  { value: "calm", emoji: "🧘", label: "Calm" },
+  { value: "whimsical", emoji: "✨", label: "Whimsical" },
+  { value: "brave", emoji: "🦁", label: "Brave" },
+  { value: "mysterious", emoji: "🌑", label: "Mysterious" },
 ];
 
 export default function Step2() {
@@ -41,12 +41,6 @@ export default function Step2() {
         : "border-transparent bg-white hover:shadow-md"
     }`;
 
-  const pillClass = (selected: boolean) =>
-    `cursor-pointer rounded-xl px-3 py-2 text-center transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
 
   return (
     <WizardShell>
@@ -92,21 +86,22 @@ export default function Step2() {
           </div>
         </div>
 
-        {/* Mood pills */}
+        {/* Mood grid */}
         <div className="space-y-3">
           <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
             Mood
           </label>
-          <div className="flex justify-center gap-2 pb-1">
+          <div className="grid grid-cols-3 gap-3">
             {MOODS.map((m) => (
               <button
                 key={m.value}
                 type="button"
                 onClick={() => setAnswer("mood", m.value)}
-                className={pillClass(mood === m.value)}
+                className={cardClass(mood === m.value)}
               >
+                <span className="text-2xl">{m.emoji}</span>
                 <span
-                  className="block text-sm font-semibold"
+                  className="block text-base font-semibold mt-1"
                   style={{ color: "hsl(var(--wizard-primary))" }}
                 >
                   {m.label}
