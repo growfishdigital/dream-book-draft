@@ -17,7 +17,8 @@
 // ---- Models -----------------------------------------------------------------
 // Swap to upgrade/downgrade. Keep cover on a multimodal image model.
 export const MODELS = {
-  summary: "openai/gpt-5",
+  // Lightweight pre-purchase concept step. Keep this fast and cheap.
+  summary: "openai/gpt-5-mini",
   cover: "google/gemini-3-pro-image-preview",
   // Full-book engine. Long context + strong reasoning.
   book: "openai/gpt-5",
