@@ -1014,16 +1014,14 @@ import {
 } from "./layouts.ts";
 
 // ---- Story length knobs (V2) -----------------------------------------------
-// Default 500 words at the 5-6 age band; scales gently around it.
+// Single page-count knob. Per-page word bounds are DERIVED from the age band's
+// total — see perPageWordBounds(). Don't add a separate per-page constant.
 export const STORY_LENGTH_BOOK = {
   pageCount: 30 as const,           // story pages (pages 3–32)
   totalPageCount: 32 as const,      // includes title (p.1) + dedication (p.2)
-  perPageMin: 4,
-  perPageMax: 28,
-  perPageTarget: 16,                // 500 / 30 ≈ 16
   totalByAgeBand: {
-    "0-2": 250,
-    "3-4": 350,
+    "0-2": 100,    // very young — pictures dominate, many image-only pages
+    "3-4": 250,
     "5-6": 500,
     "7-8": 650,
     "9-10": 800,
@@ -1042,6 +1040,33 @@ export function bookWordTotalRange(age_band: AgeBand): { min: number; target: nu
     max: Math.round(target * (1 + tol)),
   };
 }
+
+/**
+ * Derives per-page word bounds from the age band's total. Always proportional
+ * to STORY_LENGTH_BOOK.pageCount so the engine stays consistent if we change
+ * page count later.
+ *
+ *   - target  ≈ total / pageCount
+ *   - min     ≈ 35% of target, floored at 0 (image-only pages allowed)
+ *   - max     ≈ 220% of target — climax pages can be roughly 2× a normal page
+ *   - softMin: a "comfortable" floor for non-quiet pages; below this the page
+ *              should be deliberately quiet (silent or near-silent).
+ */
+export function perPageWordBounds(age_band: AgeBand): {
+  target: number;
+  min: number;
+  max: number;
+  softMin: number;
+} {
+  const total = STORY_LENGTH_BOOK.totalByAgeBand[age_band] ?? 500;
+  const raw = total / STORY_LENGTH_BOOK.pageCount;
+  const target = Math.max(1, Math.round(raw));
+  const min = age_band === "0-2" ? 0 : Math.max(1, Math.round(raw * 0.35));
+  const max = Math.max(target + 2, Math.round(raw * 2.2));
+  const softMin = Math.max(min, Math.round(raw * 0.5));
+  return { target, min, max, softMin };
+}
+
 
 // ---- Per-page output schema -------------------------------------------------
 
