@@ -1307,15 +1307,7 @@ export function buildBookUserMessageV2(opts: {
   occasion_label: string;
   child_name: string;
 }): string {
-// ---- V2 user prompt builder -------------------------------------------------
 
-export function buildBookUserMessageV2(opts: {
-  age_band: AgeBand;
-  include_belongs_to_page: boolean;
-  buyer_relationship_label: string;
-  occasion_label: string;
-  child_name: string;
-}): string {
   const { age_band, include_belongs_to_page, buyer_relationship_label, occasion_label, child_name } = opts;
   const { min, target, max } = bookWordTotalRange(age_band);
   const pp = perPageWordBounds(age_band);
