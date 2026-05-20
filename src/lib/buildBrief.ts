@@ -68,6 +68,10 @@ export interface StoryBrief {
   occasion?: string;
   /** Whether to include the "This book belongs to" page. */
   bookBelongsTo?: boolean;
+  /** Buyer name collected at checkout — drives the Drive folder name. */
+  buyer_name?: string;
+  /** Buyer email collected at checkout. */
+  buyer_email?: string;
 }
 
 function wordsFromList(list: any): string[] {
