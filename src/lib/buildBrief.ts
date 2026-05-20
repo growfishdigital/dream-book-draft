@@ -140,5 +140,7 @@ export function buildBrief(answers: Record<string, any>): StoryBrief {
     buyer_relationship: answers.buyer_relationship,
     occasion: answers.occasion,
     bookBelongsTo: answers.bookBelongsTo,
+    buyer_name: answers.buyer_name,
+    buyer_email: answers.buyer_email,
   };
 }
