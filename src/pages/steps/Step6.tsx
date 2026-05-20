@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Star, Plus, X, Camera, Sparkles, User, Upload, ChevronDown, ChevronUp,
 } from "lucide-react";
+import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -577,6 +578,10 @@ export default function Step6() {
 
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
+
+  // Kick off the background portrait the moment the first protagonist photo
+  // is uploaded. No visible UI on this step — result is shown on Step 8.
+  useCharacterPortrait();
 
   // Intercept Continue: if no supporting characters, ask "are you sure?"
   const handleBeforeContinue = useCallback(() => {

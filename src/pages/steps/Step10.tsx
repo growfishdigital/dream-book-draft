@@ -55,6 +55,9 @@ export default function Step11Generating() {
         console.warn("Could not load style reference image", e);
       }
 
+      const characterPortraitDataUrl =
+        (answers.characterPortrait as { dataUrl?: string } | undefined)?.dataUrl;
+
       const { data, error: fnError } = await supabase.functions.invoke(
         "generate-cover",
         {
@@ -63,6 +66,7 @@ export default function Step11Generating() {
             title: concept.title || "",
             summary: concept.summary || "",
             styleReferenceImage,
+            characterPortraitDataUrl,
           },
         },
       );

@@ -1,11 +1,13 @@
-// Generate a single book-cover illustration.
-// Uses the uploaded protagonist photo (if provided) for likeness reference.
-// Returns { imageDataUrl } as a base64 data URL.
+// Generate a canonical full-body portrait of the protagonist in the chosen
+// art style. Fired in the background from Step 6 (character page) as soon as
+// the first photo is uploaded. The resulting image is:
+//   1. shown above the story summary on Step 8, and
+//   2. passed back into generate-cover as the primary likeness anchor.
 //
-// Prompt copy lives in ../_shared/prompts.ts — edit there to tweak for all users.
+// Prompt copy lives in ../_shared/prompts.ts (CHARACTER_PORTRAIT_PROMPT_TEMPLATE).
 
 import {
-  COVER_PROMPT_TEMPLATE,
+  CHARACTER_PORTRAIT_PROMPT_TEMPLATE,
   getArtStylePrompt,
   MODELS,
 } from "../_shared/prompts.ts";
@@ -26,35 +28,20 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const body = await req.json();
-    const {
-      brief = {},
-      title = "",
-      summary = "",
-      styleReferenceImage,
-      characterPortraitDataUrl,
-    }: {
-      brief?: any;
-      title?: string;
-      summary?: string;
-      styleReferenceImage?: string;
-      characterPortraitDataUrl?: string;
-    } = body;
+    const { brief = {} }: { brief?: any } = body;
 
     const childName = brief.child?.name || "the child";
     const proto = brief.protagonist || {};
-
-    // Collect hero photos (new field is `photos[]`; fall back to legacy single).
     const heroPhotos: string[] = Array.isArray(proto.photos)
-      ? proto.photos.filter((p: unknown) => typeof p === "string" && p.startsWith("data:"))
+      ? proto.photos.filter(
+          (p: unknown) => typeof p === "string" && p.startsWith("data:"),
+        )
       : proto.photoDataUrl
         ? [proto.photoDataUrl]
         : [];
 
-    // NOTE: Supporting characters are intentionally EXCLUDED from the cover.
-
     const styleHint = getArtStylePrompt(brief.artStyle);
 
-    // Hero appearance — read the field names that Step6 actually saves.
     const app = proto.appearance || {};
     const protoDescBits = [
       proto.age && `age: ${proto.age}`,
@@ -68,36 +55,14 @@ Deno.serve(async (req) => {
     ].filter(Boolean);
     const protoDesc = protoDescBits.join(", ");
 
-    const hasCharacterPortrait =
-      typeof characterPortraitDataUrl === "string" &&
-      characterPortraitDataUrl.startsWith("data:");
-
-    const promptText = COVER_PROMPT_TEMPLATE({
-      title,
-      summary,
+    const promptText = CHARACTER_PORTRAIT_PROMPT_TEMPLATE({
       childName,
       protoDesc,
       styleHint,
-      hasStyleReference: !!styleReferenceImage,
-      hasCharacterPortrait,
       heroPhotoCount: heroPhotos.length,
     });
 
     const userContent: any[] = [{ type: "text", text: promptText }];
-    // Image order MUST match the prompt's "Image #N" references:
-    //   [styleRef?] [characterPortrait?] [heroPhotos…]
-    if (styleReferenceImage) {
-      userContent.push({
-        type: "image_url",
-        image_url: { url: styleReferenceImage },
-      });
-    }
-    if (hasCharacterPortrait) {
-      userContent.push({
-        type: "image_url",
-        image_url: { url: characterPortraitDataUrl },
-      });
-    }
     for (const url of heroPhotos) {
       userContent.push({ type: "image_url", image_url: { url } });
     }
@@ -121,29 +86,20 @@ Deno.serve(async (req) => {
     if (!aiResp.ok) {
       if (aiResp.status === 429) {
         return new Response(
-          JSON.stringify({
-            error: "We're a bit busy — please try again in a moment.",
-          }),
-          {
-            status: 429,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
+          JSON.stringify({ error: "We're a bit busy — please try again in a moment." }),
+          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
       if (aiResp.status === 402) {
         return new Response(
           JSON.stringify({
-            error:
-              "Out of AI credits. Please add credits in Settings → Workspace → Usage.",
+            error: "Out of AI credits. Please add credits in Settings → Workspace → Usage.",
           }),
-          {
-            status: 402,
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          },
+          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
         );
       }
       const t = await aiResp.text();
-      console.error("AI gateway error (cover)", aiResp.status, t);
+      console.error("AI gateway error (portrait)", aiResp.status, t);
       return new Response(JSON.stringify({ error: "AI gateway error" }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -158,10 +114,7 @@ Deno.serve(async (req) => {
       console.error("No image in AI response", JSON.stringify(data).slice(0, 800));
       return new Response(
         JSON.stringify({ error: "Model did not return an image." }),
-        {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        },
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
     }
 
@@ -170,7 +123,7 @@ Deno.serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("generate-cover error", e);
+    console.error("generate-character-portrait error", e);
     const msg = e instanceof Error ? e.message : "Unknown error";
     return new Response(JSON.stringify({ error: msg }), {
       status: 500,

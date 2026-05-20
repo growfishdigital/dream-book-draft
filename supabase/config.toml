@@ -6,6 +6,9 @@ verify_jwt = false
 [functions.generate-cover]
 verify_jwt = false
 
+[functions.generate-character-portrait]
+verify_jwt = false
+
 [functions.generate-book]
 verify_jwt = false
 

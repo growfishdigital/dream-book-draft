@@ -170,6 +170,9 @@ export interface CoverPromptCtx {
   styleHint: string;
   /** True if a style reference image is attached. */
   hasStyleReference: boolean;
+  /** True if a previously-rendered character portrait is attached as the
+   *  canonical likeness anchor (preferred over raw photos). */
+  hasCharacterPortrait?: boolean;
   /** Number of hero likeness photos attached (0 if none). */
   heroPhotoCount: number;
 }
@@ -179,21 +182,15 @@ export interface CoverPromptCtx {
 //  - The "no visible name on the cover" and "no author byline" rules
 //    (Step 11 renders "written for: <child>" client-side instead).
 //  - HERO ONLY: the cover features just the hero child in a scene from the
-//    story. Supporting characters NEVER appear on the cover (they still show
-//    up in the story summary and inside the book). Do not reintroduce
-//    supporting-character text or photos here.
+//    story. Supporting characters NEVER appear on the cover.
+//
+// Image order MUST match: [styleRef?] [characterPortrait?] [heroPhotos…]
 export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
   const {
-    title,
-    summary,
-    childName,
-    protoDesc,
-    styleHint,
-    hasStyleReference,
-    heroPhotoCount,
+    title, summary, childName, protoDesc, styleHint,
+    hasStyleReference, hasCharacterPortrait, heroPhotoCount,
   } = ctx;
 
-  // Build a positional reference guide so the model knows which image is which.
   const refParts: string[] = [];
   let pos = 0;
   if (hasStyleReference) {
@@ -202,13 +199,20 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
       `Image #${pos} is a STYLE REFERENCE — match its illustration technique, line quality, color palette, and finish. Do NOT copy its subject, pose, or composition; only mimic its style.`,
     );
   }
+  if (hasCharacterPortrait) {
+    pos++;
+    refParts.push(
+      `Image #${pos} is the CANONICAL CHARACTER REFERENCE — a prior rendition of the hero in this exact art style. Match this rendition of ${childName} faithfully (face, hair, skin tone, body shape, outfit). This is the PRIMARY likeness source; any photos below are only supplemental cues.`,
+    );
+  }
   if (heroPhotoCount > 0) {
     const start = pos + 1;
     const end = pos + heroPhotoCount;
+    const role = hasCharacterPortrait ? "SUPPLEMENTAL likeness cues" : "LIKENESS REFERENCES";
     refParts.push(
       heroPhotoCount === 1
-        ? `Image #${start} is a LIKENESS REFERENCE for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically. Keep it kind, warm, and age-appropriate.`
-        : `Images #${start}–#${end} are LIKENESS REFERENCES for the hero child from different angles. Use them together to capture face shape, hair, and skin tone. Render in the chosen art style — not photo-realistically.`,
+        ? `Image #${start} contains ${role} for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically. Keep it kind, warm, and age-appropriate.`
+        : `Images #${start}–#${end} contain ${role} for the hero child from different angles. Render in the chosen art style — not photo-realistically.`,
     );
   }
 
@@ -220,9 +224,46 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
     `Scene inspired by: ${summary.slice(0, 600)}`,
     `Composition: portrait orientation (2:3), the title clearly readable at the top or centered, no extra text, no author byline, no watermarks. Do NOT include "${childName}" or any name as visible text on the cover.`,
     `Tone: magical, hopeful, suitable for young children.`,
-  ]
-    .filter(Boolean)
-    .join(" ");
+  ].filter(Boolean).join(" ");
+}
+
+// =============================================================================
+//  CHARACTER PORTRAIT — generate-character-portrait edge function
+// =============================================================================
+//
+// Renders a single canonical full-body portrait of the protagonist in the
+// chosen art style. Fired in the background as soon as the user uploads
+// their first photo on the character step. Result is shown above the story
+// summary AND passed to generate-cover as the primary likeness anchor so
+// the cover matches the rendition the user has already accepted.
+
+export interface CharacterPortraitCtx {
+  childName: string;
+  protoDesc: string;
+  styleHint: string;
+  heroPhotoCount: number;
+}
+
+export function CHARACTER_PORTRAIT_PROMPT_TEMPLATE(
+  ctx: CharacterPortraitCtx,
+): string {
+  const { childName, protoDesc, styleHint, heroPhotoCount } = ctx;
+  const likenessLine = heroPhotoCount === 0
+    ? ""
+    : heroPhotoCount === 1
+      ? `The attached image is a LIKENESS REFERENCE for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically.`
+      : `The attached images are LIKENESS REFERENCES for the hero child from different angles. Use them together to capture face shape, hair, and skin tone. Render in the chosen art style — not photo-realistically.`;
+
+  return [
+    `Full-body character portrait in ${styleHint}.`,
+    likenessLine,
+    `Subject: ONLY the hero child — ${childName} — alone, standing, facing the viewer in a relaxed neutral pose, full body visible head to toe.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
+    `Choose a single charming outfit appropriate for the child's age and personality — this outfit should feel iconic and could be reused on the cover and inside the book.`,
+    `Background: plain soft cream/neutral background, no scenery, no props, no other characters.`,
+    `Composition: portrait orientation (2:3), the child centered with comfortable margin on all sides.`,
+    `No text, no title, no captions, no watermarks, no borders, no name labels.`,
+    `Tone: kind, warm, age-appropriate.`,
+  ].filter(Boolean).join(" ");
 }
 
 // =============================================================================
