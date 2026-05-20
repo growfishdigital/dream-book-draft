@@ -29,6 +29,25 @@ export const genericMessages = [
   "Almost there…",
 ];
 
+/** Encouraging copy for the post-purchase pipeline progress card. */
+export function pipelineMessage(
+  stage: string,
+  current: number,
+  total: number,
+  name: string,
+): string {
+  if (stage === "story") return `Writing ${name}'s story…`;
+  if (stage === "portraits") {
+    if (current === 0) return `Sketching ${name}…`;
+    return `Posing ${name} from a few angles…`;
+  }
+  if (stage === "pages") {
+    return `Painting page ${Math.min(current + 1, total)} of ${total}…`;
+  }
+  if (stage === "done") return `All done — ${name}'s book is ready!`;
+  return `Bringing ${name}'s book to life…`;
+}
+
 /** Rotate through `messages` every `intervalMs`. */
 export function useRotatingMessage(messages: string[], intervalMs = 2200): string {
   const [i, setI] = useState(0);
