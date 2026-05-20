@@ -298,6 +298,7 @@ async function generatePages(
   references: string[],
   apiKey: string,
   deadline: number,
+  subfolderId: string | null,
 ): Promise<GeneratePagesResult> {
   const pages = Array.isArray(parsed?.pages) ? parsed.pages : [];
   const targets = pages.filter((p: any) => p.image_prompt);
