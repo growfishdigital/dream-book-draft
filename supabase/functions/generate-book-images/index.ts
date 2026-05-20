@@ -208,6 +208,7 @@ async function ensurePortraits(
         prompt: promptText, image_data_url: anchor,
         status: "ok", generated_ms: Date.now() - started,
       });
+      scheduleDriveUpload(supabase, bookId, "portrait", 1, subfolderId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await upsertImage(supabase, {
@@ -223,6 +224,7 @@ async function ensurePortraits(
       prompt: "(seeded from Step 6 background portrait)",
       image_data_url: anchor, status: "ok",
     });
+    scheduleDriveUpload(supabase, bookId, "portrait", 1, subfolderId);
   }
 
   await setPipeline(supabase, bookId, "portraits", {
