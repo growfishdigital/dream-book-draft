@@ -31,14 +31,13 @@ import {
   parseBookPagesOutput,
   pronounsFor,
   selectFramework,
-  SPREAD_COUNT_BY_AGE_AND_FRAMEWORK,
   STORY_FRAMEWORKS,
   STORY_KERNEL,
   STORY_LENGTH_BOOK,
   validateBook,
   VOCAB_TIER_BY_AGE,
-  WORD_COUNT_BY_AGE,
 } from "../_shared/prompts.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
