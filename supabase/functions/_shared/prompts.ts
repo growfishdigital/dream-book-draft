@@ -1243,15 +1243,20 @@ export function buildBookJsonSchema() {
       meta: {
         type: "object",
         additionalProperties: false,
-        required: ["title", "repeating_phrase"],
+        required: ["title", "repeating_phrase", "book_outfit"],
         properties: {
           title: { type: "string", description: "Book title, max 8 words, no child's first name." },
           repeating_phrase: {
             type: "string",
-            description: "5–8 word repeating phrase (chorus) appearing 3+ times. May be empty for silly_escalation if not used.",
+            description: "5–8 word repeating phrase (chorus) appearing 4–6 times across the book.",
+          },
+          book_outfit: {
+            type: "string",
+            description: "≤10 words. One distinctive visible outfit (shirt + bottoms + shoes + optional accessory) the hero wears on EVERY illustrated page. Locked across all 30 pages for visual continuity.",
           },
         },
       },
+
       cover: {
         type: "object",
         additionalProperties: false,
