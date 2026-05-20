@@ -394,7 +394,11 @@ export default function Step11() {
         buyer_email: buyerEmail.trim(),
       });
 
-      // 1. Story (generate-book persists the row + returns id)
+      // 1. Story. generate-book inserts a stub row, returns the id immediately,
+      //    runs the AI call in the background, and chains generate-book-images
+      //    (which itself self-chains slices) when the story is ready.
+      //    The DB poller above is the source of truth for progress.
+      const seed = (answers.characterPortrait as any)?.dataUrl || null;
       const { data: bookResp, error: bookErr } = await supabase.functions.invoke(
         "generate-book",
         {
@@ -402,6 +406,7 @@ export default function Step11() {
             brief,
             buyer_name: buyerName.trim(),
             buyer_email: buyerEmail.trim(),
+            seed_portrait_data_url: seed,
           },
         },
       );
@@ -410,26 +415,7 @@ export default function Step11() {
       const bookId: string | undefined = bookResp?.id;
       if (!bookId) throw new Error("Book id missing from generate-book response.");
 
-      setPipeline((p) => ({ ...p, bookId, status: "portraits" }));
-
-      // 2. Image pipeline (orchestrator; self-chaining slices).
-      // Fire-and-forget: each invocation handles a slice and chains the
-      // next one. The DB poller above is the source of truth for status;
-      // transient invoke errors are non-fatal because the chain (or the
-      // stall watchdog) will recover.
-      const seed = (answers.characterPortrait as any)?.dataUrl || null;
-      void supabase.functions
-        .invoke("generate-book-images", {
-          body: { book_id: bookId, seed_portrait_data_url: seed },
-        })
-        .then(({ error }) => {
-          if (error) {
-            console.warn(
-              "generate-book-images invoke error (non-fatal, poller will reconcile):",
-              error,
-            );
-          }
-        });
+      setPipeline((p) => ({ ...p, bookId, status: "story" }));
 
     } catch (e: any) {
       setPipeline({
