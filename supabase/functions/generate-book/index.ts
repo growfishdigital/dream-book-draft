@@ -333,203 +333,167 @@ Deno.serve(async (req) => {
       try {
         const schema = buildBookJsonSchema();
         const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        temperature: 0.8,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
-        ],
-        tools: [
-          {
-            type: "function",
-            function: {
-              name: "return_book",
-              description: "Return the complete printed book as structured JSON.",
-              parameters: schema,
-            },
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "Content-Type": "application/json",
           },
-        ],
-        tool_choice: { type: "function", function: { name: "return_book" } },
-      }),
-    });
-
-    if (!aiResp.ok) {
-      if (aiResp.status === 429) {
-        return new Response(
-          JSON.stringify({ error: "We're a bit busy — please try again in a moment." }),
-          { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
-      }
-      if (aiResp.status === 402) {
-        return new Response(
-          JSON.stringify({
-            error: "Out of AI credits. Please add credits in Settings → Workspace → Usage.",
+          body: JSON.stringify({
+            model,
+            temperature: 0.8,
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: userMessage },
+            ],
+            tools: [
+              {
+                type: "function",
+                function: {
+                  name: "return_book",
+                  description: "Return the complete printed book as structured JSON.",
+                  parameters: schema,
+                },
+              },
+            ],
+            tool_choice: { type: "function", function: { name: "return_book" } },
           }),
-          { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        });
+
+        if (!aiResp.ok) {
+          const t = await aiResp.text();
+          throw new Error(`AI gateway ${aiResp.status}: ${t.slice(0, 300)}`);
+        }
+
+        const data = await aiResp.json();
+        const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+        const argsStr = toolCall?.function?.arguments;
+        if (!argsStr) {
+          throw new Error("Model did not return structured book payload.");
+        }
+
+        const rawArgs = typeof argsStr === "string" ? argsStr : JSON.stringify(argsStr);
+        const parsedRaw = parseBookPagesOutput(rawArgs);
+
+        if (parsedRaw.pages.length !== STORY_LENGTH_BOOK.totalPageCount) {
+          console.error(`Expected ${STORY_LENGTH_BOOK.totalPageCount} pages, got ${parsedRaw.pages.length}`);
+        }
+
+        const appearance = buildAppearanceBlocks(brief);
+        const artStyleFragment = getArtStylePrompt(engineInput.art_style);
+        const bookOutfit = parsedRaw.meta.book_outfit;
+
+        const pages = parsedRaw.pages.map((p) => ({
+          ...p,
+          image_prompt:
+            p.role === "title"
+              ? null
+              : buildPageImagePrompt(p, appearance, artStyleFragment, bookOutfit),
+        }));
+
+        const heroCoverDesc = bookOutfit
+          ? `${appearance.hero.description}, wearing ${bookOutfit}`
+          : appearance.hero.description;
+
+        const coverImagePrompt = [
+          `${artStyleFragment}.`,
+          `Children's book cover illustration.`,
+          `Characters: ${heroCoverDesc}. HERO ONLY — no other people, friends, family, or supporting characters.`,
+          parsedRaw.cover.image_scene ? `Scene: ${parsedRaw.cover.image_scene}.` : "",
+          parsedRaw.cover.setting ? `Setting: ${parsedRaw.cover.setting}.` : "",
+          parsedRaw.cover.mood ? `Mood: ${parsedRaw.cover.mood}.` : "",
+          `Composition: portrait orientation (2:3), the title rendered clearly at the top or centered.`,
+          `Title text to render on the cover: "${parsedRaw.cover.title}". Render ONLY this title — do not add the child's name, an author byline, or any other text.`,
+        ].filter(Boolean).join(" ");
+
+        const generation_ms = Date.now() - startedAt;
+        const storyPageWords = pages
+          .filter((p) => p.role === "story")
+          .reduce((acc, p) => acc + countWords(p.text), 0);
+
+        const parsed: BookOutputV2 = {
+          schema_version: "v2",
+          meta: {
+            title: parsedRaw.meta.title,
+            framework_id,
+            word_count_total: storyPageWords,
+            page_count: pages.length,
+            age_band,
+            art_style: engineInput.art_style || null,
+            repeating_phrase: parsedRaw.meta.repeating_phrase,
+            book_outfit: bookOutfit,
+            generated_at: new Date().toISOString(),
+            model,
+            prompt_version: promptHash,
+            generation_time_ms: generation_ms,
+          },
+          cover: {
+            title: parsedRaw.cover.title,
+            subtitle: parsedRaw.cover.subtitle,
+            image_prompt: coverImagePrompt,
+          },
+          pages,
+        };
+
+        const validation = validateBook(parsed, engineInput);
+
+        const { error: updateErr } = await supabase
+          .from("generated_books")
+          .update({
+            raw_output: rawArgs,
+            parsed,
+            generation_ms,
+            status: validation.valid ? "ok" : "needs_review",
+            pipeline_status: "portraits",
+            pipeline_progress: { stage: "story", current: 1, total: 1, message: "Story written." },
+          })
+          .eq("id", bookId);
+
+        if (updateErr) {
+          throw new Error(`Persist failed: ${updateErr.message}`);
+        }
+
+        // Best-effort Drive export — fire and forget.
+        try {
+          void supabase.functions.invoke("export-book-to-drive", {
+            body: { book_id: bookId },
+          });
+        } catch (e) {
+          console.error("Drive export invoke threw:", e);
+        }
+
+        // Chain image pipeline.
+        try {
+          void supabase.functions.invoke("generate-book-images", {
+            body: { book_id: bookId, seed_portrait_data_url },
+          });
+        } catch (e) {
+          console.error("generate-book-images invoke threw:", e);
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : "Unknown error";
+        console.error("generate-book background error", msg);
+        await supabase
+          .from("generated_books")
+          .update({
+            pipeline_status: "failed",
+            pipeline_error: msg,
+          })
+          .eq("id", bookId);
       }
-      const t = await aiResp.text();
-      console.error("AI gateway error (book)", aiResp.status, t);
-      return new Response(JSON.stringify({ error: "AI gateway error" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const data = await aiResp.json();
-    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
-    const argsStr = toolCall?.function?.arguments;
-    if (!argsStr) {
-      console.error("No tool_call returned", JSON.stringify(data).slice(0, 800));
-      return new Response(JSON.stringify({ error: "Model did not return structured book payload." }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const rawArgs = typeof argsStr === "string" ? argsStr : JSON.stringify(argsStr);
-    const parsedRaw = parseBookPagesOutput(rawArgs);
-
-    // Validate page count.
-    if (parsedRaw.pages.length !== STORY_LENGTH_BOOK.totalPageCount) {
-      console.error(`Expected ${STORY_LENGTH_BOOK.totalPageCount} pages, got ${parsedRaw.pages.length}`);
-      // We continue rather than fail — the dev preview will surface the gap.
-    }
-
-    // Build canonical appearance blocks once, reuse on every page's image prompt.
-    const appearance = buildAppearanceBlocks(brief);
-    const artStyleFragment = getArtStylePrompt(engineInput.art_style);
-    const bookOutfit = parsedRaw.meta.book_outfit;
-
-    // Bake the per-page image prompts and assemble the cover prompt.
-    const pages = parsedRaw.pages.map((p) => ({
-      ...p,
-      image_prompt:
-        p.role === "title"
-          ? null
-          : buildPageImagePrompt(p, appearance, artStyleFragment, bookOutfit),
-    }));
-
-    const heroCoverDesc = bookOutfit
-      ? `${appearance.hero.description}, wearing ${bookOutfit}`
-      : appearance.hero.description;
-
-    const coverImagePrompt = [
-      `${artStyleFragment}.`,
-      `Children's book cover illustration.`,
-      `Characters: ${heroCoverDesc}. HERO ONLY — no other people, friends, family, or supporting characters.`,
-      parsedRaw.cover.image_scene ? `Scene: ${parsedRaw.cover.image_scene}.` : "",
-      parsedRaw.cover.setting ? `Setting: ${parsedRaw.cover.setting}.` : "",
-      parsedRaw.cover.mood ? `Mood: ${parsedRaw.cover.mood}.` : "",
-      `Composition: portrait orientation (2:3), the title rendered clearly at the top or centered.`,
-      `Title text to render on the cover: "${parsedRaw.cover.title}". Render ONLY this title — do not add the child's name, an author byline, or any other text.`,
-    ].filter(Boolean).join(" ");
-
-    const generation_ms = Date.now() - startedAt;
-    const storyPageWords = pages
-      .filter((p) => p.role === "story")
-      .reduce((acc, p) => acc + countWords(p.text), 0);
-
-    const parsed: BookOutputV2 = {
-      schema_version: "v2",
-      meta: {
-        title: parsedRaw.meta.title,
-        framework_id,
-        word_count_total: storyPageWords,
-        page_count: pages.length,
-        age_band,
-        art_style: engineInput.art_style || null,
-        repeating_phrase: parsedRaw.meta.repeating_phrase,
-        book_outfit: bookOutfit,
-        generated_at: new Date().toISOString(),
-        model,
-        prompt_version: promptHash,
-        generation_time_ms: generation_ms,
-      },
-      cover: {
-        title: parsedRaw.cover.title,
-        subtitle: parsedRaw.cover.subtitle,
-        image_prompt: coverImagePrompt,
-      },
-      pages,
     };
 
-
-    const validation = validateBook(parsed, engineInput);
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnon);
-
-    const { data: row, error: insertErr } = await supabase
-      .from("generated_books")
-      .insert({
-        framework_id,
-        brief: { ...brief, _engine_input: engineInput },
-        raw_output: rawArgs,
-        parsed,
-        model,
-        prompt_hash: promptHash,
-        generation_ms,
-        status: validation.valid ? "ok" : "needs_review",
-        buyer_name: buyer_name || null,
-        buyer_email: buyer_email || null,
-        pipeline_status: "portraits",
-        pipeline_progress: { stage: "story", current: 1, total: 1, message: "Story written." },
-      })
-      .select("id")
-      .single();
-
-    if (insertErr) {
-      console.error("DB insert failed", insertErr);
-      return new Response(
-        JSON.stringify({
-          id: null,
-          parsed,
-          raw: rawArgs,
-          framework_id,
-          model,
-          generation_ms,
-          warning: `Persist failed: ${insertErr.message}`,
-        }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
-    }
-
-    // Best-effort export to Google Drive. Never blocks the response — if the
-    // export fails the error is stamped on the row by the export function.
-    let driveExport: any = null;
-    if (row?.id) {
-      try {
-        const { data: exp, error: expErr } = await supabase.functions.invoke(
-          "export-book-to-drive",
-          { body: { book_id: row.id } },
-        );
-        if (expErr) console.error("Drive export invoke error:", expErr);
-        driveExport = exp ?? null;
-      } catch (e) {
-        console.error("Drive export threw:", e);
-      }
+    // @ts-ignore EdgeRuntime is a Supabase edge-runtime global.
+    if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) {
+      // @ts-ignore
+      EdgeRuntime.waitUntil(work());
+    } else {
+      // Local/dev fallback — fire-and-forget.
+      void work();
     }
 
     return new Response(
-      JSON.stringify({
-        id: row?.id ?? null,
-        parsed,
-        raw: rawArgs,
-        framework_id,
-        model,
-        generation_ms,
-        validation,
-        drive_export: driveExport,
-      }),
-      { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      JSON.stringify({ id: bookId, queued: true }),
+      { status: 202, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
   } catch (e) {
     console.error("generate-book error", e);
@@ -540,3 +504,4 @@ Deno.serve(async (req) => {
     });
   }
 });
+
