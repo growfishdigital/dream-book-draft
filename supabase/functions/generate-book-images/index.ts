@@ -348,7 +348,7 @@ async function generatePages(
     }
     const started = Date.now();
     try {
-      const url = await callImageModel(apiKey, userContent);
+      const url = await callImageModel(apiKey, userContent, PAGE_IMAGE_CONFIG);
       await upsertImage(supabase, {
         book_id: bookId, kind: "page", slot: page.page_number,
         prompt: promptText, image_data_url: url,
