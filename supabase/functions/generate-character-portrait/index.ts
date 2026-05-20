@@ -28,17 +28,37 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const body = await req.json();
-    const { brief = {} }: { brief?: any } = body;
+    const {
+      brief = {},
+      pose = "front",
+      photoDataUrl,
+      anchorPortraitDataUrl,
+    }: {
+      brief?: any;
+      pose?: "front" | "side" | "action";
+      photoDataUrl?: string;
+      anchorPortraitDataUrl?: string;
+    } = body;
 
     const childName = brief.child?.name || "the child";
     const proto = brief.protagonist || {};
-    const heroPhotos: string[] = Array.isArray(proto.photos)
-      ? proto.photos.filter(
-          (p: unknown) => typeof p === "string" && p.startsWith("data:"),
-        )
-      : proto.photoDataUrl
-        ? [proto.photoDataUrl]
-        : [];
+
+    // Source photos for likeness. If a specific photoDataUrl was passed
+    // (portraits 2/3 use only one alt photo), use just that. Otherwise
+    // fall back to the protagonist's full photo array (portrait 1 default).
+    const heroPhotos: string[] = photoDataUrl
+      ? [photoDataUrl]
+      : Array.isArray(proto.photos)
+        ? proto.photos.filter(
+            (p: unknown) => typeof p === "string" && p.startsWith("data:"),
+          )
+        : proto.photoDataUrl
+          ? [proto.photoDataUrl]
+          : [];
+
+    const hasAnchorPortrait =
+      typeof anchorPortraitDataUrl === "string" &&
+      anchorPortraitDataUrl.startsWith("data:");
 
     const styleHint = getArtStylePrompt(brief.artStyle);
 
@@ -55,14 +75,30 @@ Deno.serve(async (req) => {
     ].filter(Boolean);
     const protoDesc = protoDescBits.join(", ");
 
+    const interests: string[] = Array.isArray(brief.story?.interests)
+      ? brief.story.interests
+      : [];
+    const interestPhrase = interests.slice(0, 2).join(" and ") || undefined;
+
     const promptText = CHARACTER_PORTRAIT_PROMPT_TEMPLATE({
       childName,
       protoDesc,
       styleHint,
       heroPhotoCount: heroPhotos.length,
+      pose,
+      interestPhrase,
+      hasAnchorPortrait,
     });
 
+    // Image order MUST match the prompt's "Image #N" references:
+    //   [anchorPortrait?] [heroPhotos…]
     const userContent: any[] = [{ type: "text", text: promptText }];
+    if (hasAnchorPortrait) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url: anchorPortraitDataUrl },
+      });
+    }
     for (const url of heroPhotos) {
       userContent.push({ type: "image_url", image_url: { url } });
     }
