@@ -62,9 +62,15 @@ function getEnv(name: string): string {
 
 // ---- AI gateway --------------------------------------------------------
 
+type ImageConfig = { aspect_ratio: "1:1" | "2:3"; image_size: "2K" };
+
+const PAGE_IMAGE_CONFIG: ImageConfig = { aspect_ratio: "1:1", image_size: "2K" };
+const PORTRAIT_IMAGE_CONFIG: ImageConfig = { aspect_ratio: "2:3", image_size: "2K" };
+
 async function callImageModel(
   apiKey: string,
   userContent: any[],
+  imageConfig: ImageConfig,
 ): Promise<string> {
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -75,7 +81,8 @@ async function callImageModel(
     body: JSON.stringify({
       model: MODELS.cover,
       messages: [{ role: "user", content: userContent }],
-      modalities: ["image", "text"],
+      modalities: ["image"],
+      image_config: imageConfig,
     }),
   });
 
