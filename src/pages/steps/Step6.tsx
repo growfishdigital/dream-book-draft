@@ -195,8 +195,9 @@ function PhotoUploadZone({ photos, onChange, heroName, max = 3 }: {
 
 /* ── appearance accordion ────────────────────────────────── */
 
-function AppearanceAccordion({ appearance, onChange, name, defaultExpanded }: {
+function AppearanceAccordion({ appearance, onChange, name, defaultExpanded, featuresSlot }: {
   appearance: Appearance; onChange: (a: Appearance) => void; name: string; defaultExpanded: boolean;
+  featuresSlot?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultExpanded);
   const upd = (p: Partial<Appearance>) => onChange({ ...appearance, ...p });
@@ -229,13 +230,15 @@ function AppearanceAccordion({ appearance, onChange, name, defaultExpanded }: {
             <Checkbox checked={appearance.glasses} onCheckedChange={(v) => upd({ glasses: !!v })} id="glasses" />
             <label htmlFor="glasses" className="text-sm text-muted-foreground cursor-pointer">Wears glasses</label>
           </div>
-          <div className="space-y-1.5">
-            <FieldLabel optional>Other distinguishing features</FieldLabel>
-            <Input className="rounded-xl" placeholder="Freckles, hearing aid, uses a wheelchair…"
-              maxLength={100} value={appearance.features}
-              onChange={(e) => upd({ features: e.target.value })} />
-            <CharCounter current={appearance.features.length} max={100} />
-          </div>
+          {featuresSlot !== undefined ? featuresSlot : (
+            <div className="space-y-1.5">
+              <FieldLabel optional>Other distinguishing features</FieldLabel>
+              <Input className="rounded-xl" placeholder="Freckles, hearing aid, uses a wheelchair…"
+                maxLength={100} value={appearance.features}
+                onChange={(e) => upd({ features: e.target.value })} />
+              <CharCounter current={appearance.features.length} max={100} />
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -269,22 +272,27 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
         <PillSelector options={GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel optional>Tell us something unique about the appearance of this character</FieldLabel>
-        <Textarea className="rounded-xl resize-none" rows={3} maxLength={200}
-          placeholder="Just lost a front tooth, always carries a blue blanket, always wears pink…"
-          value={data.special} onChange={(e) => upd({ special: e.target.value })} />
-        <CharCounter current={data.special.length} max={200} />
-      </div>
-
       <MiniPersonality
         value={data.traits || []}
         onChange={(t) => upd({ traits: t })}
         name={data.name}
       />
 
-      <AppearanceAccordion appearance={data.appearance} onChange={(a) => upd({ appearance: a })}
-        name={displayName} defaultExpanded={false} />
+      <AppearanceAccordion
+        appearance={data.appearance}
+        onChange={(a) => upd({ appearance: a })}
+        name={displayName}
+        defaultExpanded={false}
+        featuresSlot={
+          <div className="space-y-1.5">
+            <FieldLabel optional>Tell us something unique about the appearance of this character</FieldLabel>
+            <Textarea className="rounded-xl resize-none" rows={3} maxLength={200}
+              placeholder="Just lost a front tooth, always carries a blue blanket, always wears pink…"
+              value={data.special} onChange={(e) => upd({ special: e.target.value })} />
+            <CharCounter current={data.special.length} max={200} />
+          </div>
+        }
+      />
     </div>
   );
 }
