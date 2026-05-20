@@ -412,31 +412,25 @@ export default function Step11() {
 
       setPipeline((p) => ({ ...p, bookId, status: "portraits" }));
 
-      // 2. Image pipeline (orchestrator; long-running).
-      // Fire-and-poll: we don't await the response — the poller picks up
-      // pipeline_status changes from the DB.
+      // 2. Image pipeline (orchestrator; self-chaining slices).
+      // Fire-and-forget: each invocation handles a slice and chains the
+      // next one. The DB poller above is the source of truth for status;
+      // transient invoke errors are non-fatal because the chain (or the
+      // stall watchdog) will recover.
       const seed = (answers.characterPortrait as any)?.dataUrl || null;
       void supabase.functions
         .invoke("generate-book-images", {
           body: { book_id: bookId, seed_portrait_data_url: seed },
         })
-        .then(({ data, error }) => {
+        .then(({ error }) => {
           if (error) {
-            setPipeline((p) => ({
-              ...p,
-              running: false,
-              status: "failed",
-              error: error.message || "Image pipeline failed.",
-            }));
-          } else if (data?.error) {
-            setPipeline((p) => ({
-              ...p,
-              running: false,
-              status: "failed",
-              error: data.error,
-            }));
+            console.warn(
+              "generate-book-images invoke error (non-fatal, poller will reconcile):",
+              error,
+            );
           }
         });
+
     } catch (e: any) {
       setPipeline({
         running: false,
