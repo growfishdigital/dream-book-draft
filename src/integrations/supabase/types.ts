@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      book_image_upload_attempts: {
+        Row: {
+          attempt: number
+          book_id: string
+          book_image_id: string
+          created_at: string
+          drive_file_id: string | null
+          drive_file_url: string | null
+          duration_ms: number | null
+          error: string | null
+          http_status: number | null
+          id: string
+          kind: string
+          outcome: string
+          slot: number
+          source: string
+        }
+        Insert: {
+          attempt: number
+          book_id: string
+          book_image_id: string
+          created_at?: string
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          kind: string
+          outcome: string
+          slot: number
+          source: string
+        }
+        Update: {
+          attempt?: number
+          book_id?: string
+          book_image_id?: string
+          created_at?: string
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          duration_ms?: number | null
+          error?: string | null
+          http_status?: number | null
+          id?: string
+          kind?: string
+          outcome?: string
+          slot?: number
+          source?: string
+        }
+        Relationships: []
+      }
       book_images: {
         Row: {
           book_id: string

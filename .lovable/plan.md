@@ -1,77 +1,62 @@
 ## Goal
 
-Upload each generated image to Google Drive as soon as it's created (portraits + pages + cover), instead of waiting for a single batch at the very end. Add bounded retry with exponential backoff so transient Drive failures don't lose an image or stall the pipeline.
+Make Drive upload behavior debuggable by recording every upload attempt for every `book_images` row, including retries, HTTP status, timing, and final `drive_file_id`. Today the only signal is `book_images.error` (last error message, overwritten) plus edge function console logs that scroll out of view.
 
-## Current behavior (recap)
+## Schema
 
-- `generate-book-images` writes each image to `book_images` as base64, then at the end (when `remaining === 0`) invokes `export-book-images-to-drive` once to upload all 32+ rows in a single shot.
-- Per-image upload logic + Drive folder/subfolder creation lives in `export-book-images-to-drive/index.ts`.
-- No retries today: a single Drive 5xx / 429 on one image just stamps `error` on the row and moves on; the image never lands in Drive.
+New table `public.book_image_upload_attempts`:
 
-## New behavior
+| column | type | notes |
+|---|---|---|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `book_image_id` | uuid | the `book_images.id` being uploaded; indexed |
+| `book_id` | uuid | denormalized for fast filtering per book; indexed |
+| `kind` | text | `portrait` / `page` / `cover` (denormalized) |
+| `slot` | int | denormalized |
+| `attempt` | int | 1-based attempt number within this upload sequence |
+| `source` | text | `progressive` (from `generate-book-images`) or `cleanup` (from `export-book-images-to-drive`) |
+| `outcome` | text | `ok` / `retry` / `failed` |
+| `http_status` | int nullable | upstream status when applicable |
+| `duration_ms` | int nullable | wall time of this single attempt |
+| `error` | text nullable | truncated error message (≤500 chars) |
+| `drive_file_id` | text nullable | populated on `ok` |
+| `drive_file_url` | text nullable | populated on `ok` |
+| `created_at` | timestamptz | `now()` |
 
-Each image becomes Drive-visible within a few seconds of being generated. The final batch export becomes a no-op cleanup pass that catches anything missed.
+Indexes: `(book_id, created_at desc)`, `(book_image_id, created_at desc)`.
 
-### 1. Shared upload helper (refactor, no behavior change)
+RLS: enable + the same permissive "anyone can read/insert" policies the existing tables use (matches `book_images` — this is a public prototype with no auth). No update/delete policies needed; rows are append-only.
 
-Extract the Drive plumbing from `export-book-images-to-drive/index.ts` into `supabase/functions/_shared/driveUpload.ts`:
+No changes to `book_images` itself — `drive_file_id`/`drive_file_url`/`error` stay as the "current state" summary; the new table is the full history.
 
-- `ensureBookImagesSubfolder(supabase, bookId) → { id, webViewLink }` — resolves `generated_books.drive_folder_id` (invoking `export-book-to-drive` if missing), then ensures `book_images_<bookId>/` exists. Caches in-memory per invocation.
-- `uploadImageWithRetry(name, parentId, dataUrl) → { id, webViewLink }` — multipart upload with backoff (see §3).
-- `uploadAndStampImage(supabase, imgRow, parentId)` — uploads, updates `book_images` row (`drive_file_id`, `drive_file_url`, clears `image_data_url`), returns success/failure.
+## Edge function changes
 
-`export-book-images-to-drive` is rewritten to call these helpers; its public contract (invoke with `{ book_id }`, returns `{ ok, folder_id, folder_url, uploaded_count }`) stays identical.
+### `_shared/driveUpload.ts`
 
-### 2. Progressive upload hooks in `generate-book-images`
+`uploadImageWithRetry` currently swallows per-attempt detail. Refactor it (or add a sibling) so each attempt fires a callback with `{ attempt, outcome, http_status, duration_ms, error }`. `HttpError` already carries `status`.
 
-Add a single fire-and-forget helper inside the function:
+`uploadAndStampImage` becomes the single place that records attempts:
 
-```text
-scheduleDriveUpload(imgRow) {
-  EdgeRuntime.waitUntil(uploadAndStampImage(supabase, imgRow, subfolderId))
-}
-```
+- Accepts a `source: 'progressive' | 'cleanup'` argument.
+- For each attempt the upload helper makes, insert one row into `book_image_upload_attempts` (`outcome: 'retry'` for retried failures, `outcome: 'failed'` for the terminal failure, `outcome: 'ok'` for success).
+- Inserts are best-effort — wrapped in try/catch so a logging failure never breaks the upload.
 
-Insertion points (right after each `upsertImage(..., status: "ok")`):
+### Call sites
 
-1. Anchor portrait (slot 1) — in `ensurePortraits`
-2. Alt portraits (slots 2, 3) — in `ensurePortraits`
-3. Each page — in `generatePages` after the successful `upsertImage`
-4. Cover — wherever the cover image is currently saved (same pattern)
+- `generate-book-images` (`uploadByKindSlot` → `uploadAndStampImage`) passes `source: 'progressive'`.
+- `export-book-images-to-drive` passes `source: 'cleanup'`.
 
-Subfolder is resolved **once** at the top of the handler (after the `parsed` check) via `ensureBookImagesSubfolder`. If that resolution fails (e.g. Drive transient), we log and set `subfolderId = null`; progressive uploads silently skip and the final batch export will catch up.
-
-`EdgeRuntime.waitUntil` is already available in Supabase Edge Functions and keeps the upload alive past the HTTP response without blocking the response. If unavailable in this runtime, fall back to a bare `void uploadAndStampImage(...)` — uploads still get a few seconds before the next slice starts.
-
-### 3. Retry / backoff policy
-
-In `uploadImageWithRetry`:
-
-- Max 4 attempts (1 + 3 retries).
-- Retry on: network errors, HTTP 408, 429, 500, 502, 503, 504.
-- Do **not** retry on: 400, 401, 403, 404 (auth/config — surface immediately).
-- Backoff: 500 ms → 1.5 s → 4 s (jittered ±25%).
-- Honor `Retry-After` header if present (cap at 10 s).
-- Total worst-case time per image ≈ 6 s, well inside slice budget.
-
-Same policy is reused by the final `export-book-images-to-drive` cleanup pass.
-
-### 4. Final batch export = cleanup pass
-
-`generate-book-images` still invokes `export-book-images-to-drive` once at `remaining === 0`. With progressive uploads working, almost every row already has `drive_file_id` and is skipped (existing `if (img.drive_file_id) continue` already handles this). Anything that progressive upload missed (subfolder wasn't ready, retries exhausted) gets one more chance here.
-
-### 5. No DB schema changes
-
-`book_images` already has `drive_file_id`, `drive_file_url`, `error`. We keep using `error` for the last upload failure message; we don't add a separate upload-retry-count column for v1.
-
-## Files touched
-
-- `supabase/functions/_shared/driveUpload.ts` — **new**, holds folder + upload + retry helpers.
-- `supabase/functions/export-book-images-to-drive/index.ts` — refactored to use the shared helpers; behavior preserved.
-- `supabase/functions/generate-book-images/index.ts` — resolve subfolder once; call `scheduleDriveUpload` after each successful `upsertImage` for portraits / pages / cover.
+No changes to the public contract of either function.
 
 ## Out of scope
 
-- Realtime UI showing per-image Drive links as they appear (the data is there — `book_images.drive_file_url` — but no UI consumer for it yet).
-- Tracking upload attempt counts or per-image upload latency in the DB.
-- Changing how the manuscript Google Doc is exported (`export-book-to-drive` is untouched).
+- UI surface for the audit log. (Inspect via the database tools or a quick `select` for now.)
+- Retention policy / pruning. Volume is tiny (≤ ~4 attempts × ~35 images per book).
+- Backfilling history for books generated before this change.
+
+## Files touched
+
+- New migration: create `book_image_upload_attempts` + indexes + RLS.
+- `supabase/functions/_shared/driveUpload.ts` — emit per-attempt callbacks, write rows in `uploadAndStampImage`, accept `source`.
+- `supabase/functions/generate-book-images/index.ts` — pass `'progressive'` through `uploadByKindSlot`.
+- `supabase/functions/export-book-images-to-drive/index.ts` — pass `'cleanup'`.
