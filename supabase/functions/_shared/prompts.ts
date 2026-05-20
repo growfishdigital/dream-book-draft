@@ -1185,6 +1185,7 @@ export function buildPageImagePrompt(
   page: BookPageRaw,
   blocks: AppearanceBlocks,
   artStyleFragment: string,
+  bookOutfit?: string | null,
 ): string | null {
   const layout = getLayout(page.layout_id);
   if (!layout) return null;
@@ -1194,7 +1195,13 @@ export function buildPageImagePrompt(
   const heroIn = present.length === 0 || present.includes(blocks.hero.name.trim().toLowerCase());
 
   const characterBlocks: string[] = [];
-  if (heroIn) characterBlocks.push(blocks.hero.description);
+  if (heroIn) {
+    // Lock the hero outfit on every page for visual continuity.
+    const heroDesc = bookOutfit && bookOutfit.trim()
+      ? `${blocks.hero.description}, wearing ${bookOutfit.trim()} (same outfit on every page)`
+      : blocks.hero.description;
+    characterBlocks.push(heroDesc);
+  }
   for (const s of blocks.supporting) {
     if (present.includes(s.name.trim().toLowerCase())) {
       characterBlocks.push(s.description);
@@ -1211,12 +1218,14 @@ export function buildPageImagePrompt(
     charactersLine,
     page.setting ? `Setting: ${page.setting}.` : "",
     page.mood ? `Mood: ${page.mood}.` : "",
+    page.continuity_notes ? `Continuity from previous page: ${page.continuity_notes}.` : "",
     `Composition: ${layout.compositionCue}.`,
     `IMPORTANT: do not render any text, letters, words, numbers, signs, captions, watermarks, or logos in the illustration.`,
   ]
     .filter(Boolean)
     .join(" ");
 }
+
 
 // ---- JSON Schema for tool-calling structured output -------------------------
 
