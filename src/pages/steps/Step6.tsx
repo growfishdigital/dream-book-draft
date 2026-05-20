@@ -272,22 +272,27 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
         <PillSelector options={GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel optional>Tell us something unique about the appearance of this character</FieldLabel>
-        <Textarea className="rounded-xl resize-none" rows={3} maxLength={200}
-          placeholder="Just lost a front tooth, always carries a blue blanket, always wears pink…"
-          value={data.special} onChange={(e) => upd({ special: e.target.value })} />
-        <CharCounter current={data.special.length} max={200} />
-      </div>
-
       <MiniPersonality
         value={data.traits || []}
         onChange={(t) => upd({ traits: t })}
         name={data.name}
       />
 
-      <AppearanceAccordion appearance={data.appearance} onChange={(a) => upd({ appearance: a })}
-        name={displayName} defaultExpanded={false} />
+      <AppearanceAccordion
+        appearance={data.appearance}
+        onChange={(a) => upd({ appearance: a })}
+        name={displayName}
+        defaultExpanded={false}
+        featuresSlot={
+          <div className="space-y-1.5">
+            <FieldLabel optional>Tell us something unique about the appearance of this character</FieldLabel>
+            <Textarea className="rounded-xl resize-none" rows={3} maxLength={200}
+              placeholder="Just lost a front tooth, always carries a blue blanket, always wears pink…"
+              value={data.special} onChange={(e) => upd({ special: e.target.value })} />
+            <CharCounter current={data.special.length} max={200} />
+          </div>
+        }
+      />
     </div>
   );
 }
