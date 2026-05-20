@@ -195,8 +195,9 @@ function PhotoUploadZone({ photos, onChange, heroName, max = 3 }: {
 
 /* ── appearance accordion ────────────────────────────────── */
 
-function AppearanceAccordion({ appearance, onChange, name, defaultExpanded }: {
+function AppearanceAccordion({ appearance, onChange, name, defaultExpanded, featuresSlot }: {
   appearance: Appearance; onChange: (a: Appearance) => void; name: string; defaultExpanded: boolean;
+  featuresSlot?: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultExpanded);
   const upd = (p: Partial<Appearance>) => onChange({ ...appearance, ...p });
