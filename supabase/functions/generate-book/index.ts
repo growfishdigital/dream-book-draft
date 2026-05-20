@@ -310,6 +310,32 @@ async function shortHash(s: string): Promise<string> {
 
 // ---------- Handler ---------------------------------------------------------
 
+// Recursively strip base64 `data:` URLs and known photo fields from the brief.
+// The text engine never reads these, and dragging multi-MB strings through
+// JSON.parse + multiple in-memory copies blows the edge-runtime memory ceiling
+// (HTTP 546 "WORKER_LIMIT").
+function stripDataUrls<T>(value: T): T {
+  if (value == null) return value;
+  if (typeof value === "string") {
+    return (value.startsWith("data:") ? null : value) as any;
+  }
+  if (Array.isArray(value)) {
+    return value.map(stripDataUrls) as any;
+  }
+  if (typeof value === "object") {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      if (k === "photo" || k === "photos" || k === "photoDataUrl") {
+        out[k] = null;
+        continue;
+      }
+      out[k] = stripDataUrls(v);
+    }
+    return out as any;
+  }
+  return value;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
