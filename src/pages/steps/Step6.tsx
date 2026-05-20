@@ -7,6 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
   Star, Plus, X, Camera, Sparkles, User, Upload, ChevronDown, ChevronUp,
 } from "lucide-react";
+import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
