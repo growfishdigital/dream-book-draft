@@ -499,7 +499,7 @@ export default function Step11() {
           We'll send everything to your inbox shortly.
         </p>
         <button
-          onClick={() => navigate("/step/1")}
+          onClick={() => navigate(pathForStep(1))}
           className="text-sm font-medium underline"
           style={{ color: "hsl(var(--wizard-primary))" }}
         >

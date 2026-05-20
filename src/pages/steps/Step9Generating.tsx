@@ -270,7 +270,7 @@ export default function Step11Generating() {
 
         {done && !errored && (
           <button
-            onClick={() => navigate("/step/10")}
+            onClick={() => navigate(pathForStep(10))}
             className="px-8 py-4 rounded-full text-base font-semibold"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
@@ -302,7 +302,7 @@ export default function Step11Generating() {
               ✨ Try again
             </button>
             <button
-              onClick={() => navigate("/step/8")}
+              onClick={() => navigate(pathForStep(8))}
               className="text-xs underline text-[#2b4e18]/60"
             >
               Back to the story
