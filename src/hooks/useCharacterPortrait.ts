@@ -63,7 +63,64 @@ export function useCharacterPortrait() {
       } satisfies CharacterPortraitState);
 
       try {
-        const brief = buildBrief(answers);
+        // ---- Step 1: vision pre-pass to extract appearance traits ----
+        // Only fills blanks; never overwrites traits the user manually set.
+        // Cached per source hash so we don't re-call on portrait regenerate.
+        const protoNow = (answers.protagonist as any) || {};
+        const photosNow: string[] = Array.isArray(protoNow.photos) ? protoNow.photos : [];
+        const firstPhotoNow = photosNow[0];
+        let mergedAppearance: Record<string, any> =
+          (protoNow.appearance as Record<string, any>) || {};
+        const cachedHash: string | undefined = answers.appearanceAutofillHash;
+        const baseHash = forceHash.split("|r")[0];
+
+        if (firstPhotoNow && cachedHash !== baseHash) {
+          try {
+            const { data: traitData } = await supabase.functions.invoke(
+              "extract-appearance-traits",
+              { body: { photoDataUrl: firstPhotoNow } },
+            );
+            if (ctrl.signal.aborted) return;
+            const t = (traitData?.traits ?? {}) as Record<string, any>;
+            const current = mergedAppearance;
+            const onlyIfBlank = (cur: any, val: any) =>
+              cur && String(cur).trim() ? cur : val || "";
+            const featuresExtra = [
+              t.distinguishing,
+              t.eye_color ? `${t.eye_color} eyes` : "",
+            ].filter(Boolean).join(", ");
+            const next = {
+              hairColor: onlyIfBlank(current.hairColor, t.hair_color),
+              hairStyle: onlyIfBlank(
+                current.hairStyle,
+                t.hair_length || t.hair_style,
+              ),
+              skinTone: onlyIfBlank(current.skinTone, t.skin_tone),
+              glasses:
+                typeof current.glasses === "boolean" && current.glasses
+                  ? true
+                  : !!t.glasses,
+              features:
+                current.features && String(current.features).trim()
+                  ? current.features
+                  : featuresExtra,
+            };
+            mergedAppearance = next;
+            setAnswer("protagonist", { ...protoNow, appearance: next });
+            setAnswer("appearanceAutofillHash", baseHash);
+          } catch (traitErr) {
+            console.warn("appearance trait extraction failed", traitErr);
+          }
+        }
+
+        // ---- Step 2: portrait generation ----
+        // Build brief from a snapshot that includes the freshly merged
+        // appearance (React state may not have flushed yet).
+        const briefSeed = {
+          ...answers,
+          protagonist: { ...protoNow, appearance: mergedAppearance },
+        };
+        const brief = buildBrief(briefSeed);
         const { data, error: fnError } = await supabase.functions.invoke(
           "generate-character-portrait",
           { body: { brief } },

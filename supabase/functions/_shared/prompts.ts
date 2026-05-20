@@ -276,23 +276,32 @@ export function CHARACTER_PORTRAIT_PROMPT_TEMPLATE(
     ? `Image #1 is the CANONICAL CHARACTER REFERENCE — match the exact face, hair, body, and outfit shown there. Any other attached photos are only supplemental likeness cues.`
     : "";
 
+  // HARD likeness rules — placed BEFORE the style hint so style cannot
+  // override them. Cartoon defaults (brown hair, generic skin) routinely
+  // win over soft "reference" wording, so we make this a non-negotiable
+  // constraint with explicit do-nots.
   const likenessLine = hasAnchorPortrait
     ? ""
     : heroPhotoCount === 0
       ? ""
       : heroPhotoCount === 1
-        ? `The attached image is a LIKENESS REFERENCE for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically.`
-        : `The attached images are LIKENESS REFERENCES for the hero child from different angles. Use them together to capture face shape, hair, and skin tone. Render in the chosen art style — not photo-realistically.`;
+        ? `CRITICAL — the attached photo is the CANONICAL LIKENESS for the hero child. You MUST preserve, exactly as shown in the photo: hair color, hair length and shape, skin tone, eye color, eyebrow color, face shape, and any distinguishing features (freckles, dimples, gap teeth, etc.). Stylize ONLY the rendering. Do NOT change hair color (e.g. do not default to brown if the child is blonde). Do NOT change skin tone. Do NOT add or remove glasses unless shown in the photo. Do NOT invent traits that are not in the photo.`
+        : `CRITICAL — the attached photos are the CANONICAL LIKENESS for the hero child from multiple angles. You MUST preserve, exactly as shown in the photos: hair color, hair length and shape, skin tone, eye color, eyebrow color, face shape, and any distinguishing features. Stylize ONLY the rendering. Do NOT change hair color, skin tone, or eye color. Do NOT add or remove glasses unless shown. Do NOT invent traits that are not in the photos.`;
+
+  const outfitLine = hasAnchorPortrait
+    ? `Outfit: REUSE the exact outfit from the anchor reference (Image #1).`
+    : heroPhotoCount >= 1
+      ? `Outfit: recreate the outfit visible in the photo (jacket, shirt, pants, shoes — match colors and silhouette) in the chosen art style. This outfit becomes iconic and will be reused on the cover and inside the book.`
+      : `Choose a single charming outfit appropriate for the child's age and personality — this outfit should feel iconic and could be reused on the cover and inside the book.`;
 
   return [
-    `Full-body character portrait in ${styleHint}.`,
+    // Likeness rules FIRST so they outrank the style hint that follows.
     anchorLine,
     likenessLine,
-    `Subject: ONLY the hero child — ${childName} — alone.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
+    `Subject: ONLY the hero child — ${childName} — alone.${protoDesc ? ` Confirmed character details — ${protoDesc}. These details MUST match what's rendered.` : ""}`,
+    `Full-body character portrait rendered in ${styleHint}.`,
     poseLine,
-    hasAnchorPortrait
-      ? `Outfit: REUSE the exact outfit from the anchor reference (Image #1).`
-      : `Choose a single charming outfit appropriate for the child's age and personality — this outfit should feel iconic and could be reused on the cover and inside the book.`,
+    outfitLine,
     `Background: plain soft cream/neutral background, no scenery, no props, no other characters.`,
     `Composition: portrait orientation (2:3), the child centered with comfortable margin on all sides.`,
     `No text, no title, no captions, no watermarks, no borders, no name labels.`,

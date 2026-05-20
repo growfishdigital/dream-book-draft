@@ -1,98 +1,60 @@
-## Goal
+# Fix portrait likeness drift
 
-Force **1:1 square at 2K** for the **cover** and **interior pages**. Keep **character portraits at 2:3 portrait** at 2K. Modalities: **cover** = `["image","text"]` (needs to render the title text on the artwork), **pages and portraits** = `["image"]` only. Update cover + page-layout prompts for square format.
+## Why the current portrait looks nothing like the photo
 
-## Gateway changes
+Three compounding issues:
 
-All three image functions call the gateway with `MODELS.cover` (`google/gemini-3-pro-image-preview`).
+1. **Weak likeness language.** The prompt says the photo is a "likeness reference for face shape, hair, skin tone" and immediately follows with "render in the chosen art style — not photo-realistically." The style hint (cute cartoon) overpowers the soft likeness ask. There is no hard rule like "hair color MUST match exactly."
+2. **Empty appearance text.** `protoDesc` is built only from the manual "Adjust appearance" accordion on Step 6. Most users skip it after uploading a photo, so the prompt has zero textual reinforcement of "blonde hair, fair skin." The model defaults to brown.
+3. **Invented outfit.** The prompt explicitly tells the model to *choose a charming outfit*, so the denim jacket is discarded. That further loosens the model's grip on the reference and contributes to the "wrong kid" feel.
 
-### 1. `generate-cover/index.ts`
+## What to build (the three fixes)
 
-```ts
-{
-  model: MODELS.cover,
-  messages: [{ role: "user", content: userContent }],
-  modalities: ["image", "text"],          // unchanged — cover renders title text
-  image_config: { aspect_ratio: "1:1", image_size: "2K" },
-}
-```
+### 1. Strengthen the portrait prompt — hard likeness rules
 
-### 2. `generate-character-portrait/index.ts`
+`supabase/functions/_shared/prompts.ts` → `CHARACTER_PORTRAIT_PROMPT_TEMPLATE`
 
-```ts
-{
-  model: MODELS.cover,
-  messages: [{ role: "user", content: userContent }],
-  modalities: ["image"],                   // image-only
-  image_config: { aspect_ratio: "2:3", image_size: "2K" },
-}
-```
+- When `heroPhotoCount >= 1` and no anchor portrait, replace the soft "likeness reference" line with a hard, explicit rule:
+  - "The attached photo is the CANONICAL LIKENESS for the hero. You MUST preserve, exactly as shown in the photo: hair color, hair length and shape, skin tone, eye color, eyebrow color, face shape, and any distinguishing features (freckles, dimples, etc.). Stylize ONLY the rendering — never invent or change these traits."
+- Re-order the lines so the likeness rule appears BEFORE the style hint, not after, so the style instruction can't override it.
+- Add a "Do NOT" clause: "Do not change hair color to brown/blonde unless that matches the photo. Do not add or remove glasses unless shown in the photo. Do not change skin tone."
 
-### 3. `generate-book-images/index.ts` → `callImageModel`
+### 2. Auto-extract appearance traits from the uploaded photo
 
-Used for retry/sweep of both portraits and pages. Add an `imageConfig` parameter so callers pick the ratio:
+New tiny edge function: `extract-appearance-traits` (or fold into existing `generate-character-portrait` as a pre-pass — see Tech notes).
 
-```ts
-async function callImageModel(
-  apiKey: string,
-  userContent: any[],
-  imageConfig: { aspect_ratio: "1:1" | "2:3"; image_size: "2K" },
-): Promise<string> {
-  // body:
-  {
-    model: MODELS.cover,
-    messages: [{ role: "user", content: userContent }],
-    modalities: ["image"],                  // pages + portrait retries are image-only
-    image_config: imageConfig,
-  }
-}
-```
+- Input: first hero photo data URL.
+- Calls Lovable AI Gateway with a cheap vision model (`google/gemini-3-flash-preview`) and a tight JSON schema:
+  ```
+  { hair_color, hair_length, hair_style, skin_tone, eye_color, glasses, distinguishing }
+  ```
+- Result is written back into `answers.protagonist.appearance` (only fields the user hasn't already filled — never overwrite manual input).
+- Trigger: same place the portrait auto-fires (first photo upload). Runs once per photo source hash.
+- The newly-populated appearance flows through `buildBrief` → `protoDesc` automatically, so the portrait prompt now contains explicit "hair color: Blonde, skin tone: fair" text reinforcing the photo.
 
-Call sites:
-- portrait retries → `{ aspect_ratio: "2:3", image_size: "2K" }`
-- page generations + `finalSweepGenerations` → `{ aspect_ratio: "1:1", image_size: "2K" }`
-- If the sweep ever picks up a `kind === 'cover'` row, branch on `row.kind` and pass `{ aspect_ratio: "1:1" }` (and switch that one call to `modalities: ["image","text"]`). Simplest: keep the sweep skipping `cover` (cover lives in its own function), document the assumption.
+### 3. Reuse the outfit from the photo
 
-### Response parsing
+`CHARACTER_PORTRAIT_PROMPT_TEMPLATE` — the no-anchor branch:
 
-Already only reads `data.choices[0].message.images[0].image_url.url` — unaffected by modality changes.
+- Replace "Choose a single charming outfit" with: "Outfit: recreate the outfit visible in the photo (e.g. jacket type, shirt, pants) in the chosen art style. This outfit becomes iconic and is reused on the cover and inside the book."
+- Anchor branch keeps "REUSE the exact outfit from the anchor reference."
+- Downstream cover + book-image prompts already say "match the anchor portrait," so iconic outfit will carry through automatically.
 
-## Prompt changes
+## Tech notes
 
-### Cover (`_shared/prompts.ts` → `COVER_PROMPT_TEMPLATE`, ~line 225)
+- **Where to host the trait extractor:** Cheapest is a new edge function `extract-appearance-traits` invoked from `useCharacterPortrait` before `generate-character-portrait`. Keeps responsibilities clean and lets us cache its result in `answers.appearanceAutofill`.
+- **Race condition:** Portrait should wait for trait extraction to finish before firing, so `protoDesc` is populated. Implement as: trait-extract → then portrait, sequentially, in `useCharacterPortrait.run`.
+- **User precedence:** If the user has manually set `appearance.hairColor` (etc.), DO NOT overwrite. Only fill blanks.
+- **No schema changes**, no UI changes, no business logic changes outside the portrait pipeline.
+- **Files touched:**
+  - `supabase/functions/_shared/prompts.ts` (rewrite portrait template body)
+  - `supabase/functions/extract-appearance-traits/index.ts` (new)
+  - `src/hooks/useCharacterPortrait.ts` (sequence trait-extract → portrait, merge results into `answers.protagonist.appearance`)
+- **Out of scope:** Cover prompt rewording, book-image prompt rewording, model swap, schema migrations.
 
-Replace `"Composition: portrait orientation (2:3), the title clearly readable at the top or centered, …"` with:
+## Verification
 
-`"Composition: square format (1:1), the title clearly readable across the upper third or centered, with comfortable margin on all four sides, no extra text, no author byline, no watermarks. Do NOT include \"${childName}\" or any name as visible text on the cover."`
-
-### Character portrait (`_shared/prompts.ts` → `CHARACTER_PORTRAIT_PROMPT_TEMPLATE`)
-
-**Unchanged.** Keeps `"Composition: portrait orientation (2:3), the child centered with comfortable margin on all sides."` to match the 2:3 gateway hint.
-
-### Interior page layouts (`_shared/layouts.ts` → `compositionCue`)
-
-| layout id | new cue |
-|---|---|
-| `full-bleed` | "square 1:1 full-bleed illustration; no text overlay so the composition can fill the entire canvas" |
-| `text-bottom-third` | "square 1:1 canvas — keep the lower third visually quiet (open sky, water, soft ground, or out-of-focus foreground) so text can overlay cleanly" |
-| `text-top-third` | "square 1:1 canvas — keep the upper third visually quiet (open sky, plain ceiling, soft wall) so text can overlay cleanly" |
-| `text-left-half` | "square 1:1 canvas — compose the scene on the right half; left half is a plain, gently textured backdrop reserved for text" |
-| `text-right-half` | "square 1:1 canvas — compose the scene on the left half; right half is a plain, gently textured backdrop reserved for text" |
-| `dedication-spot` | "square 1:1 canvas — small, centered decorative spot motif on a clean cream background, single motif, no full scene" |
-| `title` | unchanged (reuses cover artwork, no prompt sent) |
-
-Client mirror `src/lib/pageLayouts.ts` has no `compositionCue` field — no update needed.
-
-## Files touched
-
-1. `supabase/functions/generate-cover/index.ts` — add `image_config: 1:1 / 2K`; modality stays `["image","text"]`.
-2. `supabase/functions/generate-character-portrait/index.ts` — modality → `["image"]`, `image_config: 2:3 / 2K`.
-3. `supabase/functions/generate-book-images/index.ts` — `callImageModel` signature + call sites; modality → `["image"]` for pages/portraits; per-kind `image_config`.
-4. `supabase/functions/_shared/prompts.ts` — rewrite cover composition line only.
-5. `supabase/functions/_shared/layouts.ts` — 6 `compositionCue` strings.
-
-## Out of scope
-
-- Model swap.
-- Client `pageLayouts.ts` mirror.
-- Downstream PDF / Drive layout.
+After implementing, re-run Step 6 with the Macaulay photo:
+- Expect: blonde hair, fair skin, denim jacket + white tee.
+- Check edge logs for `extract-appearance-traits` returning expected JSON.
+- Inspect `protoDesc` in `generate-character-portrait` logs to confirm "hair color: Blonde" is present.
