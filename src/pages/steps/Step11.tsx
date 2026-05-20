@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
+import { supabase } from "@/integrations/supabase/client";
+import { buildBrief } from "@/lib/buildBrief";
+import { pipelineMessage } from "@/lib/loadingMessages";
 
 
 import { Check, Image as ImageIcon, Columns2 } from "lucide-react";
