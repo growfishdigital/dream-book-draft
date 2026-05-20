@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { pathForStep } from "@/lib/wizardSteps";
 import { Input } from "@/components/ui/input";
 
 export default function Login() {
@@ -14,12 +15,12 @@ export default function Login() {
     if (!email.trim() || !password.trim()) return;
     setLoading(true);
     // Mock delay then proceed
-    setTimeout(() => navigate("/step/1"), 700);
+    setTimeout(() => navigate(pathForStep(1)), 700);
   };
 
   const handleGoogle = () => {
     setLoading(true);
-    setTimeout(() => navigate("/step/1"), 700);
+    setTimeout(() => navigate(pathForStep(1)), 700);
   };
 
   return (
@@ -127,7 +128,7 @@ export default function Login() {
         <div className="text-center">
           <button
             type="button"
-            onClick={() => navigate("/step/1")}
+            onClick={() => navigate(pathForStep(1))}
             className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-4 transition-colors"
           >
             Skip login (dev preview) →

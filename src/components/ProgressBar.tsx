@@ -6,8 +6,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useWizard } from "@/contexts/WizardContext";
-
-const TOTAL_STEPS = 10;
+import { TOTAL_STEPS, pathForStep } from "@/lib/wizardSteps";
 
 // Short, accurate step names for tooltips. Matches the current 10-step flow.
 const STEP_LABELS: Record<number, string> = {
@@ -61,7 +60,7 @@ export default function ProgressBar({ currentStep }: { currentStep: number }) {
                     aria-disabled={locked}
                     onClick={() => {
                       if (locked) return;
-                      navigate(`/step/${stepNum}`);
+                      navigate(pathForStep(stepNum));
                     }}
                     className={`h-2 rounded-full transition-all duration-300 ${
                       locked

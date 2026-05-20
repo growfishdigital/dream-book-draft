@@ -2,9 +2,8 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { ChevronLeft } from "lucide-react";
 import WizardHeader from "./WizardHeader";
 import { useWizard } from "@/contexts/WizardContext";
+import { TOTAL_STEPS, pathForStep, stepNumFromSlug } from "@/lib/wizardSteps";
 import type { ReactNode } from "react";
-
-const TOTAL_STEPS = 10;
 
 export default function WizardShell({
   children,
@@ -21,16 +20,17 @@ export default function WizardShell({
 }) {
   const { step } = useParams<{ step: string }>();
   const location = useLocation();
-  const currentStep = Number(step ?? location.pathname.match(/^\/step\/(\d+)$/)?.[1]) || 1;
+  const slugFromPath = location.pathname.match(/^\/step\/([^/]+)$/)?.[1];
+  const currentStep = stepNumFromSlug(step ?? slugFromPath);
   const navigate = useNavigate();
   const { canContinue } = useWizard();
 
   const goBack = () => {
-    if (currentStep > 1) navigate(`/step/${currentStep - 1}`);
+    if (currentStep > 1) navigate(pathForStep(currentStep - 1));
   };
 
   const goNext = () => {
-    if (currentStep < TOTAL_STEPS) navigate(`/step/${currentStep + 1}`);
+    if (currentStep < TOTAL_STEPS) navigate(pathForStep(currentStep + 1));
   };
 
   const handleContinue = async () => {

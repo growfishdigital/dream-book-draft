@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -499,7 +500,7 @@ export default function Step11() {
           We'll send everything to your inbox shortly.
         </p>
         <button
-          onClick={() => navigate("/step/1")}
+          onClick={() => navigate(pathForStep(1))}
           className="text-sm font-medium underline"
           style={{ color: "hsl(var(--wizard-primary))" }}
         >
