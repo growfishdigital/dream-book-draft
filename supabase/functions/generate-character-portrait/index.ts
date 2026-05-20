@@ -114,7 +114,8 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           model: MODELS.cover,
           messages: [{ role: "user", content: userContent }],
-          modalities: ["image", "text"],
+          modalities: ["image"],
+          image_config: { aspect_ratio: "2:3", image_size: "2K" },
         }),
       },
     );

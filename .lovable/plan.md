@@ -1,61 +1,98 @@
 ## Goal
 
-At the end of the run, do a single final sweep that retries any **failed image generations** and any **failed Drive uploads** once. If after that pass any planned page (or portrait 1, or the cover when present) is still missing, the book is marked **failed**, not partially-done.
+Force **1:1 square at 2K** for the **cover** and **interior pages**. Keep **character portraits at 2:3 portrait** at 2K. Modalities: **cover** = `["image","text"]` (needs to render the title text on the artwork), **pages and portraits** = `["image"]` only. Update cover + page-layout prompts for square format.
 
-No second sweep, no per-row retry counter, no `completed_with_errors` state.
+## Gateway changes
 
-## Where the sweep runs
+All three image functions call the gateway with `MODELS.cover` (`google/gemini-3-pro-image-preview`).
 
-In `generate-book-images/index.ts`, inside the `remaining === 0` branch:
+### 1. `generate-cover/index.ts`
 
-```text
-1. ensurePortraits        (unchanged)
-2. generatePages          (unchanged; may take multiple invocations)
-3. when remaining === 0:
-   a. finalSweepGenerations()      ← NEW, single pass
-   b. invoke export-book-images-to-drive (existing, retries failed uploads)
-   c. verifyComplete() → setPipeline("done") OR "failed"
+```ts
+{
+  model: MODELS.cover,
+  messages: [{ role: "user", content: userContent }],
+  modalities: ["image", "text"],          // unchanged — cover renders title text
+  image_config: { aspect_ratio: "1:1", image_size: "2K" },
+}
 ```
 
-## (3a) Generation retry sweep — single pass
+### 2. `generate-character-portrait/index.ts`
 
-- Query `book_images` for the book where `status='failed'` AND `kind IN ('portrait','page')`.
-- For each failed row, exactly **one** retry attempt:
-  - Reuse the stored `prompt` already on the row.
-  - Rebuild `userContent`: text prompt + `references` (anchor portrait + alt portraits) as image_url parts. Same anchor-preamble logic `generatePages` already uses.
-  - Call `callImageModel`. On success: upsert `status='ok'` and `scheduleDriveUpload(...)`. On failure: leave row as `failed` with updated `error`.
-- Time budget: if `Date.now() > deadline` mid-loop, stop and self-chain via the existing `generate-book-images` invoke pattern with `pipeline_status='retry_generations'`. The next slice's `remaining === 0` will re-enter this branch and finish the sweep. Net effect is still "one retry per failed row" because successful ones drop out of the failed-set.
+```ts
+{
+  model: MODELS.cover,
+  messages: [{ role: "user", content: userContent }],
+  modalities: ["image"],                   // image-only
+  image_config: { aspect_ratio: "2:3", image_size: "2K" },
+}
+```
 
-No schema change. No per-row attempt counter — if the single retry fails, that's the verdict.
+### 3. `generate-book-images/index.ts` → `callImageModel`
 
-## (3b) Upload retry sweep
+Used for retry/sweep of both portraits and pages. Add an `imageConfig` parameter so callers pick the ratio:
 
-`export-book-images-to-drive` already handles this: selects every `status='ok'` row missing `drive_file_id` and re-uploads via `uploadAndStampImage` (4-attempt jittered backoff + audit log). Runs after (3a) so freshly regenerated images get uploaded in the same pass.
+```ts
+async function callImageModel(
+  apiKey: string,
+  userContent: any[],
+  imageConfig: { aspect_ratio: "1:1" | "2:3"; image_size: "2K" },
+): Promise<string> {
+  // body:
+  {
+    model: MODELS.cover,
+    messages: [{ role: "user", content: userContent }],
+    modalities: ["image"],                  // pages + portrait retries are image-only
+    image_config: imageConfig,
+  }
+}
+```
 
-## (3c) Completion verdict — strict
+Call sites:
+- portrait retries → `{ aspect_ratio: "2:3", image_size: "2K" }`
+- page generations + `finalSweepGenerations` → `{ aspect_ratio: "1:1", image_size: "2K" }`
+- If the sweep ever picks up a `kind === 'cover'` row, branch on `row.kind` and pass `{ aspect_ratio: "1:1" }` (and switch that one call to `modalities: ["image","text"]`). Simplest: keep the sweep skipping `cover` (cover lives in its own function), document the assumption.
 
-After cleanup, recompute against `parsed.pages`:
+### Response parsing
 
-- Required pages = every `parsed.pages[i]` that has an `image_prompt`.
-- Required portrait = portrait slot 1 only (slots 2/3 stay best-effort; they only affect page reference quality, not whether the book is shippable).
+Already only reads `data.choices[0].message.images[0].image_url.url` — unaffected by modality changes.
 
-A page is **complete** when its `book_images` row has `status='ok'` AND `drive_file_id IS NOT NULL` (image generated AND uploaded to Drive). Same rule for portrait 1.
+## Prompt changes
 
-- If any required row is incomplete → `pipeline_status='failed'`, `pipeline_error` summarizes what's missing (e.g. `"Book incomplete: missing 2 page(s) (7, 19); cover not uploaded"`).
-- Otherwise → `pipeline_status='done'`.
+### Cover (`_shared/prompts.ts` → `COVER_PROMPT_TEMPLATE`, ~line 225)
 
-This makes "done" actually mean "every planned image was generated and is in Drive". A book missing pages is never silently shipped.
+Replace `"Composition: portrait orientation (2:3), the title clearly readable at the top or centered, …"` with:
+
+`"Composition: square format (1:1), the title clearly readable across the upper third or centered, with comfortable margin on all four sides, no extra text, no author byline, no watermarks. Do NOT include \"${childName}\" or any name as visible text on the cover."`
+
+### Character portrait (`_shared/prompts.ts` → `CHARACTER_PORTRAIT_PROMPT_TEMPLATE`)
+
+**Unchanged.** Keeps `"Composition: portrait orientation (2:3), the child centered with comfortable margin on all sides."` to match the 2:3 gateway hint.
+
+### Interior page layouts (`_shared/layouts.ts` → `compositionCue`)
+
+| layout id | new cue |
+|---|---|
+| `full-bleed` | "square 1:1 full-bleed illustration; no text overlay so the composition can fill the entire canvas" |
+| `text-bottom-third` | "square 1:1 canvas — keep the lower third visually quiet (open sky, water, soft ground, or out-of-focus foreground) so text can overlay cleanly" |
+| `text-top-third` | "square 1:1 canvas — keep the upper third visually quiet (open sky, plain ceiling, soft wall) so text can overlay cleanly" |
+| `text-left-half` | "square 1:1 canvas — compose the scene on the right half; left half is a plain, gently textured backdrop reserved for text" |
+| `text-right-half` | "square 1:1 canvas — compose the scene on the left half; right half is a plain, gently textured backdrop reserved for text" |
+| `dedication-spot` | "square 1:1 canvas — small, centered decorative spot motif on a clean cream background, single motif, no full scene" |
+| `title` | unchanged (reuses cover artwork, no prompt sent) |
+
+Client mirror `src/lib/pageLayouts.ts` has no `compositionCue` field — no update needed.
 
 ## Files touched
 
-- `supabase/functions/generate-book-images/index.ts`:
-  - New `finalSweepGenerations(supabase, bookId, parsed, references, apiKey, deadline, subfolderId)`.
-  - New `verifyComplete(supabase, bookId, parsed)` returning `{ ok, missing[] }`.
-  - Wire both into the `remaining === 0` branch; replace the current unconditional `setPipeline("done")` with the verdict.
-- `_shared/driveUpload.ts`, `export-book-images-to-drive/index.ts`: unchanged.
+1. `supabase/functions/generate-cover/index.ts` — add `image_config: 1:1 / 2K`; modality stays `["image","text"]`.
+2. `supabase/functions/generate-character-portrait/index.ts` — modality → `["image"]`, `image_config: 2:3 / 2K`.
+3. `supabase/functions/generate-book-images/index.ts` — `callImageModel` signature + call sites; modality → `["image"]` for pages/portraits; per-kind `image_config`.
+4. `supabase/functions/_shared/prompts.ts` — rewrite cover composition line only.
+5. `supabase/functions/_shared/layouts.ts` — 6 `compositionCue` strings.
 
 ## Out of scope
 
-- Cover: today this function doesn't generate the cover (it's a separate `generate-cover` path). Verdict checks the cover row only if one exists in `book_images`.
-- Surfacing `failed` to the UI beyond what's already on `generated_books.pipeline_status` / `pipeline_error`.
-- Restarting/regenerating from the UI — the book stays `failed` until a manual re-run.
+- Model swap.
+- Client `pageLayouts.ts` mirror.
+- Downstream PDF / Drive layout.

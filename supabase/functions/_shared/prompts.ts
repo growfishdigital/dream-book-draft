@@ -222,7 +222,7 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
     `Title to display on the cover: "${title}". Render this title text exactly as given — do NOT add the child's name or any first name to the title.`,
     `Subject: ONLY the hero child — ${childName} — alone in a single evocative scene drawn from the story. Do NOT depict any other people, friends, family members, pets, or supporting characters; the cover features the hero solo.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
     `Scene inspired by: ${summary.slice(0, 600)}`,
-    `Composition: portrait orientation (2:3), the title clearly readable at the top or centered, no extra text, no author byline, no watermarks. Do NOT include "${childName}" or any name as visible text on the cover.`,
+    `Composition: square format (1:1), the title clearly readable across the upper third or centered, with comfortable margin on all four sides, no extra text, no author byline, no watermarks. Do NOT include "${childName}" or any name as visible text on the cover.`,
     `Tone: magical, hopeful, suitable for young children.`,
   ].filter(Boolean).join(" ");
 }

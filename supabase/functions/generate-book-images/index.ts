@@ -62,9 +62,15 @@ function getEnv(name: string): string {
 
 // ---- AI gateway --------------------------------------------------------
 
+type ImageConfig = { aspect_ratio: "1:1" | "2:3"; image_size: "2K" };
+
+const PAGE_IMAGE_CONFIG: ImageConfig = { aspect_ratio: "1:1", image_size: "2K" };
+const PORTRAIT_IMAGE_CONFIG: ImageConfig = { aspect_ratio: "2:3", image_size: "2K" };
+
 async function callImageModel(
   apiKey: string,
   userContent: any[],
+  imageConfig: ImageConfig,
 ): Promise<string> {
   const resp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
     method: "POST",
@@ -75,7 +81,8 @@ async function callImageModel(
     body: JSON.stringify({
       model: MODELS.cover,
       messages: [{ role: "user", content: userContent }],
-      modalities: ["image", "text"],
+      modalities: ["image"],
+      image_config: imageConfig,
     }),
   });
 
@@ -202,7 +209,7 @@ async function ensurePortraits(
     }
     const started = Date.now();
     try {
-      anchor = await callImageModel(apiKey, userContent);
+      anchor = await callImageModel(apiKey, userContent, PORTRAIT_IMAGE_CONFIG);
       await upsertImage(supabase, {
         book_id: bookId, kind: "portrait", slot: 1,
         prompt: promptText, image_data_url: anchor,
@@ -257,7 +264,7 @@ async function ensurePortraits(
     ];
     const started = Date.now();
     try {
-      const url = await callImageModel(apiKey, userContent);
+      const url = await callImageModel(apiKey, userContent, PORTRAIT_IMAGE_CONFIG);
       await upsertImage(supabase, {
         book_id: bookId, kind: "portrait", slot,
         prompt: promptText, image_data_url: url,
@@ -341,7 +348,7 @@ async function generatePages(
     }
     const started = Date.now();
     try {
-      const url = await callImageModel(apiKey, userContent);
+      const url = await callImageModel(apiKey, userContent, PAGE_IMAGE_CONFIG);
       await upsertImage(supabase, {
         book_id: bookId, kind: "page", slot: page.page_number,
         prompt: promptText, image_data_url: url,
@@ -442,7 +449,8 @@ async function finalSweepGenerations(
 
     const started = Date.now();
     try {
-      const url = await callImageModel(apiKey, userContent);
+      const cfg: ImageConfig = row.kind === "portrait" ? PORTRAIT_IMAGE_CONFIG : PAGE_IMAGE_CONFIG;
+      const url = await callImageModel(apiKey, userContent, cfg);
       await upsertImage(supabase, {
         book_id: bookId, kind: row.kind, slot: row.slot,
         prompt: row.prompt, image_data_url: url,
