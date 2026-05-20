@@ -414,14 +414,25 @@ Deno.serve(async (req) => {
     const startedAt = Date.now();
     const deadline = startedAt + MAX_RUN_MS;
 
+    // 0. Resolve Drive subfolder up-front so progressive uploads have a
+    // target. Best-effort: if Drive is down, progressive uploads no-op and
+    // the final cleanup pass picks up the slack.
+    let subfolderId: string | null = null;
+    try {
+      const sub = await ensureBookImagesSubfolder(supabase, bookId);
+      subfolderId = sub.id;
+    } catch (e) {
+      console.error("Drive subfolder resolution failed (progressive uploads disabled):", e);
+    }
+
     // 1. Portraits
     const { references } = await ensurePortraits(
-      supabase, bookId, row.brief || {}, seedPortrait, apiKey,
+      supabase, bookId, row.brief || {}, seedPortrait, apiKey, subfolderId,
     );
 
     // 2. Pages (time-budgeted slice)
     const { remaining, fatal } = await generatePages(
-      supabase, bookId, row.parsed, references, apiKey, deadline,
+      supabase, bookId, row.parsed, references, apiKey, deadline, subfolderId,
     );
 
     if (fatal) {
