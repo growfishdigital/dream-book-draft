@@ -1,5 +1,6 @@
-// Generate a single ~100-word kid-friendly story summary.
-// Returns { title, summary } via structured tool-call output.
+// Generate a framework-aware kid-friendly story concept.
+// Returns { title, summary } today; see ../_shared/storyConceptPrompt.ts for the
+// new framework-aware concept prompt and hidden metadata shape to wire next.
 //
 // Prompt copy lives in ../_shared/prompts.ts — edit there to tweak for all users.
 
