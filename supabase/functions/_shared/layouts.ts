@@ -113,7 +113,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "right",
     illustrationCoverage: "half",
     compositionCue:
-      "compose the scene on the left half of the canvas; right half is a plain, gently textured backdrop reserved for text",
+      "square 1:1 canvas — compose the scene on the left half; right half is a plain, gently textured backdrop reserved for text",
     preferFor: ["resolution", "closing"],
   },
 ];
