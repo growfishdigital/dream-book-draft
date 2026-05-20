@@ -1,17 +1,32 @@
-## Fix Summary Generation Slowness
+## Smoke Test: gpt-5 text models
 
-### Problem
-`generate-summary` was switched to `openai/gpt-5` (a reasoning model), making the pre-purchase Step 8 call take 20–60s instead of ~3–6s. The full-book engine (`generate-book`) already runs async with `EdgeRuntime.waitUntil` + polling, so it correctly uses `openai/gpt-5`.
-
-### Current State
-`supabase/functions/_shared/prompts.ts` already has `MODELS.summary` reverted to `"openai/gpt-5-mini"`.
+### Goal
+Verify `generate-summary` (gpt-5-mini) and `generate-book` (gpt-5) both produce valid output end-to-end.
 
 ### Steps
-1. Deploy the `generate-summary` edge function so the reverted model goes live.
-2. Verify with a quick test invocation to confirm response time is back under ~10s.
-3. Optionally trim the per-call prompt payload in `storyConceptPrompt.ts` (only inject the selected framework's examples/bad-phrases instead of all five) for an additional speed boost.
+
+1. **Deploy** `generate-summary` and `generate-book` to make sure both run the latest code.
+
+2. **Test `generate-summary`** via `supabase--curl_edge_functions` with a realistic brief (child name, age band, genre, mood, lesson, interests, personality). Time the call. Pass criteria:
+   - HTTP 200
+   - `title` non-empty, doesn't contain child's first name
+   - `summary` 50–110 words
+   - Response time under ~10s
+   - No quality warnings in edge logs
+
+3. **Test `generate-book`** via `curl_edge_functions` with the same brief plus the approved concept from step 2. It returns `{ id, queued: true }` immediately (202); the real work runs in background via `EdgeRuntime.waitUntil`.
+
+4. **Poll `generated_books`** via `supabase--read_query` every ~5s on `id`, watching `pipeline_status` advance `story → portraits`. Cap at ~3 minutes. Pass criteria:
+   - `pipeline_status` reaches at least `portraits` (story done) without `failed`
+   - `parsed` is non-null with 32 pages
+   - `status` is `ok` (or `needs_review` with logged validation issues)
+   - `generation_ms` recorded; surface it for visibility
+
+5. **Skip image pipeline** for this smoke test — `generate-book-images` is triggered automatically but we only care about text-model output here. Note the final `pipeline_status` reached.
+
+6. **Report** model used, latency for each, summary text, book title + first 2 page texts, and any validation warnings.
 
 ### Out of scope
-- `generate-book` model stays `openai/gpt-5`
-- Cover image model stays `google/gemini-3-pro-image-preview`
-- No client-side queue/polling changes needed since the model itself is fast again.
+- Image generation quality (cover/page images)
+- Client-side wizard flow
+- Drive export
