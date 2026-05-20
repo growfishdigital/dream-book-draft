@@ -66,6 +66,10 @@ interface BookRow {
   model: string;
   generation_ms: number | null;
   status: string;
+  drive_folder_url?: string | null;
+  drive_doc_url?: string | null;
+  drive_export_status?: string | null;
+  drive_export_error?: string | null;
 }
 
 function isV2(p: any): p is BookOutputV2 {
