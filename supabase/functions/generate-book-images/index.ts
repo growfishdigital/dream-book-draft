@@ -255,13 +255,22 @@ async function ensurePortraits(
   return { anchor: anchor!, references };
 }
 
+const MAX_RUN_MS = 50_000;
+const MAX_CONSECUTIVE_PAGE_FAILURES = 3;
+
+interface GeneratePagesResult {
+  remaining: number;
+  fatal?: string;
+}
+
 async function generatePages(
   supabase: any,
   bookId: string,
   parsed: any,
   references: string[],
   apiKey: string,
-): Promise<void> {
+  deadline: number,
+): Promise<GeneratePagesResult> {
   const pages = Array.isArray(parsed?.pages) ? parsed.pages : [];
   const targets = pages.filter((p: any) => p.image_prompt);
   const total = targets.length;
