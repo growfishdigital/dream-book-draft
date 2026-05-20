@@ -1104,6 +1104,8 @@ export interface BookOutputV2 {
     age_band: AgeBand;
     art_style: string | null;
     repeating_phrase: string | null;
+    /** Locked hero outfit description used on every page's image prompt. */
+    book_outfit: string | null;
     generated_at: string;
     model: string;
     prompt_version: string;
@@ -1116,6 +1118,7 @@ export interface BookOutputV2 {
   };
   pages: BookPage[];
 }
+
 
 // ---- Appearance blocks (one source of character truth per book) ------------
 
