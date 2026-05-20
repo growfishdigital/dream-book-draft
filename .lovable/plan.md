@@ -1,26 +1,15 @@
-# Fix: Drive uploads failing — folder name mismatch
+# Recover current job + correct folder name
 
-## Root cause
+## Folder name fix
+- `supabase/functions/export-book-to-drive/index.ts`: change `"Thistle Books"` → `"ThistleBook"` in the `findFolder` call and the error message.
+- Redeploy `export-book-to-drive`.
 
-`export-book-to-drive` searches the connected Drive for a top-level folder named **`ThistleBooks`** (no space). Your actual Drive root folder is **`Thistle Books`** (with a space). Every export call fails with:
+## Recover book `7a054950-7091-4f2a-b6ea-d6556bc96648`
+1. Invoke `export-book-to-drive` with that `book_id` → creates dated subfolder under `ThistleBook/Unprocessed Books/` and the manuscript Google Doc; stamps `drive_folder_id` + `drive_doc_url` onto the row.
+2. Invoke `export-book-images-to-drive` with the same `book_id` → uploads all 13 already-generated `book_images` rows (portraits + cover + pages) into `book_images_<id>/`.
+3. Verify with `SELECT drive_folder_url, drive_doc_url FROM generated_books WHERE id = '7a054950…'` and a count of `book_images` where `drive_file_id IS NOT NULL`.
 
-> Couldn't find a top-level 'ThistleBooks' folder in the connected Drive.
+Pages 14–31 were never generated (the run failed at "Painting page 3" per your screenshot — the pipeline stopped because every image upload was erroring on the missing folder). They will NOT regenerate from this recovery; this only uploads what already exists. If you want the remaining pages, we'd need a separate "resume image pipeline" call — say the word and I'll add that next.
 
-Because the manuscript export never succeeds, `generated_books.drive_folder_id` stays `NULL`. Every `generate-book-images` upload then bails with "Book has no Drive folder yet" — so portraits, cover, page 1, and the Doc never reach Drive even though they generate correctly in the DB.
-
-## Change
-
-Update the hardcoded root folder name in two edge functions to match the real Drive folder:
-
-- `supabase/functions/export-book-to-drive/index.ts` — replace the `findFolder("ThistleBooks", "root")` lookup (and the error message that mentions it) with `"Thistle Books"`.
-- Audit `supabase/functions/export-book-images-to-drive/index.ts` and `supabase/functions/_shared/driveUpload.ts` for any other `ThistleBooks` literal and update to `"Thistle Books"`. (The shared helper resolves via `drive_folder_id` so likely no change needed, but verify.)
-
-No schema changes, no client changes, no other behavior changes.
-
-## Verify after deploy
-
-1. Re-run the current book generation (or trigger a fresh one with `?dev=1`).
-2. Check `export-book-to-drive` logs — expect a success line, no "Couldn't find" error.
-3. Check `generated_books` row — `drive_folder_id` and `drive_doc_url` populated.
-4. Check `generate-book-images` logs — uploads should succeed; no more "Book has no Drive folder yet".
-5. Refresh the `Thistle Books / Unprocessed Books` folder in Drive — expect the dated subfolder containing the manuscript Doc plus `book_images_<id>/` with portrait, cover, and page PNGs as they finish.
+## Optional (not in this plan)
+Older orphan row `c8b90584…` (34 images, `pipeline_status='failed'`) — leave alone unless you also want to recover it.

@@ -27,20 +27,29 @@ function getEnv(name: string): string {
 async function exportImages(bookId: string, supabase: any) {
   const subfolder = await ensureBookImagesSubfolder(supabase, bookId);
 
-  const { data: images, error: imgErr } = await supabase
+  // Fetch ids only first — image_data_url is huge base64 and a bulk SELECT
+  // including it routinely hits the statement timeout.
+  const { data: idRows, error: idErr } = await supabase
     .from("book_images")
-    .select("id,book_id,kind,slot,image_data_url,drive_file_id")
+    .select("id")
     .eq("book_id", bookId)
     .eq("status", "ok")
+    .is("drive_file_id", null)
     .order("kind", { ascending: true })
     .order("slot", { ascending: true });
-  if (imgErr) throw new Error(`book_images read failed: ${imgErr.message}`);
+  if (idErr) throw new Error(`book_images id read failed: ${idErr.message}`);
 
   let uploaded = 0;
-  for (const img of (images || []) as BookImageRow[]) {
+  for (const { id } of (idRows || []) as { id: string }[]) {
+    const { data: img, error: rowErr } = await supabase
+      .from("book_images")
+      .select("id,book_id,kind,slot,image_data_url,drive_file_id")
+      .eq("id", id)
+      .maybeSingle();
+    if (rowErr || !img) continue;
     if (img.drive_file_id) continue;
     if (!img.image_data_url) continue;
-    const ok = await uploadAndStampImage(supabase, img, subfolder.id);
+    const ok = await uploadAndStampImage(supabase, img as BookImageRow, subfolder.id);
     if (ok) uploaded += 1;
   }
 
