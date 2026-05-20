@@ -146,24 +146,45 @@ async function uploadOnce(
   return JSON.parse(text);
 }
 
+export interface AttemptEvent {
+  attempt: number;            // 1-based
+  outcome: "ok" | "retry" | "failed";
+  http_status?: number;
+  duration_ms: number;
+  error?: string;
+}
+
 export async function uploadImageWithRetry(
   name: string,
   parentId: string,
   dataUrl: string,
+  onAttempt?: (ev: AttemptEvent) => void,
 ): Promise<{ id: string; webViewLink: string }> {
   const { bytes, mime } = dataUrlToBytes(dataUrl);
   let lastErr: unknown;
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    const started = Date.now();
     try {
-      return await uploadOnce(name, parentId, bytes, mime);
+      const file = await uploadOnce(name, parentId, bytes, mime);
+      onAttempt?.({ attempt: attempt + 1, outcome: "ok", duration_ms: Date.now() - started });
+      return file;
     } catch (e) {
       lastErr = e;
+      const duration_ms = Date.now() - started;
       const isHttp = e instanceof HttpError;
-      const status = isHttp ? (e as HttpError).status : 0;
-      const retriable = !isHttp || RETRY_STATUSES.has(status);
-      if (!retriable || attempt === MAX_ATTEMPTS - 1) break;
+      const status = isHttp ? (e as HttpError).status : undefined;
+      const retriable = !isHttp || RETRY_STATUSES.has(status!);
+      const terminal = !retriable || attempt === MAX_ATTEMPTS - 1;
+      onAttempt?.({
+        attempt: attempt + 1,
+        outcome: terminal ? "failed" : "retry",
+        http_status: status,
+        duration_ms,
+        error: e instanceof Error ? e.message : String(e),
+      });
+      if (terminal) break;
       const backoff = (isHttp && (e as HttpError).retryAfterMs) || jitter(BACKOFF_MS[attempt]);
-      console.warn(`Drive upload retry ${attempt + 1}/${MAX_ATTEMPTS - 1} for ${name} in ${backoff}ms (status ${status})`);
+      console.warn(`Drive upload retry ${attempt + 1}/${MAX_ATTEMPTS - 1} for ${name} in ${backoff}ms (status ${status ?? "n/a"})`);
       await new Promise((r) => setTimeout(r, backoff));
     }
   }
