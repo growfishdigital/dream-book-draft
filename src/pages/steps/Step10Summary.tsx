@@ -270,7 +270,7 @@ export default function Step10Summary() {
         <div className="w-full flex items-center gap-3" style={{ maxWidth: "700px" }}>
           <button
             type="button"
-            onClick={() => navigate("/step/8")}
+            onClick={() => navigate("/step/7")}
             className="flex-1 basis-0 py-4 rounded-full text-base font-semibold border-2"
             style={{
               borderColor: "hsl(var(--wizard-primary))",
