@@ -605,7 +605,27 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 3. Drive export (best-effort) — only when all pages are done.
+    // 3a. Final sweep: one-pass retry of any failed portrait/page generations.
+    const stillFailed = await finalSweepGenerations(
+      supabase, bookId, references, apiKey, deadline, subfolderId,
+    );
+    if (stillFailed < 0) {
+      // Ran out of time mid-sweep — self-chain so the next slice finishes it.
+      try {
+        void supabase.functions.invoke("generate-book-images", {
+          body: { book_id: bookId },
+        });
+      } catch (e) {
+        console.error("Self-chain (sweep) invoke threw:", e);
+      }
+      return new Response(
+        JSON.stringify({ ok: true, book_id: bookId, continued: true, stage: "retrying" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // 3b. Drive cleanup pass — uploads any rows still missing drive_file_id
+    // (including freshly-regenerated ones from the sweep).
     let exportResult: any = null;
     try {
       const { data, error: invErr } = await supabase.functions.invoke(
@@ -618,6 +638,25 @@ Deno.serve(async (req) => {
       console.error("Drive image export threw:", e);
     }
 
+    // 3c. Strict completion verdict: every required image must be generated
+    // AND uploaded to Drive, otherwise the book is failed.
+    const verdict = await verifyComplete(supabase, bookId, row.parsed);
+    if (!verdict.ok) {
+      const summary = summarizeGaps(verdict.gaps);
+      console.error("Book verification failed:", summary);
+      await supabase
+        .from("generated_books")
+        .update({
+          pipeline_status: "failed",
+          pipeline_error: summary.slice(0, 1000),
+        })
+        .eq("id", bookId);
+      return new Response(
+        JSON.stringify({ ok: false, book_id: bookId, error: summary, gaps: verdict.gaps }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
     await setPipeline(supabase, bookId, "done", {
       stage: "done", current: 1, total: 1, message: "All done!",
     });
@@ -626,6 +665,8 @@ Deno.serve(async (req) => {
       JSON.stringify({ ok: true, book_id: bookId, done: true, drive_export: exportResult }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
+
 
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
