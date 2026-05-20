@@ -1,129 +1,47 @@
+# Fix: "Edge Function returned a non-2xx status code" on Pay
 
-# Post-purchase story + image generation pipeline
+## Root cause
 
-## Goal
+The failing call is `generate-book` (first step of the post-purchase pipeline), not the image orchestrator. Edge logs show Lovable AI gateway returning **400** from the upstream provider (Google AI Studio / Gemini 2.5 Pro):
 
-After the user "purchases" on Step 11, run the full backend pipeline end-to-end:
-1. Generate the full book text (already exists via `generate-book`).
-2. Generate 1–3 character portraits (front / 3/4 side / action), anchored to the existing portrait from Step 6.
-3. Sequentially generate every page illustration, anchored to those portraits + per-page scene/layout prompts.
-4. Upload all images to the same Google Drive folder as the manuscript, in a `book_images_<bookId>/` subfolder, named `page-01.png`, `page-02.png`, etc.
+> "The specified schema produces a constraint that has too many states for serving. Typical causes are schemas with lots of text, long array length limits (especially when nested), or complex value matchers (integers/numbers with minimum/maximum, strings with date-time, etc)."
 
-Canonical bookID = `generated_books.id` (existing uuid). All new rows reference it.
+Our `buildBookJsonSchema()` in `supabase/functions/_shared/prompts.ts` hits all three of those triggers:
 
-## What changes for the user
+- `pages` array has `minItems: 32, maxItems: 32` with a nested object — Gemini multiplies the state space across every item.
+- `page_number` is `integer` with `minimum: 1, maximum: 32` — another multiplier per item.
+- `beat` is a nullable enum (`type: ["string","null"]` + `enum: [..., null]`) — Gemini's constrained decoder doesn't like the nullable‑enum combo.
+- `role` and `layout_id` enums are fine on their own but compound the per‑item state space.
 
-- **Step 11**: replace the "Place order" button with a tiny buyer form (name + email), then a "Pay" button. On click, we kick off the pipeline and show a "Crafting your book…" screen with a real progress indicator (story → portraits → page 1/30 → page 2/30…). When done, show the existing success state. No real Stripe yet.
+Net result: Gemini's serving-time constraint compiler refuses to compile the schema, so the function returns 500, which surfaces in Step 11 as "Edge Function returned a non-2xx status code".
 
-## Data model
+## The fix (single file)
 
-New table `book_images` (one row per image asset for a book):
+Edit `supabase/functions/_shared/prompts.ts` → `buildBookJsonSchema()`:
 
-```text
-id              uuid pk
-book_id         uuid not null  -- FK generated_books.id (logical, no hard FK)
-kind            text not null  -- 'portrait' | 'page' | 'cover'
-slot            int  not null  -- portrait: 1..3 ; page: page_number ; cover: 0
-prompt          text
-image_data_url  text           -- base64 (kept short-term until Drive upload)
-drive_file_id   text
-drive_file_url  text
-status          text not null default 'pending'  -- pending|ok|failed
-error           text
-generated_ms    int
-created_at      timestamptz default now()
-unique (book_id, kind, slot)
-```
+1. **Drop `minItems`/`maxItems` on `pages`.** Keep the 32‑page requirement in the prompt copy (`buildBookUserMessageV2` already specifies it). Validate length server‑side after parsing.
+2. **Loosen `page_number`** to `{ type: "integer" }` — drop `minimum`/`maximum`. Already validated implicitly by the prompt.
+3. **Simplify `beat`** to a plain optional enum: remove it from the per‑item `required` list (it already isn't required) and change the type to `{ type: "string", enum: ["opening","rising","turn","climax","resolution","closing"] }`. Model omits the field for the title/dedication pages instead of returning `null`.
+4. **Make `image_scene`, `setting`, `mood`, `continuity_notes`** plain optional `{ type: "string" }` (drop the `["string","null"]` union). Same reasoning — Gemini's constrained mode hates nullable scalars; absence conveys the same thing.
+5. **Keep** the `role` enum and `layout_id` enum — these are small and necessary.
+6. Add a short server‑side guard after `JSON.parse` in `generate-book/index.ts` that:
+   - Confirms `parsed.pages.length === 32`, otherwise returns a clear error.
+   - Coerces missing optional fields to `null` so downstream code (`generate-book-images`, `export-book-to-drive`) keeps working unchanged.
 
-New columns on `generated_books`:
-- `buyer_name text`
-- `buyer_email text`
-- `pipeline_status text default 'idle'`  -- idle|story|portraits|pages|done|failed
-- `pipeline_progress jsonb`               -- `{ stage, current, total, message }`
-- `pipeline_error text`
+No other functions need to change. `generate-book-images` already handles missing `image_prompt` and won't be reached until `generate-book` succeeds.
 
-RLS: same permissive "anyone can read/insert/update" pattern as `generated_books` (no auth in the prototype).
+## Why this is safe
 
-## Edge functions
+- The prompt (`buildBookUserMessageV2`) already enforces "exactly 32 pages, page_number 1–32, page 1 = title, page 2 = dedication, pages 3–32 = story, tag each story page's beat". Removing schema-level numeric constraints just stops Gemini's compiler from rejecting the schema; it doesn't change what the model is asked to produce.
+- Downstream we already null‑coalesce these fields everywhere they're used; collapsing `["string","null"]` → optional `"string"` is a no-op for callers.
 
-### `generate-book` (modify)
-- Accept `buyer_name` and `buyer_email` in the request; stamp them onto the row + brief so the Drive folder name (already keyed off `brief.buyer_name`) picks them up.
-- Set `pipeline_status = 'story'` at start, `'portraits'` on success. Return `{ id, ... }` as today.
+## Verification
 
-### `generate-character-portrait` (modify)
-- Accept `pose: 'front' | 'side' | 'action'` and `photoDataUrl` (the specific source photo to base this portrait on).
-- Accept optional `anchorPortraitDataUrl` — when present (portraits 2 & 3), feed it FIRST as the canonical likeness reference, then the alt photo as the source-of-pose reference.
-- Update `CHARACTER_PORTRAIT_PROMPT_TEMPLATE` in `_shared/prompts.ts` to take a `pose` arg:
-  - front: full-body, facing camera, neutral cream background.
-  - side: 3/4 turn, same outfit, same background.
-  - action: mid-motion expressive pose appropriate to one of the child's interests, same outfit.
-- Still returns `{ imageDataUrl }`. No DB write — the orchestrator persists it into `book_images`.
-
-### `generate-book-images` (NEW)
-- Input: `{ book_id }`.
-- Loads the `generated_books` row (must have `parsed.pages` and `parsed.cover.image_prompt`).
-- Updates `pipeline_status = 'portraits'` and `pipeline_progress = { stage:'portraits', current:0, total: N }`.
-- **Portrait phase**:
-  - Reads `brief.protagonist.photos[]` (already saved). N = `min(photos.length, 3)`.
-  - Portrait 1 = the existing portrait from Step 6 (passed in via `answers.characterPortrait.dataUrl` and saved to the row before invoking; falls back to a fresh `front` portrait if absent).
-  - Portrait 2 (if photo 2 exists) = pose `side`, anchored on portrait 1.
-  - Portrait 3 (if photo 3 exists) = pose `action`, anchored on portrait 1.
-  - Each result inserted into `book_images (kind='portrait', slot=1..3)`.
-- **Page phase**:
-  - Sets `pipeline_status='pages'`.
-  - For each page where `image_prompt` is not null (skips the title page), sequentially calls the Lovable AI gateway with `MODELS.cover` and:
-    - text = `image_prompt` (already baked in `generate-book`, includes art style + canonical appearance + scene + layout).
-    - images = `[portrait1, portrait2?, portrait3?]` as anchor references, prepending a short "Use Image #1 as the canonical character appearance reference; Images #2–#3 are alternate poses of the same character" preamble.
-  - On each success, upsert `book_images (kind='page', slot=page_number)` and bump `pipeline_progress`.
-  - Failures are recorded on the row but do not stop the loop.
-- **Drive phase**:
-  - After all pages, invoke `export-book-images-to-drive` (below) and `pipeline_status='done'`.
-- Errors set `pipeline_status='failed'` and `pipeline_error`.
-- `verify_jwt = false` in `supabase/config.toml`.
-
-### `export-book-images-to-drive` (NEW)
-- Input: `{ book_id }`.
-- Reads `generated_books.drive_folder_id` (already populated by `export-book-to-drive`). If missing, waits/falls back to invoking the doc exporter first to ensure the folder exists.
-- Creates subfolder `book_images_<book_id>` inside that folder (idempotent — find-or-create, same helper as the existing exporter).
-- For each `book_images` row with `image_data_url` and no `drive_file_id`:
-  - Decodes the base64.
-  - Uploads via multipart `POST https://connector-gateway.lovable.dev/google_drive/upload/drive/v3/files?uploadType=multipart` with the proper name:
-    - portraits: `portrait-1.png`, `portrait-2.png`, `portrait-3.png`
-    - pages: `page-01.png`, `page-02.png`, … (zero-padded so they sort)
-    - cover: `cover.png`
-  - Stamps `drive_file_id` + `drive_file_url`, clears `image_data_url` to keep the row light.
-- Best-effort, same error semantics as the manuscript exporter.
-
-## Frontend changes
-
-### `src/pages/steps/Step11.tsx`
-- Add buyer form above the plan selector: `name` (required), `email` (required, basic regex). Errors inline.
-- Replace `setOrderPlaced(true)` button handler with `startPipeline()`:
-  1. Save buyer to `WizardContext`.
-  2. Build the full brief (`buildBrief`) **with** `buyer_name` + `buyer_email`.
-  3. Invoke `generate-book` and capture `id`.
-  4. Persist the existing portrait (`answers.characterPortrait.dataUrl`) into `book_images` (slot 1) so the backend has it.
-  5. Invoke `generate-book-images` with `{ book_id }`.
-  6. Poll `generated_books.pipeline_progress` every ~3s until `pipeline_status` is `done` or `failed`.
-- New `PipelineProgress` component renders progress copy from `pipeline_progress` using the warm `loadingMessages` voice ("Sketching {name}…", "Painting page 7 of 30…").
-- Final state = existing `orderPlaced` screen, with a "View your book" link (later wired to Drive doc URL once available).
-
-### `src/lib/buildBrief.ts`
-- Add `buyer_name` / `buyer_email` passthrough.
-
-### `src/lib/loadingMessages.ts`
-- Add `pipelineMessages(stage, current, total, name)`.
-
-## Technical notes
-
-- The Lovable AI image gateway accepts multiple `image_url` parts; we already do this in `generate-cover`. Same call shape works for page images.
-- `book_images.image_data_url` is intentionally a transient column — kept only between `generate-book-images` and the Drive export, then nulled. Keeps the row small.
-- Generation runs sequentially in one invocation of `generate-book-images`. Edge function timeout is the constraint; 30 page images × ~6s ≈ 3 minutes — within Supabase Edge Function limits (150s soft / 400s hard). If we hit the cap during testing we can shard later; flagged in code comment.
-- No payment integration is added. The "Pay" button is a simulated purchase event. Real Stripe wiring is a follow-up that just needs to trigger the same `startPipeline()` from a webhook.
-- The Drive doc already includes the per-page image prompts, so QA can verify each generated image against its prompt in one place.
+1. Click "Pay" on Step 11 with a known-good wizard run.
+2. Watch `supabase--edge_function_logs` for `generate-book` → expect 200 + a row in `generated_books` with `parsed.pages.length === 32`.
+3. Pipeline should advance to `portraits` → `pages` → `done`; Step 11 polling shows the progress bar.
 
 ## Out of scope
-- Real payment provider (`payments--enable_*`).
-- User accounts / auth.
-- Sending the final book to the buyer's email.
-- Retrying failed page images automatically.
+
+- No changes to the image pipeline, Drive export, or Step 11 UI.
+- No model swap. If Gemini still rejects after the simplification, the follow-up is to switch `MODELS.book` to `openai/gpt-5` (which uses OpenAI's structured outputs, a different constraint engine) — flagged but not done in this pass.
