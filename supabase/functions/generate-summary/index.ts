@@ -126,7 +126,10 @@ function conceptToolSchema(firstName: string) {
           core_conflict: { type: "string" },
           emotional_arc: { type: "string" },
           visual_world: { type: "string" },
-          recurring_motif: { type: "string" },
+          recurring_motif: {
+            type: "string",
+            description: "Age-aware recurring verbal motif: a phrase, question, sound, image, or sentence pattern that can echo through the full book without feeling like a forced chorus.",
+          },
           ending_feeling: { type: "string" },
           image_opportunities: {
             type: "array",
@@ -161,7 +164,7 @@ function conceptToolSchema(firstName: string) {
       },
       full_book_instruction: {
         type: "string",
-        description: "2–4 sentence instruction for the full-book engine.",
+        description: "2–4 sentence instruction for the full-book engine, including motif usage guidance.",
       },
     },
     required: [
