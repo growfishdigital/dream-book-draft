@@ -264,7 +264,7 @@ async function ensurePortraits(
     ];
     const started = Date.now();
     try {
-      const url = await callImageModel(apiKey, userContent);
+      const url = await callImageModel(apiKey, userContent, PORTRAIT_IMAGE_CONFIG);
       await upsertImage(supabase, {
         book_id: bookId, kind: "portrait", slot,
         prompt: promptText, image_data_url: url,
