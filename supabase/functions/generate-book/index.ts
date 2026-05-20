@@ -442,6 +442,10 @@ Deno.serve(async (req) => {
         prompt_hash: promptHash,
         generation_ms,
         status: validation.valid ? "ok" : "needs_review",
+        buyer_name: buyer_name || null,
+        buyer_email: buyer_email || null,
+        pipeline_status: "portraits",
+        pipeline_progress: { stage: "story", current: 1, total: 1, message: "Story written." },
       })
       .select("id")
       .single();
