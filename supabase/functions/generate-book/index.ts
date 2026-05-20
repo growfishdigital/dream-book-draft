@@ -1,34 +1,40 @@
-// generate-book — full hardcover-book story generation engine.
+// generate-book — full hardcover-book story generation engine (V2).
 //
-// V1 status: hidden behind /dev/story-preview/:id. Not used in the normal user
-// flow. Designed to be wired into the post-purchase flow later without a
-// signature change (`revision_note` is accepted from day one).
+// V2 = fixed 32-page structure (title + dedication + 30 story pages), word
+// total scaled by reader age (~500 default), and a per-page illustration
+// prompt baked in server-side from the chosen layout + canonical character
+// appearance blocks. Persisted to public.generated_books (parsed jsonb).
 //
-// Input: { brief: StoryBrief, revision_note?: string, modelOverride?: string }
-// Output: { id, parsed, raw, framework_id, model, generation_ms }
-//
-// All prompt text lives in ../_shared/prompts.ts — edit there to change for
-// every user on the next deploy.
+// Layout types live in ../_shared/layouts.ts. Adding a new layout = pushing
+// one entry there; the prompt table, JSON schema enum, image-prompt
+// composition cue, and dev preview renderer all pick it up automatically.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.4";
 import {
   ageToBand,
   BookEngineInput,
+  BookOutputV2,
+  bookWordTotalRange,
+  buildAppearanceBlocks,
+  buildBookJsonSchema,
+  buildBookUserMessageV2,
+  buildPageImagePrompt,
   BUYER_RELATIONSHIP_LABEL,
+  countWords,
   formatCastSummary,
   FrameworkId,
-  GeneratedBook,
+  getArtStylePrompt,
   grammaticalJoin,
   KernelVars,
   MODELS,
   OCCASION_LABEL,
-  parseBookOutput,
+  parseBookPagesOutput,
   pronounsFor,
   selectFramework,
   SPREAD_COUNT_BY_AGE_AND_FRAMEWORK,
-  STORY_BOOK_USER_MESSAGE,
   STORY_FRAMEWORKS,
   STORY_KERNEL,
+  STORY_LENGTH_BOOK,
   validateBook,
   VOCAB_TIER_BY_AGE,
   WORD_COUNT_BY_AGE,
@@ -53,6 +59,7 @@ const GENDER_TO_PRONOUN: Record<string, "he" | "she" | "they"> = {
   girl: "she",
   boy: "he",
   "non-binary": "they",
+  "gender-neutral": "they",
   surprise: "they",
 };
 
@@ -145,7 +152,6 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
     : [];
   const special = flattenSpecialThing(brief.specialThing);
 
-  // The brief's `mood_tags` is an array; our wizard collects a single mood.
   const moodTags: string[] = Array.isArray(story.mood)
     ? story.mood
     : story.mood
@@ -162,12 +168,9 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
     child_pronouns: GENDER_TO_PRONOUN[(child.gender || "").toLowerCase()] ?? "they",
     child_appearance_notes: joinAppearance(proto.appearance),
     child_special: proto.special || null,
-    personality_traits: Array.isArray(story.personality)
-      ? story.personality.slice(0, 3)
-      : [],
+    personality_traits: Array.isArray(story.personality) ? story.personality.slice(0, 3) : [],
 
-    buyer_relationship: (brief.buyer_relationship || undefined) as
-      BookEngineInput["buyer_relationship"],
+    buyer_relationship: (brief.buyer_relationship || undefined) as BookEngineInput["buyer_relationship"],
     occasion: (brief.occasion || null) as BookEngineInput["occasion"],
     include_belongs_to_page: brief.bookBelongsTo !== false,
 
@@ -238,7 +241,6 @@ function buildKernelVars(input: BookEngineInput, framework_id: FrameworkId): Ker
   };
 }
 
-// ---------- Tiny stable hash for prompt versioning --------------------------
 async function shortHash(s: string): Promise<string> {
   const buf = new TextEncoder().encode(s);
   const digest = await crypto.subtle.digest("SHA-256", buf);
@@ -251,9 +253,7 @@ async function shortHash(s: string): Promise<string> {
 // ---------- Handler ---------------------------------------------------------
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -271,36 +271,58 @@ Deno.serve(async (req) => {
       mood_tags: engineInput.mood_tags,
     });
     const vars = buildKernelVars(engineInput, framework_id);
+    const age_band = vars.age_band;
+
+    // Override the kernel's word target with the V2 book-level total so the
+    // model targets ~500 across 30 pages instead of the legacy spread totals.
+    const wordRange = bookWordTotalRange(age_band);
+    const v2Vars: KernelVars = {
+      ...vars,
+      word_count_target: `${wordRange.min}-${wordRange.max}`,
+      spread_count: STORY_LENGTH_BOOK.pageCount,
+    };
 
     const systemPrompt =
-      STORY_KERNEL(vars) + "\n\n---\n\n" + STORY_FRAMEWORKS[framework_id](vars);
+      STORY_KERNEL(v2Vars) + "\n\n---\n\n" + STORY_FRAMEWORKS[framework_id](v2Vars);
     const promptHash = await shortHash(systemPrompt);
 
-    const userMessage = revision_note
-      ? `${STORY_BOOK_USER_MESSAGE}\n\nRevision note: ${revision_note}`
-      : STORY_BOOK_USER_MESSAGE;
+    const userMessage = buildBookUserMessageV2({
+      age_band,
+      include_belongs_to_page: engineInput.include_belongs_to_page,
+      buyer_relationship_label: vars.buyer_relationship,
+      occasion_label: vars.occasion,
+      child_name: engineInput.child_name,
+    }) + (revision_note ? `\n\nRevision note: ${revision_note}` : "");
 
     const startedAt = Date.now();
+    const schema = buildBookJsonSchema();
 
-    const aiResp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          temperature: 0.8,
-          max_tokens: 2500,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userMessage },
-          ],
-        }),
+    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        model,
+        temperature: 0.8,
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userMessage },
+        ],
+        tools: [
+          {
+            type: "function",
+            function: {
+              name: "return_book",
+              description: "Return the complete printed book as structured JSON.",
+              parameters: schema,
+            },
+          },
+        ],
+        tool_choice: { type: "function", function: { name: "return_book" } },
+      }),
+    });
 
     if (!aiResp.ok) {
       if (aiResp.status === 429) {
@@ -326,29 +348,79 @@ Deno.serve(async (req) => {
     }
 
     const data = await aiResp.json();
-    const raw: string = data.choices?.[0]?.message?.content ?? "";
-    if (!raw.trim()) {
-      console.error("Empty book content", JSON.stringify(data).slice(0, 600));
-      return new Response(JSON.stringify({ error: "Model returned no content." }), {
+    const toolCall = data.choices?.[0]?.message?.tool_calls?.[0];
+    const argsStr = toolCall?.function?.arguments;
+    if (!argsStr) {
+      console.error("No tool_call returned", JSON.stringify(data).slice(0, 800));
+      return new Response(JSON.stringify({ error: "Model did not return structured book payload." }), {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const parsedCore = parseBookOutput(raw, framework_id);
+    const rawArgs = typeof argsStr === "string" ? argsStr : JSON.stringify(argsStr);
+    const parsedRaw = parseBookPagesOutput(rawArgs);
+
+    // Validate page count.
+    if (parsedRaw.pages.length !== STORY_LENGTH_BOOK.totalPageCount) {
+      console.error(`Expected ${STORY_LENGTH_BOOK.totalPageCount} pages, got ${parsedRaw.pages.length}`);
+      // We continue rather than fail — the dev preview will surface the gap.
+    }
+
+    // Build canonical appearance blocks once, reuse on every page's image prompt.
+    const appearance = buildAppearanceBlocks(brief);
+    const artStyleFragment = getArtStylePrompt(engineInput.art_style);
+
+    // Bake the per-page image prompts and assemble the cover prompt.
+    const pages = parsedRaw.pages.map((p) => ({
+      ...p,
+      image_prompt:
+        p.role === "title"
+          ? null
+          : buildPageImagePrompt(p, appearance, artStyleFragment),
+    }));
+
+    const coverImagePrompt = [
+      `${artStyleFragment}.`,
+      `Children's book cover illustration.`,
+      `Characters: ${appearance.hero.description}. HERO ONLY — no other people, friends, family, or supporting characters.`,
+      parsedRaw.cover.image_scene ? `Scene: ${parsedRaw.cover.image_scene}.` : "",
+      parsedRaw.cover.setting ? `Setting: ${parsedRaw.cover.setting}.` : "",
+      parsedRaw.cover.mood ? `Mood: ${parsedRaw.cover.mood}.` : "",
+      `Composition: portrait orientation (2:3), the title rendered clearly at the top or centered.`,
+      `Title text to render on the cover: "${parsedRaw.cover.title}". Render ONLY this title — do not add the child's name, an author byline, or any other text.`,
+    ].filter(Boolean).join(" ");
+
     const generation_ms = Date.now() - startedAt;
-    const parsed: GeneratedBook = {
-      ...parsedCore,
-      generated_at: new Date().toISOString(),
-      model,
-      prompt_version: promptHash,
-      generation_time_ms: generation_ms,
+    const storyPageWords = pages
+      .filter((p) => p.role === "story")
+      .reduce((acc, p) => acc + countWords(p.text), 0);
+
+    const parsed: BookOutputV2 = {
+      schema_version: "v2",
+      meta: {
+        title: parsedRaw.meta.title,
+        framework_id,
+        word_count_total: storyPageWords,
+        page_count: pages.length,
+        age_band,
+        art_style: engineInput.art_style || null,
+        repeating_phrase: parsedRaw.meta.repeating_phrase,
+        generated_at: new Date().toISOString(),
+        model,
+        prompt_version: promptHash,
+        generation_time_ms: generation_ms,
+      },
+      cover: {
+        title: parsedRaw.cover.title,
+        subtitle: parsedRaw.cover.subtitle,
+        image_prompt: coverImagePrompt,
+      },
+      pages,
     };
 
-    // Stub validation (always valid in v1).
     const validation = validateBook(parsed, engineInput);
 
-    // Persist. We use the publishable env vars — RLS allows open insert by design.
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseAnon);
@@ -358,7 +430,7 @@ Deno.serve(async (req) => {
       .insert({
         framework_id,
         brief: { ...brief, _engine_input: engineInput },
-        raw_output: raw,
+        raw_output: rawArgs,
         parsed,
         model,
         prompt_hash: promptHash,
@@ -370,16 +442,15 @@ Deno.serve(async (req) => {
 
     if (insertErr) {
       console.error("DB insert failed", insertErr);
-      // Still return the book so the dev route works even if persistence fails.
       return new Response(
         JSON.stringify({
           id: null,
           parsed,
-          raw,
+          raw: rawArgs,
           framework_id,
           model,
           generation_ms,
-          warning: `Persisted failed: ${insertErr.message}`,
+          warning: `Persist failed: ${insertErr.message}`,
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
       );
@@ -389,7 +460,7 @@ Deno.serve(async (req) => {
       JSON.stringify({
         id: row?.id ?? null,
         parsed,
-        raw,
+        raw: rawArgs,
         framework_id,
         model,
         generation_ms,

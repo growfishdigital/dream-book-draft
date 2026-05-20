@@ -841,3 +841,369 @@ export const OCCASION_LABEL: Record<string, string> = {
   other: "other",
 };
 
+// =============================================================================
+//  STORY ENGINE V2 — fixed-page-count book with paired image prompts.
+// =============================================================================
+//
+//  Output shape: 32 interior pages (title + dedication + 30 story pages) plus
+//  the cover. Every story page carries both narrative text AND a structured
+//  image prompt. Total word count scales by reader age.
+//
+//  Per the project plan, this lives alongside the legacy V1 spread parser so
+//  older rows in `generated_books` still render. New generations call V2.
+// =============================================================================
+
+import {
+  allLayoutIds,
+  getLayout,
+  PAGE_LAYOUTS,
+  PageRole,
+  serializeLayoutRegistryForPrompt,
+  StoryBeat,
+} from "./layouts.ts";
+
+// ---- Story length knobs (V2) -----------------------------------------------
+// Default 500 words at the 5-6 age band; scales gently around it.
+export const STORY_LENGTH_BOOK = {
+  pageCount: 30 as const,           // story pages (pages 3–32)
+  totalPageCount: 32 as const,      // includes title (p.1) + dedication (p.2)
+  perPageMin: 4,
+  perPageMax: 28,
+  perPageTarget: 16,                // 500 / 30 ≈ 16
+  totalByAgeBand: {
+    "0-2": 250,
+    "3-4": 350,
+    "5-6": 500,
+    "7-8": 650,
+    "9-10": 800,
+    "11+":  900,
+  } as Record<AgeBand, number>,
+  /** ±10% wiggle on total. */
+  totalTolerance: 0.10,
+} as const;
+
+export function bookWordTotalRange(age_band: AgeBand): { min: number; target: number; max: number } {
+  const target = STORY_LENGTH_BOOK.totalByAgeBand[age_band] ?? 500;
+  const tol = STORY_LENGTH_BOOK.totalTolerance;
+  return {
+    target,
+    min: Math.round(target * (1 - tol)),
+    max: Math.round(target * (1 + tol)),
+  };
+}
+
+// ---- Per-page output schema -------------------------------------------------
+
+export interface BookPageRaw {
+  page_number: number;
+  role: PageRole;
+  beat?: StoryBeat | null;
+  text: string;
+  /** Short, factual scene description — the model writes this. The server
+   *  bakes the final image_prompt by adding style + appearance + layout cue. */
+  image_scene?: string | null;
+  /** Named characters in this page's illustration (subset of hero+cast). */
+  characters_present?: string[];
+  /** Where/when the scene takes place. */
+  setting?: string | null;
+  /** One-word mood for this page's illustration. */
+  mood?: string | null;
+  /** Short reminder of outfit/time/setting carried from previous page. */
+  continuity_notes?: string | null;
+  layout_id: string;
+}
+
+export interface BookPage extends BookPageRaw {
+  /** Server-assembled final illustration prompt. Null for the title page. */
+  image_prompt: string | null;
+}
+
+export interface BookOutputV2 {
+  schema_version: "v2";
+  meta: {
+    title: string;
+    framework_id: FrameworkId;
+    word_count_total: number;
+    page_count: number;
+    age_band: AgeBand;
+    art_style: string | null;
+    repeating_phrase: string | null;
+    generated_at: string;
+    model: string;
+    prompt_version: string;
+    generation_time_ms: number;
+  };
+  cover: {
+    title: string;
+    subtitle: string | null;
+    image_prompt: string;
+  };
+  pages: BookPage[];
+}
+
+// ---- Appearance blocks (one source of character truth per book) ------------
+
+export interface AppearanceBlocks {
+  hero: { name: string; description: string };
+  supporting: Array<{ name: string; description: string }>;
+}
+
+function joinAppearanceParts(parts: Array<string | undefined | null | false>): string {
+  return parts.filter(Boolean).join(", ");
+}
+
+/**
+ * Builds the single, canonical appearance string for the hero and each named
+ * supporting character. Reused VERBATIM on every page they appear in, which is
+ * the single biggest lever for character consistency across 30 illustrations.
+ */
+export function buildAppearanceBlocks(brief: any): AppearanceBlocks {
+  const child = brief?.child || {};
+  const proto = brief?.protagonist || {};
+  const appearance = proto.appearance || {};
+  const heroName = (child.name || "the child").trim();
+  const ageBand = child.ageRange || "young";
+  const heroParts = [
+    `${heroName}, a ${ageBand} ${child.gender || "child"}`,
+    appearance.hairColor && `${appearance.hairColor} ${appearance.hairStyle || "hair"}`,
+    appearance.skinTone && `${appearance.skinTone} skin`,
+    appearance.glasses && "wearing round glasses",
+    appearance.features,
+    proto.special,
+  ];
+
+  const supporting = (Array.isArray(brief?.supportingCharacters) ? brief.supportingCharacters : [])
+    .filter((c: any) => c && c.name)
+    .map((c: any) => {
+      const a = c.appearance || {};
+      const desc = joinAppearanceParts([
+        `${c.name}, ${c.relationship || "friend"}${c.ageRange ? `, ${c.ageRange}` : ""}`,
+        c.gender,
+        a.hairColor && `${a.hairColor} ${a.hairStyle || "hair"}`,
+        a.skinTone && `${a.skinTone} skin`,
+        a.glasses && "wearing glasses",
+        a.features,
+        c.description,
+      ]);
+      return { name: c.name, description: desc };
+    });
+
+  return {
+    hero: { name: heroName, description: joinAppearanceParts(heroParts) },
+    supporting,
+  };
+}
+
+/**
+ * Builds the per-page illustration prompt by composing:
+ *   art style + scene + appearance blocks for characters in scene + setting
+ *   + mood + layout composition cue + the universal "no text" rule.
+ *
+ * The model only writes `image_scene`/`characters_present`/`setting`/`mood`.
+ * The server owns the rest — so style and likeness stay locked across pages.
+ */
+export function buildPageImagePrompt(
+  page: BookPageRaw,
+  blocks: AppearanceBlocks,
+  artStyleFragment: string,
+): string | null {
+  const layout = getLayout(page.layout_id);
+  if (!layout) return null;
+  if (layout.illustrationCoverage === "none") return null;
+
+  const present = (page.characters_present || []).map((n) => n.trim().toLowerCase());
+  const heroIn = present.length === 0 || present.includes(blocks.hero.name.trim().toLowerCase());
+
+  const characterBlocks: string[] = [];
+  if (heroIn) characterBlocks.push(blocks.hero.description);
+  for (const s of blocks.supporting) {
+    if (present.includes(s.name.trim().toLowerCase())) {
+      characterBlocks.push(s.description);
+    }
+  }
+
+  const charactersLine = characterBlocks.length
+    ? `Characters in this illustration: ${characterBlocks.join("; ")}.`
+    : `No characters in this illustration — environmental shot only.`;
+
+  return [
+    `${artStyleFragment}.`,
+    page.image_scene ? `Scene: ${page.image_scene}.` : "",
+    charactersLine,
+    page.setting ? `Setting: ${page.setting}.` : "",
+    page.mood ? `Mood: ${page.mood}.` : "",
+    `Composition: ${layout.compositionCue}.`,
+    `IMPORTANT: do not render any text, letters, words, numbers, signs, captions, watermarks, or logos in the illustration.`,
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
+// ---- JSON Schema for tool-calling structured output -------------------------
+
+/**
+ * JSON Schema describing the per-page book output. Provided to the model via
+ * the gateway's tools API so the response is guaranteed-shape JSON.
+ * Layout enum is derived from the registry — adding a layout updates this.
+ */
+export function buildBookJsonSchema() {
+  return {
+    type: "object",
+    additionalProperties: false,
+    required: ["meta", "cover", "pages"],
+    properties: {
+      meta: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "repeating_phrase"],
+        properties: {
+          title: { type: "string", description: "Book title, max 8 words, no child's first name." },
+          repeating_phrase: {
+            type: "string",
+            description: "5–8 word repeating phrase (chorus) appearing 3+ times. May be empty for silly_escalation if not used.",
+          },
+        },
+      },
+      cover: {
+        type: "object",
+        additionalProperties: false,
+        required: ["title", "image_scene", "setting", "mood"],
+        properties: {
+          title: { type: "string" },
+          subtitle: { type: ["string", "null"] },
+          image_scene: { type: "string", description: "Hero-only cover scene description, no supporting characters." },
+          setting: { type: "string" },
+          mood: { type: "string" },
+        },
+      },
+      pages: {
+        type: "array",
+        minItems: 32,
+        maxItems: 32,
+        items: {
+          type: "object",
+          additionalProperties: false,
+          required: ["page_number", "role", "text", "layout_id"],
+          properties: {
+            page_number: { type: "integer", minimum: 1, maximum: 32 },
+            role: { type: "string", enum: ["title", "dedication", "story"] },
+            beat: {
+              type: ["string", "null"],
+              enum: ["opening", "rising", "turn", "climax", "resolution", "closing", null],
+            },
+            text: { type: "string" },
+            image_scene: { type: ["string", "null"] },
+            characters_present: { type: "array", items: { type: "string" } },
+            setting: { type: ["string", "null"] },
+            mood: { type: ["string", "null"] },
+            continuity_notes: { type: ["string", "null"] },
+            layout_id: { type: "string", enum: allLayoutIds() },
+          },
+        },
+      },
+    },
+  };
+}
+
+// ---- V2 user prompt builder -------------------------------------------------
+
+export function buildBookUserMessageV2(opts: {
+  age_band: AgeBand;
+  include_belongs_to_page: boolean;
+  buyer_relationship_label: string;
+  occasion_label: string;
+  child_name: string;
+}): string {
+  const { age_band, include_belongs_to_page, buyer_relationship_label, occasion_label, child_name } = opts;
+  const { min, target, max } = bookWordTotalRange(age_band);
+  const layoutsTable = serializeLayoutRegistryForPrompt();
+  const storyPages = STORY_LENGTH_BOOK.pageCount; // 30
+
+  return `You are now writing the FINAL printed book.
+
+# Book structure (RIGID — do not deviate)
+
+The book has exactly **${STORY_LENGTH_BOOK.totalPageCount} interior pages**:
+
+- **Page 1 — Title page** (role: "title", layout_id: "title").
+  - text: The book title on its own line, followed on a second line by "A story for ${child_name}".
+  - image_scene: null. image_prompt is reused from the cover.
+- **Page 2 — Dedication page** (role: "dedication", layout_id: "dedication-spot").
+  - text: A warm 1–2 sentence dedication. Tone matches the buyer (${buyer_relationship_label}) and the occasion (${occasion_label}).${include_belongs_to_page ? ` On a new line, append: "This book belongs to ${child_name}."` : ""}
+- **Pages 3–${STORY_LENGTH_BOOK.totalPageCount} — Story pages** (role: "story"). Exactly ${storyPages} pages.
+  - Each page has its own short narrative text AND its own illustration scene.
+  - The story arc plays out across these ${storyPages} pages, following the framework's beats from the system prompt. Tag each page's beat: opening / rising / turn / climax / resolution / closing.
+
+# Word counts (HARD)
+
+- Total story-page text (pages 3–${STORY_LENGTH_BOOK.totalPageCount}) must land between **${min} and ${max} words**, target ~${target}.
+- Each individual story page: ${STORY_LENGTH_BOOK.perPageMin}–${STORY_LENGTH_BOOK.perPageMax} words. Target ~${STORY_LENGTH_BOOK.perPageTarget}.
+- Vary page lengths — quiet pages can be very short; the climax can be longer.
+
+# Per-page illustration prompts
+
+For every story page, also provide:
+- \`image_scene\`: 1 sentence, what is physically happening on this page (action, posture, key props).
+- \`characters_present\`: array of character names appearing on this page. Use the hero's exact name and any supporting character's exact name.
+- \`setting\`: where + time of day + weather, in a short phrase.
+- \`mood\`: a single emotional word (e.g. "wonder", "tender", "playful").
+- \`continuity_notes\`: short reminder of what carries from the previous page (outfit detail, time of day, location). Locks visual continuity.
+
+DO NOT write style instructions, art direction, lighting, color, or composition. The server bakes those in from the chosen art style, character appearance blocks, and the chosen layout. Just describe WHAT IS HAPPENING and WHO IS THERE.
+
+# Layouts (pick one per story page)
+
+Vary layouts across the book — never use the same layout on three back-to-back pages. Reserve \`full-bleed\` for high-emotion beats (climax, turn). The dedication page must use \`dedication-spot\`. The title page must use \`title\`.
+
+${layoutsTable}
+
+# Output
+
+Call the provided tool \`return_book\` with the exact structured payload. No prose outside the tool call.`;
+}
+
+// ---- V2 parser / normaliser -------------------------------------------------
+
+export function parseBookPagesOutput(raw: unknown): {
+  meta: { title: string; repeating_phrase: string | null };
+  cover: { title: string; subtitle: string | null; image_scene: string; setting: string; mood: string };
+  pages: BookPageRaw[];
+} {
+  const obj = (typeof raw === "string" ? JSON.parse(raw) : raw) as any;
+  if (!obj || typeof obj !== "object") throw new Error("Book payload was not a JSON object.");
+  if (!Array.isArray(obj.pages)) throw new Error("Book payload missing pages[].");
+
+  const pages: BookPageRaw[] = obj.pages.map((p: any, idx: number) => ({
+    page_number: Number(p.page_number ?? idx + 1),
+    role: (p.role || (idx === 0 ? "title" : idx === 1 ? "dedication" : "story")) as PageRole,
+    beat: p.beat ?? null,
+    text: String(p.text ?? "").trim(),
+    image_scene: p.image_scene ?? null,
+    characters_present: Array.isArray(p.characters_present) ? p.characters_present : [],
+    setting: p.setting ?? null,
+    mood: p.mood ?? null,
+    continuity_notes: p.continuity_notes ?? null,
+    layout_id: String(p.layout_id || (idx === 0 ? "title" : idx === 1 ? "dedication-spot" : "text-bottom-third")),
+  }));
+
+  return {
+    meta: {
+      title: String(obj.meta?.title || "Untitled").trim(),
+      repeating_phrase: obj.meta?.repeating_phrase ? String(obj.meta.repeating_phrase) : null,
+    },
+    cover: {
+      title: String(obj.cover?.title || obj.meta?.title || "Untitled").trim(),
+      subtitle: obj.cover?.subtitle ?? null,
+      image_scene: String(obj.cover?.image_scene || "").trim(),
+      setting: String(obj.cover?.setting || "").trim(),
+      mood: String(obj.cover?.mood || "warm").trim(),
+    },
+    pages,
+  };
+}
+
+export function countWords(s: string): number {
+  return s.trim().split(/\s+/).filter(Boolean).length;
+}
+
+
