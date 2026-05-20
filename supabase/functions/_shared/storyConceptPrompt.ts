@@ -17,7 +17,10 @@ export interface StoryConceptPromptCtx {
   lesson?: string;
   interestsLine?: string;
   personalityLine?: string;
+  heroBehaviorNotes?: string;
   supportingLine?: string;
+  supportingBehaviorNotes?: string;
+  forbiddenTraitWords?: string;
   specialThing?: string;
   heroQuirk?: string;
   thingsAlreadyGoodAt?: string;
@@ -113,7 +116,6 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
     `Name: ${ctx.childName}`,
     `Age band: ${ctx.ageBand}`,
     ctx.gender ? `Gender/pronouns: ${ctx.gender}` : "",
-    ctx.personalityLine ? `Personality traits for internal use only: ${ctx.personalityLine}` : "",
     ctx.heroQuirk ? `Appearance/signature detail: ${ctx.heroQuirk}` : "",
     ``,
     `# Story preferences`,
@@ -128,6 +130,15 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
     `# Cast`,
     ctx.supportingLine ? `Supporting characters: ${ctx.supportingLine}` : "Supporting characters: none provided",
     ctx.specialThing ? `Companion/object/pet/toy: ${ctx.specialThing}` : "",
+    ``,
+    `# Private behavior notes`,
+    ctx.heroBehaviorNotes || ctx.personalityLine
+      ? (ctx.heroBehaviorNotes || `Hero behavior notes:\nUse these only to decide actions. Do not repeat these words in the visible summary: ${ctx.personalityLine}`)
+      : "Hero behavior notes: none provided",
+    ctx.supportingBehaviorNotes || "Supporting character behavior notes: none provided",
+    ctx.forbiddenTraitWords
+      ? `Forbidden visible trait words: Do not use these exact words in title, summary, or user_visible_summary: ${ctx.forbiddenTraitWords}. You may use them only inside hidden planning fields if needed.`
+      : "",
     ``,
     `# Book context`,
     ctx.buyerRelationship ? `Buyer relationship: ${ctx.buyerRelationship}` : "",
@@ -144,12 +155,15 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
     ``,
     `# Personality handling`,
     `Treat personality traits as hidden casting notes, not words to paste into the user_visible_summary.`,
-    `Do NOT write trait-list phrasing such as "curious and joyful", "warm and brave", "kind and creative", or "fiery, creative, determined."`,
+    `Do not describe any character with direct trait labels from the wizard.`,
+    `Do not write patterns like "Name is a silly, energetic kid", "Name, the warm, creative girl", "curious and joyful", "warm and brave", "kind and creative", or "fiery, creative, determined."`,
+    `Never place personality adjectives directly after a character name.`,
+    `Never use "is a [trait] kid/person/girl/boy" phrasing.`,
     `Instead, show personality through one concrete action, choice, gesture, habit, or response.`,
-    `Bad: "Corey, curious and joyful, skateboards up to the glow."`,
-    `Better: "Corey coasts closer instead of calling for help, grinning when the light flickers across his wheels."`,
-    `Bad: "Topanga, warm and brave, appears..."`,
-    `Better: "Topanga steps between the fluttering pages and Corey, then holds out the lantern-ball with both hands."`,
+    `Bad: "Corey is a silly, energetic kid who zips through the neighborhood."`,
+    `Better: "Corey rockets through the neighborhood on his skateboard, braking only long enough to tighten one more bolt on the robot rattling in his backpack."`,
+    `Bad: "Topanga, the warm, creative girl he likes..."`,
+    `Better: "When Topanga notices the robot's crooked aim, she crouches beside Corey and offers a softer idea."`,
     `The visible summary should never read like it is listing attributes from the wizard.`,
     ``,
     `# Recurring verbal motif`,
