@@ -31,11 +31,13 @@ Deno.serve(async (req) => {
       title = "",
       summary = "",
       styleReferenceImage,
+      characterPortraitDataUrl,
     }: {
       brief?: any;
       title?: string;
       summary?: string;
       styleReferenceImage?: string;
+      characterPortraitDataUrl?: string;
     } = body;
 
     const childName = brief.child?.name || "the child";
@@ -49,8 +51,6 @@ Deno.serve(async (req) => {
         : [];
 
     // NOTE: Supporting characters are intentionally EXCLUDED from the cover.
-    // The cover is hero-only by product decision — supporting characters still
-    // appear in the story summary and inside the book, just not on the cover.
 
     const styleHint = getArtStylePrompt(brief.artStyle);
 
@@ -68,6 +68,10 @@ Deno.serve(async (req) => {
     ].filter(Boolean);
     const protoDesc = protoDescBits.join(", ");
 
+    const hasCharacterPortrait =
+      typeof characterPortraitDataUrl === "string" &&
+      characterPortraitDataUrl.startsWith("data:");
+
     const promptText = COVER_PROMPT_TEMPLATE({
       title,
       summary,
@@ -75,16 +79,23 @@ Deno.serve(async (req) => {
       protoDesc,
       styleHint,
       hasStyleReference: !!styleReferenceImage,
+      hasCharacterPortrait,
       heroPhotoCount: heroPhotos.length,
     });
 
     const userContent: any[] = [{ type: "text", text: promptText }];
     // Image order MUST match the prompt's "Image #N" references:
-    //   [styleRef?] [heroPhotos…]
+    //   [styleRef?] [characterPortrait?] [heroPhotos…]
     if (styleReferenceImage) {
       userContent.push({
         type: "image_url",
         image_url: { url: styleReferenceImage },
+      });
+    }
+    if (hasCharacterPortrait) {
+      userContent.push({
+        type: "image_url",
+        image_url: { url: characterPortraitDataUrl },
       });
     }
     for (const url of heroPhotos) {
