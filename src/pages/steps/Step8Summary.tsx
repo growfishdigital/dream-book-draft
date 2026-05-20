@@ -10,11 +10,26 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 
+type StoryConcept = {
+  title?: string;
+  summary?: string;
+  user_visible_summary?: string;
+  framework_id?: string;
+  framework_reason?: string;
+  story_seed?: Record<string, unknown>;
+  personalization_notes?: Record<string, unknown>;
+  full_book_instruction?: string;
+  user_edited?: boolean;
+};
+
 export default function Step10Summary() {
   const { answers, setAnswer } = useWizard();
   const navigate = useNavigate();
   const name = (answers.childName || "your little one").trim();
 
+  const [concept, setConcept] = useState<StoryConcept | null>(
+    answers.selectedConcept || null,
+  );
   const [title, setTitle] = useState<string>(answers.selectedConcept?.title || "");
   const [summary, setSummary] = useState<string>(answers.selectedConcept?.summary || "");
   const [loading, setLoading] = useState(false);
@@ -50,8 +65,17 @@ export default function Step10Summary() {
       if (fnError) throw fnError;
       if (data?.error) throw new Error(data.error);
       const newTitle = String(data?.title || "").trim();
-      const newSummary = String(data?.summary || "").trim();
+      const newSummary = String(data?.summary || data?.user_visible_summary || "").trim();
       if (!newSummary) throw new Error("Empty summary returned.");
+
+      const nextConcept: StoryConcept = {
+        ...data,
+        title: newTitle,
+        summary: newSummary,
+        user_visible_summary: data?.user_visible_summary || newSummary,
+      };
+
+      setConcept(nextConcept);
       setTitle(newTitle);
       setSummary(newSummary);
       previousSummaryRef.current = newSummary;
@@ -79,8 +103,17 @@ export default function Step10Summary() {
   };
 
   const saveEdit = () => {
-    setTitle(draftTitle.trim());
-    setSummary(draft.trim());
+    const editedTitle = draftTitle.trim();
+    const editedSummary = draft.trim();
+    setTitle(editedTitle);
+    setSummary(editedSummary);
+    setConcept((prev) => ({
+      ...(prev || {}),
+      title: editedTitle,
+      summary: editedSummary,
+      user_visible_summary: editedSummary,
+      user_edited: true,
+    }));
     setEditing(false);
   };
 
@@ -88,12 +121,17 @@ export default function Step10Summary() {
     setEditing(false);
   };
 
+  const buildApprovedConcept = (): StoryConcept => ({
+    ...(concept || {}),
+    title: title.trim() || `${name}'s Adventure`,
+    summary: summary.trim(),
+    user_visible_summary: summary.trim(),
+  });
+
   const approve = async () => {
     if (!summary.trim()) return;
-    setAnswer("selectedConcept", {
-      title: title.trim() || `${name}'s Adventure`,
-      summary: summary.trim(),
-    });
+    const approvedConcept = buildApprovedConcept();
+    setAnswer("selectedConcept", approvedConcept);
 
     // Dev-only: ?dev=1 fires the full-book engine and routes to the dev preview
     // INSTEAD of the normal Generating step. Without ?dev=1, behavior unchanged.
@@ -101,7 +139,10 @@ export default function Step10Summary() {
     if (isDev) {
       setLoading(true);
       try {
-        const brief = buildBrief(answers);
+        const brief = buildBrief({
+          ...answers,
+          selectedConcept: approvedConcept,
+        });
         const { data, error: fnError } = await supabase.functions.invoke(
           "generate-book",
           { body: { brief } },
