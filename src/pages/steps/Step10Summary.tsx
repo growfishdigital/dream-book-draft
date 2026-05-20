@@ -26,6 +26,12 @@ export default function Step10Summary() {
   const previousSummaryRef = useRef<string>("");
   const loadingMsg = useRotatingMessage(summaryMessages(name), 2000);
 
+  // Portrait of the protagonist (kicked off in Step 6). Idempotent — won't
+  // refire if the user uploaded a photo earlier; will lazily trigger here if
+  // they arrived with a photo but no portrait yet.
+  const portrait = useCharacterPortrait();
+  const portraitMsg = useRotatingMessage(portraitMessages(name), 2200);
+
   const fetchSummary = async () => {
     setLoading(true);
     setError(null);
