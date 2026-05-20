@@ -364,6 +364,7 @@ Deno.serve(async (req) => {
     // Build canonical appearance blocks once, reuse on every page's image prompt.
     const appearance = buildAppearanceBlocks(brief);
     const artStyleFragment = getArtStylePrompt(engineInput.art_style);
+    const bookOutfit = parsedRaw.meta.book_outfit;
 
     // Bake the per-page image prompts and assemble the cover prompt.
     const pages = parsedRaw.pages.map((p) => ({
@@ -371,13 +372,17 @@ Deno.serve(async (req) => {
       image_prompt:
         p.role === "title"
           ? null
-          : buildPageImagePrompt(p, appearance, artStyleFragment),
+          : buildPageImagePrompt(p, appearance, artStyleFragment, bookOutfit),
     }));
+
+    const heroCoverDesc = bookOutfit
+      ? `${appearance.hero.description}, wearing ${bookOutfit}`
+      : appearance.hero.description;
 
     const coverImagePrompt = [
       `${artStyleFragment}.`,
       `Children's book cover illustration.`,
-      `Characters: ${appearance.hero.description}. HERO ONLY — no other people, friends, family, or supporting characters.`,
+      `Characters: ${heroCoverDesc}. HERO ONLY — no other people, friends, family, or supporting characters.`,
       parsedRaw.cover.image_scene ? `Scene: ${parsedRaw.cover.image_scene}.` : "",
       parsedRaw.cover.setting ? `Setting: ${parsedRaw.cover.setting}.` : "",
       parsedRaw.cover.mood ? `Mood: ${parsedRaw.cover.mood}.` : "",
@@ -400,6 +405,7 @@ Deno.serve(async (req) => {
         age_band,
         art_style: engineInput.art_style || null,
         repeating_phrase: parsedRaw.meta.repeating_phrase,
+        book_outfit: bookOutfit,
         generated_at: new Date().toISOString(),
         model,
         prompt_version: promptHash,
@@ -412,6 +418,7 @@ Deno.serve(async (req) => {
       },
       pages,
     };
+
 
     const validation = validateBook(parsed, engineInput);
 
