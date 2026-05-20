@@ -805,17 +805,53 @@ export default function Step11() {
             <span>📦 Free shipping to the US</span>
           </div>
 
-          {/* Order form */}
+          {/* Buyer details + order */}
           <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-2">
+              <label className="text-xs font-semibold uppercase tracking-widest"
+                     style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
+                Your name
+              </label>
+              <input
+                type="text"
+                value={buyerName}
+                onChange={(e) => setBuyerName(e.target.value)}
+                placeholder="e.g. Sarah Johnson"
+                className="w-full h-11 rounded-xl border px-3 text-sm bg-white"
+                style={{ borderColor: buyerErrors.name ? "hsl(var(--destructive))" : "hsl(var(--wizard-primary) / 0.25)" }}
+              />
+              {buyerErrors.name && (
+                <p className="text-xs text-destructive">{buyerErrors.name}</p>
+              )}
+              <label className="text-xs font-semibold uppercase tracking-widest mt-2"
+                     style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
+                Email
+              </label>
+              <input
+                type="email"
+                value={buyerEmail}
+                onChange={(e) => setBuyerEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="w-full h-11 rounded-xl border px-3 text-sm bg-white"
+                style={{ borderColor: buyerErrors.email ? "hsl(var(--destructive))" : "hsl(var(--wizard-primary) / 0.25)" }}
+              />
+              {buyerErrors.email && (
+                <p className="text-xs text-destructive">{buyerErrors.email}</p>
+              )}
+              <p className="text-[11px] text-muted-foreground mt-1">
+                We'll use your name on the book's dedication and email you when it's ready.
+              </p>
+            </div>
+
             <button
-              onClick={() => canOrder && setOrderPlaced(true)}
+              onClick={() => canOrder && startPipeline()}
               disabled={!canOrder}
-              className="w-full h-12 rounded-full text-base font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+              className="w-full h-12 rounded-full text-base font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed mt-2"
               style={{ backgroundColor: "#2B4E18", color: "#fff" }}
             >
-              Place Order
+              Pay {price} & start crafting
             </button>
-            {!canOrder && (
+            {!canOrder && !pipeline.running && (
               <p className="text-xs text-center" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
                 Confirm your cover layout above to continue.
               </p>
