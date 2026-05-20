@@ -17,11 +17,10 @@
 // ---- Models -----------------------------------------------------------------
 // Swap to upgrade/downgrade. Keep cover on a multimodal image model.
 export const MODELS = {
-  summary: "openai/gpt-5-mini",
+  summary: "openai/gpt-5",
   cover: "google/gemini-3-pro-image-preview",
-  // Full-book engine. Long context + strong reasoning. Swappable to
-  // "anthropic/claude-sonnet-4-5" once an Anthropic key is wired in.
-  book: "google/gemini-2.5-pro",
+  // Full-book engine. Long context + strong reasoning.
+  book: "openai/gpt-5",
 } as const;
 
 // ---- Summary length knobs (Step 9 summary ONLY — not the full book) --------
