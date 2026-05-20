@@ -264,6 +264,7 @@ async function ensurePortraits(
         status: "ok", generated_ms: Date.now() - started,
       });
       references.push(url);
+      scheduleDriveUpload(supabase, bookId, "portrait", slot, subfolderId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`Portrait ${slot} failed:`, msg);
