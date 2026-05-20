@@ -1382,7 +1382,7 @@ Call the provided tool \`return_book\` with the exact structured payload. No pro
 // ---- V2 parser / normaliser -------------------------------------------------
 
 export function parseBookPagesOutput(raw: unknown): {
-  meta: { title: string; repeating_phrase: string | null };
+  meta: { title: string; repeating_phrase: string | null; book_outfit: string | null };
   cover: { title: string; subtitle: string | null; image_scene: string; setting: string; mood: string };
   pages: BookPageRaw[];
 } {
@@ -1407,6 +1407,7 @@ export function parseBookPagesOutput(raw: unknown): {
     meta: {
       title: String(obj.meta?.title || "Untitled").trim(),
       repeating_phrase: obj.meta?.repeating_phrase ? String(obj.meta.repeating_phrase) : null,
+      book_outfit: obj.meta?.book_outfit ? String(obj.meta.book_outfit).trim() : null,
     },
     cover: {
       title: String(obj.cover?.title || obj.meta?.title || "Untitled").trim(),
@@ -1418,6 +1419,7 @@ export function parseBookPagesOutput(raw: unknown): {
     pages,
   };
 }
+
 
 export function countWords(s: string): number {
   return s.trim().split(/\s+/).filter(Boolean).length;
