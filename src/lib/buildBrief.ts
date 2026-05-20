@@ -83,7 +83,9 @@ export function buildBrief(answers: Record<string, any>): StoryBrief {
   const supporting = (answers.supportingCharacters as any[]) || [];
 
   const interests = wordsFromList(answers.interestsList);
-  const personality = wordsFromList(answers.personalityList);
+  const personality = wordsFromList(proto.traits) .length
+    ? wordsFromList(proto.traits)
+    : wordsFromList(answers.personalityList);
 
   const protoPhotos: string[] = Array.isArray(proto.photos) ? proto.photos : [];
 

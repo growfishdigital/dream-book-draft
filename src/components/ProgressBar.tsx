@@ -7,7 +7,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useWizard } from "@/contexts/WizardContext";
 
-const TOTAL_STEPS = 11;
+const TOTAL_STEPS = 10;
 
 // Short, accurate step names for tooltips. Matches the current 11-step flow.
 const STEP_LABELS: Record<number, string> = {
