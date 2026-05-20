@@ -23,6 +23,30 @@ import {
   MODELS,
   type PortraitPose,
 } from "../_shared/prompts.ts";
+import {
+  ensureBookImagesSubfolder,
+  uploadByKindSlot,
+} from "../_shared/driveUpload.ts";
+
+// Fire-and-forget Drive upload for a single (kind, slot). Safe to call
+// without awaiting — surface failures only via console + the row's error
+// column; the final cleanup pass will re-attempt anything that slipped.
+function scheduleDriveUpload(
+  supabase: any,
+  bookId: string,
+  kind: string,
+  slot: number,
+  parentId: string | null,
+): void {
+  if (!parentId) return;
+  const p = uploadByKindSlot(supabase, bookId, kind, slot, parentId)
+    .catch((e) => console.error(`scheduleDriveUpload ${kind}/${slot} threw:`, e));
+  // Keep the upload alive past the HTTP response when the runtime supports it.
+  const ert = (globalThis as any).EdgeRuntime;
+  if (ert && typeof ert.waitUntil === "function") {
+    try { ert.waitUntil(p); } catch (_) { /* ignore */ }
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -128,6 +152,7 @@ async function ensurePortraits(
   brief: any,
   seedPortrait: string | null,
   apiKey: string,
+  subfolderId: string | null,
 ): Promise<PortraitsResult> {
   const proto = brief.protagonist || {};
   const photos: string[] = Array.isArray(proto.photos)
@@ -183,6 +208,7 @@ async function ensurePortraits(
         prompt: promptText, image_data_url: anchor,
         status: "ok", generated_ms: Date.now() - started,
       });
+      scheduleDriveUpload(supabase, bookId, "portrait", 1, subfolderId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       await upsertImage(supabase, {
@@ -198,6 +224,7 @@ async function ensurePortraits(
       prompt: "(seeded from Step 6 background portrait)",
       image_data_url: anchor, status: "ok",
     });
+    scheduleDriveUpload(supabase, bookId, "portrait", 1, subfolderId);
   }
 
   await setPipeline(supabase, bookId, "portraits", {
@@ -237,6 +264,7 @@ async function ensurePortraits(
         status: "ok", generated_ms: Date.now() - started,
       });
       references.push(url);
+      scheduleDriveUpload(supabase, bookId, "portrait", slot, subfolderId);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`Portrait ${slot} failed:`, msg);
@@ -270,6 +298,7 @@ async function generatePages(
   references: string[],
   apiKey: string,
   deadline: number,
+  subfolderId: string | null,
 ): Promise<GeneratePagesResult> {
   const pages = Array.isArray(parsed?.pages) ? parsed.pages : [];
   const targets = pages.filter((p: any) => p.image_prompt);
@@ -318,6 +347,7 @@ async function generatePages(
         prompt: promptText, image_data_url: url,
         status: "ok", generated_ms: Date.now() - started,
       });
+      scheduleDriveUpload(supabase, bookId, "page", page.page_number, subfolderId);
       consecutiveFailures = 0;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
@@ -384,14 +414,25 @@ Deno.serve(async (req) => {
     const startedAt = Date.now();
     const deadline = startedAt + MAX_RUN_MS;
 
+    // 0. Resolve Drive subfolder up-front so progressive uploads have a
+    // target. Best-effort: if Drive is down, progressive uploads no-op and
+    // the final cleanup pass picks up the slack.
+    let subfolderId: string | null = null;
+    try {
+      const sub = await ensureBookImagesSubfolder(supabase, bookId);
+      subfolderId = sub.id;
+    } catch (e) {
+      console.error("Drive subfolder resolution failed (progressive uploads disabled):", e);
+    }
+
     // 1. Portraits
     const { references } = await ensurePortraits(
-      supabase, bookId, row.brief || {}, seedPortrait, apiKey,
+      supabase, bookId, row.brief || {}, seedPortrait, apiKey, subfolderId,
     );
 
     // 2. Pages (time-budgeted slice)
     const { remaining, fatal } = await generatePages(
-      supabase, bookId, row.parsed, references, apiKey, deadline,
+      supabase, bookId, row.parsed, references, apiKey, deadline, subfolderId,
     );
 
     if (fatal) {
