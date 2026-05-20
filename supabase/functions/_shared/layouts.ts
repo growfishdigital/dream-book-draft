@@ -66,7 +66,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "top",
     illustrationCoverage: "spot",
     compositionCue:
-      "small, centered decorative spot illustration on a clean cream background — single motif, no full scene",
+      "square 1:1 canvas — small, centered decorative spot motif on a clean cream background, single motif, no full scene",
   },
   {
     id: "full-bleed",
@@ -75,7 +75,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "none",
     illustrationCoverage: "full",
     compositionCue:
-      "edge-to-edge illustration; this page carries no text overlay so the composition can fill the entire canvas",
+      "square 1:1 full-bleed illustration; no text overlay so the composition can fill the entire canvas",
     preferFor: ["climax", "turn"],
   },
   {
@@ -85,7 +85,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "bottom",
     illustrationCoverage: "three-quarter",
     compositionCue:
-      "keep the lower third visually quiet (open sky, water, soft ground, or out-of-focus foreground) so text can overlay cleanly",
+      "square 1:1 canvas — keep the lower third visually quiet (open sky, water, soft ground, or out-of-focus foreground) so text can overlay cleanly",
   },
   {
     id: "text-top-third",
@@ -94,7 +94,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "top",
     illustrationCoverage: "three-quarter",
     compositionCue:
-      "keep the upper third visually quiet (open sky, plain ceiling, soft wall) so text can overlay cleanly",
+      "square 1:1 canvas — keep the upper third visually quiet (open sky, plain ceiling, soft wall) so text can overlay cleanly",
   },
   {
     id: "text-left-half",
@@ -103,7 +103,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     textPlacement: "left",
     illustrationCoverage: "half",
     compositionCue:
-      "compose the scene on the right half of the canvas; left half is a plain, gently textured backdrop reserved for text",
+      "square 1:1 canvas — compose the scene on the right half; left half is a plain, gently textured backdrop reserved for text",
     preferFor: ["opening", "rising"],
   },
   {
