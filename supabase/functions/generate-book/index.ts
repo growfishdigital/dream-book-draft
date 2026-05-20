@@ -456,6 +456,22 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Best-effort export to Google Drive. Never blocks the response — if the
+    // export fails the error is stamped on the row by the export function.
+    let driveExport: any = null;
+    if (row?.id) {
+      try {
+        const { data: exp, error: expErr } = await supabase.functions.invoke(
+          "export-book-to-drive",
+          { body: { book_id: row.id } },
+        );
+        if (expErr) console.error("Drive export invoke error:", expErr);
+        driveExport = exp ?? null;
+      } catch (e) {
+        console.error("Drive export threw:", e);
+      }
+    }
+
     return new Response(
       JSON.stringify({
         id: row?.id ?? null,
@@ -465,6 +481,7 @@ Deno.serve(async (req) => {
         model,
         generation_ms,
         validation,
+        drive_export: driveExport,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );

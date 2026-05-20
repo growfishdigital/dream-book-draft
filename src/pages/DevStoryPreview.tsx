@@ -66,6 +66,10 @@ interface BookRow {
   model: string;
   generation_ms: number | null;
   status: string;
+  drive_folder_url?: string | null;
+  drive_doc_url?: string | null;
+  drive_export_status?: string | null;
+  drive_export_error?: string | null;
 }
 
 function isV2(p: any): p is BookOutputV2 {
@@ -271,6 +275,43 @@ export default function DevStoryPreview() {
                 <Download className="w-3.5 h-3.5" /> pages.csv
               </button>
               <CopyButton text={JSON.stringify(parsed, null, 2)} label="Copy full JSON" />
+            </div>
+          )}
+
+          {(row.drive_doc_url || row.drive_folder_url || row.drive_export_error) && (
+            <div className="pt-3 border-t border-dashed border-muted-foreground/30 space-y-2">
+              <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                Google Drive export — {row.drive_export_status || "unknown"}
+              </div>
+              {(row.drive_doc_url || row.drive_folder_url) && (
+                <div className="flex flex-wrap gap-2">
+                  {row.drive_doc_url && (
+                    <a
+                      href={row.drive_doc_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[hsl(var(--wizard-primary))] border border-[hsl(var(--wizard-primary)/0.4)] rounded-full px-3 py-1.5 hover:bg-[hsl(var(--wizard-primary)/0.05)]"
+                    >
+                      Open Google Doc ↗
+                    </a>
+                  )}
+                  {row.drive_folder_url && (
+                    <a
+                      href={row.drive_folder_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center gap-1.5 text-xs font-mono uppercase tracking-wider text-[hsl(var(--wizard-primary))] border border-[hsl(var(--wizard-primary)/0.4)] rounded-full px-3 py-1.5 hover:bg-[hsl(var(--wizard-primary)/0.05)]"
+                    >
+                      Open Drive folder ↗
+                    </a>
+                  )}
+                </div>
+              )}
+              {row.drive_export_error && (
+                <p className="text-xs text-destructive font-mono whitespace-pre-wrap">
+                  {row.drive_export_error}
+                </p>
+              )}
             </div>
           )}
         </header>
