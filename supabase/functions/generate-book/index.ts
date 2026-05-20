@@ -203,8 +203,6 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
 
 function buildKernelVars(input: BookEngineInput, framework_id: FrameworkId): KernelVars {
   const age_band = ageToBand(input.child_age);
-  const [wmin, wmax] = WORD_COUNT_BY_AGE[age_band];
-  const spread_count = SPREAD_COUNT_BY_AGE_AND_FRAMEWORK[age_band][framework_id];
   const vocab_tier = VOCAB_TIER_BY_AGE[age_band];
   const p = pronounsFor(input.child_pronouns);
   const cast_summary = formatCastSummary(input.supporting_cast);
@@ -233,13 +231,18 @@ function buildKernelVars(input: BookEngineInput, framework_id: FrameworkId): Ker
     mood_tags: (input.mood_tags || []).join(", ") || "warm",
     occasion: input.occasion ? (OCCASION_LABEL[input.occasion] || "none specified") : "none specified",
     bedtime_setting_modifier: input.genre === "bedtime" && framework_id !== "bedtime_wind_down",
-    word_count_target: `${wmin}-${wmax}`,
-    spread_count,
+    // V2 book-level totals — single source of truth (see prompts.ts).
+    word_count_target: (() => {
+      const r = bookWordTotalRange(age_band);
+      return `${r.min}-${r.max}`;
+    })(),
+    spread_count: STORY_LENGTH_BOOK.pageCount,
     vocab_tier,
     age_band,
     include_belongs_to_page: input.include_belongs_to_page,
   };
 }
+
 
 async function shortHash(s: string): Promise<string> {
   const buf = new TextEncoder().encode(s);
