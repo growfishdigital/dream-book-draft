@@ -16,6 +16,13 @@ export const coverMessages = (name: string) => [
   `Polishing every illustration…`,
 ];
 
+export const portraitMessages = (name: string) => [
+  `Sketching ${name}…`,
+  `Choosing the perfect outfit for ${name}…`,
+  `Bringing ${name} to life on the page…`,
+  `Adding a little sparkle to ${name}…`,
+];
+
 export const genericMessages = [
   "Working a little magic…",
   "Just a moment…",
