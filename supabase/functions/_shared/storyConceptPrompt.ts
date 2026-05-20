@@ -47,91 +47,75 @@ export interface StoryConceptPromptCtx {
 }
 
 export const STORY_CONCEPT_SYSTEM_PROMPT =
-  "You are a senior children's picture book concept editor. Create framework-aware personalized story concepts. Always call the provided tool to return structured output — never reply in plain text.";
+  "You are a senior children's picture book concept editor. Create polished customer-facing picture book concepts from private wizard context. Always call the provided tool to return structured output — never reply in plain text.";
 
-export const SUMMARY_FRAMEWORKS: Record<SummaryFrameworkId, {
-  label: string;
-  shape: string;
-  bestFor: string;
-  avoid: string;
-}> = {
+export const SUMMARY_FRAMEWORKS: Record<SummaryFrameworkId, { label: string; shape: string; bestFor: string; avoid: string }> = {
   curiosity_journey: {
     label: "Curiosity Journey",
-    shape: "A wonder/discovery story where the child follows curiosity through linked discoveries, briefly feels overwhelmed, then returns with a larger sense of the world.",
+    shape: "A wonder/discovery story where the child follows one clue into linked discoveries, briefly feels overwhelmed, then returns with a larger sense of the world.",
     bestFor: "curiosity, discovery, nature, animals, learning, exploring, wonder",
     avoid: "real danger, fear, heavy conflict, moral lectures",
   },
   bedtime_wind_down: {
     label: "Bedtime Wind-Down",
-    shape: "A soft ritual story where the child's world slowly quiets, naming beloved people, objects, places, or interests before ending in rest and love.",
+    shape: "A soft ritual story where the child's world slowly quiets around familiar beloved things before ending in rest and love.",
     bestFor: "bedtime, comfort, belonging, calm, parent keepsake, rest",
     avoid: "conflict, fast pacing, cliffhangers, high-energy stakes",
   },
   brave_choice: {
     label: "Brave Choice",
-    shape: "A courage story where the child leaves a safe familiar world, faces a hard-but-safe challenge, makes a brave choice, and returns changed.",
+    shape: "A courage story where the child faces a hard-but-safe problem and must choose a different kind of bravery.",
     bestFor: "confidence, resilience, trying something hard, anxiety, self-belief, asking for help",
     avoid: "making the challenge something the child has already mastered; adult rescues that remove the child's agency",
   },
   generous_heart: {
     label: "Generous Heart",
-    shape: "A connection story where the child has something they value, notices a need, gives or helps, and discovers that sharing creates belonging.",
+    shape: "A connection story where the child notices a need and makes room for someone else in a personally meaningful way.",
     bestFor: "kindness, friendship, empathy, sharing, family love, service",
     avoid: "adult lectures, shame, material rewards for generosity",
   },
   silly_escalation: {
     label: "Silly Escalation",
-    shape: "A comedy story where a tiny absurd premise keeps escalating until a funny snap ending and final wink.",
+    shape: "A comedy story where one tiny absurd premise escalates until a simple reversal or snap ending.",
     bestFor: "funny books, animals, vehicles, dinosaurs, chaotic interests, read-aloud silliness",
     avoid: "moralizing, big emotional lessons, slow reflective pacing",
   },
 };
 
-export const SUMMARY_PATTERNS: Record<SummaryFrameworkId, {
-  id: SummaryPatternId;
-  name: string;
-  formula: string;
-  rules: string[];
-}> = {
+export const SUMMARY_PATTERNS: Record<SummaryFrameworkId, { id: SummaryPatternId; name: string; internalShape: string; rules: string[] }> = {
   curiosity_journey: {
     id: "discovery_trail",
     name: "The Discovery Trail",
-    formula: "When [child] notices/finds/follows [one intriguing clue or possibility], it leads into [a larger world or chain of discoveries]. But when [the discovery becomes overwhelming or someone needs help], [child] must use curiosity in a new way: not just to explore, but to understand, notice, or act.",
-    rules: ["Use one discovery object, place, or clue.", "Do not list all interests.", "Do not say 'goes on a magical journey.'", "The emotional arc is wonder → overwhelm → deeper understanding."],
+    internalShape: "Private structure: one clue or possibility opens into a larger discovery; the discovery becomes too much or reveals a need; the child responds by noticing, understanding, or acting differently.",
+    rules: ["Use one discovery object, place, or clue.", "Do not list all interests.", "Do not say 'goes on a magical journey.'", "The visible summary should imply wonder, overwhelm, and deeper understanding without naming the arc."],
   },
   bedtime_wind_down: {
     id: "softening_ritual",
     name: "The Softening Ritual",
-    formula: "As [day/evening/world] grows quiet, [child] moves through [familiar beloved things, places, people, or small memories]. One little worry, burst of energy, or unfinished feeling remains. With each gentle step, [child] settles closer to [comfort, belonging, love, or rest].",
-    rules: ["No big conflict.", "No fast chase.", "No 'must save the day.'", "Use sensory details: light, sound, softness, warmth, breath.", "The emotional arc is active/worried → soothed → held/safe."],
+    internalShape: "Private structure: the day or world quiets through familiar sensory details; one worry or unfinished feeling remains; each step brings the child closer to comfort, belonging, or rest.",
+    rules: ["No big conflict.", "No fast chase.", "No 'must save the day.'", "Use light, sound, softness, warmth, or breath.", "Do not over-explain the feeling."],
   },
   brave_choice: {
     id: "hard_but_safe_test",
     name: "The Hard-But-Safe Test",
-    formula: "When [something important goes wrong], [child] tries to solve it using what already feels safe or familiar. But [specific obstacle] makes that impossible. To move forward, [child] must choose a different kind of bravery: [ask for help / tell the truth / try again / share control / face a feeling].",
-    rules: ["Use one challenge.", "The challenge must not be something the child is already good at.", "Do not say 'learns to be brave.'", "Show the brave choice through the situation.", "The emotional arc is confidence/control → difficulty → brave inner choice."],
+    internalShape: "Private structure: something important goes wrong; the child first uses what feels familiar; that is not enough; the child must choose a different kind of courage through action.",
+    rules: ["Use one challenge.", "The challenge must not be something the child is already good at.", "Do not say 'learns to be brave.'", "Show the brave choice through the situation."],
   },
   generous_heart: {
     id: "need_noticed",
     name: "The Need Noticed",
-    formula: "When [child] has/wants [something personally important], [child] notices [someone else’s need, wish, fear, or problem]. Helping may cost [attention, control, spotlight, object, comfort, or time]. As [child] chooses what to offer, the story opens toward belonging.",
-    rules: ["Do not moralize.", "Do not say 'learns kindness.'", "The child should give, make room, help, invite, listen, or include.", "The emotional arc is wanting/holding → noticing → giving/making room."],
+    internalShape: "Private structure: the child wants or holds something personally important; someone else has a need; helping costs attention, control, spotlight, comfort, or time; the choice opens room for belonging.",
+    rules: ["Do not moralize.", "Do not say 'learns kindness.'", "The child should give, make room, help, invite, listen, or include.", "Keep it specific and concrete."],
   },
   silly_escalation: {
     id: "escalating_absurd_rule",
     name: "The Escalating Absurd Rule",
-    formula: "When [child] tries [one funny plan/object/rule], it works for about three seconds — until [absurd complication]. Each fix makes the problem bigger, stranger, or funnier. The only way out is a final unexpected choice, twist, or reversal.",
-    rules: ["Use one absurd premise.", "No moral explanation in the summary.", "No interest pileup.", "No 'friendship is the best victory' ending.", "The emotional arc is funny idea → escalating mess → snap reversal."],
+    internalShape: "Private structure: one funny plan, object, or rule goes wrong; one or two attempted fixes make it worse; the ending comes from a simple reversal or unexpected practical choice.",
+    rules: ["Use one absurd premise.", "No moral explanation in the summary.", "No interest pileup.", "Do not reveal every gag.", "Include at most two escalation beats in the visible summary."],
   },
 };
 
-export const TITLE_PATTERNS: Record<SummaryFrameworkId, {
-  id: TitlePatternId;
-  name: string;
-  shapes: string[];
-  examples: string[];
-  avoid: string[];
-}> = {
+export const TITLE_PATTERNS: Record<SummaryFrameworkId, { id: TitlePatternId; name: string; shapes: string[]; examples: string[]; avoid: string[] }> = {
   curiosity_journey: {
     id: "wonder_object_place",
     name: "The Wonder Object / Wonder Place",
@@ -169,13 +153,46 @@ export const TITLE_PATTERNS: Record<SummaryFrameworkId, {
   },
 };
 
-export function summaryPatternForFramework(id: SummaryFrameworkId) {
-  return SUMMARY_PATTERNS[id];
-}
+export const SUMMARY_EXAMPLES_BY_FRAMEWORK: Record<SummaryFrameworkId, { good: Array<{ title: string; summary: string }>; badPhrases: string[] }> = {
+  curiosity_journey: {
+    good: [
+      { title: "The Lantern in the Grass", summary: "When Nora finds a tiny lantern blinking in the tall grass, every glow leads to another question. The trail slips under roots, past sleeping beetles, and toward a place no one in the garden has noticed before. But when the light begins to fade, Nora has to stop chasing answers long enough to see who has been trying to guide her home." },
+      { title: "Where the Hoofprints Glowed", summary: "A line of silver hoofprints appears beside Mateo’s fence just after sunset. He follows them from the muddy path to the quiet edge of the woods, where each print reveals something stranger than the last. When the trail suddenly splits, Mateo must choose whether to rush ahead or listen to the clues already under his feet." },
+    ],
+    badPhrases: ["magical journey", "adventure of discovery", "learns the power of curiosity"],
+  },
+  bedtime_wind_down: {
+    good: [
+      { title: "The Last Little Bounce", summary: "As the house grows quiet, Lila’s ball still has one bounce left. It bumps past the slippers, taps the blanket chest, and rolls under the moonlit chair while Lila follows in smaller and smaller steps. By the time the ball settles beside her bed, the room has remembered how to be still." },
+      { title: "Goodnight, Little Train", summary: "At bedtime, Jonah’s toy train makes one last trip around the rug. It says goodnight to the blocks, the bear, the blue socks by the door, and the shadow on the wall. Each slow circle carries the day a little farther away, until the train is ready for its station and Jonah is ready for sleep." },
+    ],
+    badPhrases: ["learns to calm down", "cozy bedtime adventure", "discovers rest"],
+  },
+  brave_choice: {
+    good: [
+      { title: "The Bridge That Wobbled", summary: "Maya can race across logs, climb the tall rocks, and jump farther than anyone in the yard. But the little bridge behind the barn wobbles in a way that makes her feet forget what to do. When her kite lands on the far side, Maya has to try a braver thing than running fast: telling someone she is stuck." },
+      { title: "One More Step Back", summary: "Eli knows exactly how to build the tower taller, until the blocks begin to lean toward his baby sister’s favorite bear. He wants to grab, stack, and fix it before anyone notices. Instead, Eli has to step back, breathe, and ask for the one kind of help that might save both the tower and the bear." },
+    ],
+    badPhrases: ["learns to be brave", "a story about confidence", "discovers his courage"],
+  },
+  generous_heart: {
+    good: [
+      { title: "Room on the Rocket", summary: "Sam builds a rocket with one perfect seat and one perfect countdown. Then Ava arrives with a moon map, a snack bag, and a problem: her own rocket has no wings. Making room means changing the buttons, sharing the captain’s spot, and letting the mission look different than planned." },
+      { title: "One Goal for Two", summary: "Tessa has saved the best kick for the last minute of the game. But when Max’s shoe comes untied and the ball rolls his way, she sees a chance that is not just hers anymore. Passing might cost her big moment, but it could make space for a better one." },
+    ],
+    badPhrases: ["learns kindness", "friendship is the best", "discovers the joy of sharing"],
+  },
+  silly_escalation: {
+    good: [
+      { title: "The Robot That Wouldn’t Stop", summary: "When Milo builds a tiny robot to carry one cookie across the kitchen, it decides every cookie in the house needs delivering. Soon crackers, carrots, and couch pillows are riding along too. Milo tries buttons, baskets, and bargaining, but the parade only grows — until he notices the robot has been waiting for someone to say please." },
+      { title: "Don’t Let the Goat Paint", summary: "Nora gives the goat one little brush, just to help with the fence. But the goat has bigger ideas. First the fence turns purple, then the porch gets stripes, and soon the chickens are wearing dots. Nora races to clean it up before Grandma sees, but the mess might be the thing that makes the yard feel finished." },
+    ],
+    badPhrases: ["bigger, stranger, or funnier", "final unexpected choice", "twist or reversal", "the only way out", "works for about three seconds"],
+  },
+};
 
-export function titlePatternForFramework(id: SummaryFrameworkId) {
-  return TITLE_PATTERNS[id];
-}
+export function summaryPatternForFramework(id: SummaryFrameworkId) { return SUMMARY_PATTERNS[id]; }
+export function titlePatternForFramework(id: SummaryFrameworkId) { return TITLE_PATTERNS[id]; }
 
 function includesAny(haystack: string, needles: string[]): boolean {
   const h = haystack.toLowerCase();
@@ -200,6 +217,7 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
   const fw = SUMMARY_FRAMEWORKS[frameworkId];
   const summaryPattern = summaryPatternForFramework(frameworkId);
   const titlePattern = titlePatternForFramework(frameworkId);
+  const examples = SUMMARY_EXAMPLES_BY_FRAMEWORK[frameworkId];
   const langLabel = (ctx.language || "").trim().toLowerCase();
   const langLine = langLabel && langLabel !== "english"
     ? `Write the title and user_visible_summary in ${ctx.language}. Keep internal planning fields in English unless impossible.`
@@ -208,21 +226,42 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
   return [
     `Create ONE personalized children's picture book concept from the inputs below.`,
     ``,
-    `This is the FIRST concept step after the wizard. Do not write the full book yet. Create a strong concept that can later expand into a 30-page illustrated book.`,
+    `# Editorial style guide`,
+    `This is a customer-facing concept blurb, not the full story, not a plot outline, and not a receipt of the wizard answers.`,
+    `A good concept blurb centers one memorable story problem, uses one primary personalized detail, implies the emotional growth through the situation, and sounds like the back cover of a real picture book.`,
+    `Do not prove every input was used. Most inputs are private background context.`,
+    `Do not reveal every gag, plot beat, or ending. Save page-level details for the full book.`,
+    `The framework and pattern are invisible scaffolding. Never copy, quote, paraphrase, or expose the pattern wording in user_visible_summary.`,
     ``,
-    `# Most important instruction`,
-    `You are not proving that every wizard input was used. Most inputs are background context. Use only the details that create the strongest version of the selected summary pattern.`,
-    `The visible summary should feel like the back cover of a popular picture book, not a receipt of the wizard answers.`,
-    `Choose ONE primary story object/problem. You may use ONE extra detail only as background texture. Do not combine the user's interests into a hybrid object, hybrid title, or packed premise.`,
-    `Use fewer than half of the available personalized details. Unused details are reserved for the full book.`,
+    `# Selected framework`,
+    `Framework ID: ${frameworkId}`,
+    `Framework name: ${fw.label}`,
+    `Hidden shape: ${fw.shape}`,
+    `Best for: ${fw.bestFor}`,
+    `Avoid: ${fw.avoid}`,
     ``,
-    `# Child`,
-    `Name: ${ctx.childName}`,
+    `# Selected summary pattern`,
+    `summary_pattern: ${summaryPattern.id}`,
+    `Pattern name: ${summaryPattern.name}`,
+    `Invisible structure only: ${summaryPattern.internalShape}`,
+    `Rules:\n- ${summaryPattern.rules.join("\n- ")}`,
+    ``,
+    `# Selected title pattern`,
+    `title_pattern: ${titlePattern.id}`,
+    `Use one of these exact title shapes, adapted naturally to the story:`,
+    ...titlePattern.shapes.map((shape) => `- ${shape}`),
+    `Good title direction: ${titlePattern.examples.join("; ")}`,
+    `Avoid this kind of title: ${titlePattern.avoid.join("; ")}`,
+    ``,
+    `# Examples for this selected framework only`,
+    ...examples.good.flatMap((ex, i) => [`Example ${i + 1} title: ${ex.title}`, `Example ${i + 1} summary: ${ex.summary}`]),
+    `Do NOT use these phrases or close paraphrases: ${examples.badPhrases.join("; ")}.`,
+    ``,
+    `# Private wizard context`,
+    `Child name: ${ctx.childName}`,
     `Age band: ${ctx.ageBand}`,
     ctx.gender ? `Gender/pronouns: ${ctx.gender}` : "",
     ctx.heroQuirk ? `Appearance/signature detail: ${ctx.heroQuirk}` : "",
-    ``,
-    `# Background context menu`,
     ctx.genre ? `Genre: ${ctx.genre}` : "",
     ctx.mood ? `Mood: ${ctx.mood}` : "",
     ctx.lesson ? `Lesson/theme: ${ctx.lesson}` : "",
@@ -230,46 +269,16 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
     ctx.thingsAlreadyGoodAt ? `Things already good at, do not make this the weakness: ${ctx.thingsAlreadyGoodAt}` : "",
     ctx.thingsCurrentlyTricky ? `Things currently tricky, good source for the emotional choice: ${ctx.thingsCurrentlyTricky}` : "",
     ctx.recentMeaningfulMoment ? `Recent meaningful moment: ${ctx.recentMeaningfulMoment}` : "",
-    ``,
-    `# Cast context`,
     ctx.supportingLine ? `Supporting characters available if they strengthen the premise. Do not repeat their adjectives in visible text: ${ctx.supportingLine}` : "Supporting characters: none provided",
     ctx.specialThing ? `Companion/object/pet/toy available if it strengthens the premise: ${ctx.specialThing}` : "",
-    ``,
-    `# Private behavior notes`,
     ctx.heroBehaviorNotes || ctx.personalityLine
       ? (ctx.heroBehaviorNotes || `Hero behavior notes:\nUse these only to decide actions. Do not repeat these words in the visible summary: ${ctx.personalityLine}`)
       : "Hero behavior notes: none provided",
     ctx.supportingBehaviorNotes || "Supporting character behavior notes: none provided",
-    ctx.forbiddenTraitWords
-      ? `Forbidden visible trait words: Do not use these exact words in title, summary, or user_visible_summary: ${ctx.forbiddenTraitWords}. You may use them only inside hidden planning fields if needed.`
-      : "",
-    ``,
-    `# Book context`,
+    ctx.forbiddenTraitWords ? `Forbidden visible trait words: ${ctx.forbiddenTraitWords}.` : "",
     ctx.buyerRelationship ? `Buyer relationship: ${ctx.buyerRelationship}` : "",
     ctx.occasion ? `Occasion: ${ctx.occasion}` : "",
     langLine,
-    ``,
-    `# Selected story framework`,
-    `Framework ID: ${frameworkId}`,
-    `Framework name: ${fw.label}`,
-    `Framework shape: ${fw.shape}`,
-    `Best for: ${fw.bestFor}`,
-    `Avoid: ${fw.avoid}`,
-    `Use this framework as the hidden narrative shape. Do not mention the framework name to the user.`,
-    ``,
-    `# Required summary pattern for this framework`,
-    `summary_pattern: ${summaryPattern.id}`,
-    `Pattern name: ${summaryPattern.name}`,
-    `Exact formula to follow: ${summaryPattern.formula}`,
-    `Rules:\n- ${summaryPattern.rules.join("\n- ")}`,
-    ``,
-    `# Required title pattern for this framework`,
-    `title_pattern: ${titlePattern.id}`,
-    `Pattern name: ${titlePattern.name}`,
-    `Use one of these exact title shapes, adapted naturally to the story:`,
-    ...titlePattern.shapes.map((shape) => `- ${shape}`),
-    `Good example direction: ${titlePattern.examples.join("; ")}`,
-    `Avoid this kind of title: ${titlePattern.avoid.join("; ")}`,
     ``,
     `# Title rules`,
     `Use 2–7 words unless the exact comedy shape needs a few more words.`,
@@ -278,43 +287,37 @@ export function STORY_CONCEPT_USER_TEMPLATE(ctx: StoryConceptPromptCtx): string 
     `Do not list multiple hobbies/interests.`,
     `Use at most one personalized object, place, creature, or problem.`,
     `Prefer concrete nouns over abstract values.`,
-    `Avoid words like adventure, journey, magical, wonderful, special, brave, confidence, friendship, kindness unless they are truly unavoidable and natural.`,
+    `Avoid words like adventure, journey, magical, wonderful, special, brave, confidence, friendship, kindness unless explicitly provided by the user and unavoidable.`,
     ``,
     `# Visible summary rules`,
-    `Use the exact summary pattern above.`,
     `Write one paragraph, ${STORY_LENGTH.min}–${STORY_LENGTH.max} words, target ~${STORY_LENGTH.target}.`,
     `Use ${ctx.childName}'s name in the summary.`,
     `Pick ONE clear story engine.`,
     `Use ONE user-provided interest as the main concrete story element. Use a second only if it is background texture.`,
+    `Include at most two specific plot/gag beats. Do not summarize the whole book.`,
     `Do not directly list personality adjectives from the wizard or obvious synonyms like unstoppable, joyful, warm, gentle, creative, goofy, or silly.`,
     `Do not describe supporting characters with adjectives. Give them a story job.`,
     `Do not open with '${ctx.childName} is a...' or '${ctx.childName} was a...'.`,
     `Do not use a list title or list summary.`,
     `Do not explain the moral. Let the emotional choice imply the growth.`,
+    `Do not include text that would need to appear inside illustrations, such as labels, signs, button text, all-caps words, or written commands.`,
+    `Never use these formula-leak phrases: bigger, stranger, or funnier; final unexpected choice; twist or reversal; the only way out; emotional arc; invisible structure; works for about three seconds.`,
     ``,
     `# Recurring verbal motif`,
-    `Plan a recurring verbal motif for the full book. This may be a repeated phrase, repeated question, recurring sound, sensory image, or sentence pattern. It should connect to the core conflict, visual world, or emotional arc.`,
-    `Age guidance: ages 0–5 may use a clear read-aloud refrain; ages 6–8 may use a repeated question or sentence pattern; ages 9–12 should use a subtler recurring line, image, sound, or emotional phrase. Do not make it feel like a slogan. Do not force sing-song repetition for older children.`,
-    `Store this in story_seed.recurring_motif.`,
+    `Plan a recurring verbal motif for the full book. This may be a repeated phrase, repeated question, recurring sound, sensory image, or sentence pattern. Store it in story_seed.recurring_motif, not necessarily in the visible summary.`,
     ``,
     `# Structured output requirements`,
     `- framework_id must be exactly ${frameworkId}.`,
     `- summary_pattern must be exactly ${summaryPattern.id}.`,
     `- title_pattern must be exactly ${titlePattern.id}.`,
     `- title must follow one of the exact title shapes listed above.`,
-    `- user_visible_summary must follow the exact summary formula listed above.`,
+    `- user_visible_summary must be polished customer-facing copy and must not leak pattern language.`,
     `- story_seed: give the full book engine a clear core_conflict, emotional_arc, visual_world, recurring_motif, ending_feeling, and 5–8 image_opportunities.`,
     `- personalization_notes: explain how personality becomes action, which single interest was used in the visible summary, which details were intentionally saved for the full book, and what NOT to make the obstacle if it would feel inauthentic.`,
     `- full_book_instruction: 2–4 sentences telling the later full-book engine how to expand this concept into a 30-page picture book, including tone, pacing, emotional direction, summary pattern, title pattern, and motif usage guidance.`,
     ``,
-    `# Quality bar`,
-    `The concept should feel like a real picture book pitch, not a generic personalized template. Keep it specific but not overcomplicated.`,
-    `Avoid these words in the title and user-visible summary unless the user specifically provided them: magic, magical, adventure, wonderful, journey, special, whimsical.`,
-    `Avoid generic closing lines like "a tale about how friendship grows" or "discovers what makes a companion."`,
-    `Prefer warm, concrete, sensory language.`,
-    `Do not invent family, location, pets, or personal details not provided.`,
     ctx.previousSummary
-      ? `\n# Previous attempt to avoid\nWrite something distinctly different. Do not repeat the setting, twist, title pattern, or opening line.\nPrevious summary:\n${ctx.previousSummary}`
+      ? `# Previous attempt to avoid\nWrite something distinctly different. Do not repeat the setting, twist, title pattern, or opening line.\nPrevious summary:\n${ctx.previousSummary}`
       : "",
   ].filter(Boolean).join("\n");
 }
