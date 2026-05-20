@@ -318,7 +318,7 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const body = await req.json();
-    const rawBrief = body.brief || {};
+    const rawBrief = stripDataUrls(body.brief || {});
     const buyer_name: string | undefined = body.buyer_name || rawBrief.buyer_name;
     const buyer_email: string | undefined = body.buyer_email || rawBrief.buyer_email;
     const brief = { ...rawBrief, buyer_name, buyer_email };
