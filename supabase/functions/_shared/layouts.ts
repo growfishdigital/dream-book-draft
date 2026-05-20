@@ -19,7 +19,7 @@ export type TextPlacement =
   | "bottom"
   | "left"
   | "right"
-  | "overlay-center"
+  | "center"
   | "facing-page";
 
 export type IllustrationCoverage =
@@ -54,7 +54,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     id: "title",
     label: "Title page",
     appliesTo: ["title"],
-    textPlacement: "overlay-center",
+    textPlacement: "center",
     illustrationCoverage: "full",
     compositionCue:
       "reuse the cover artwork; no new illustration prompt for this page",
@@ -120,7 +120,7 @@ export const PAGE_LAYOUTS: PageLayout[] = [
     id: "text-center-card",
     label: "Text center / framed illustration",
     appliesTo: ["story"],
-    textPlacement: "overlay-center",
+    textPlacement: "center",
     illustrationCoverage: "three-quarter",
     compositionCue:
       "square 1:1 canvas — reserve a large calm centered text-safe area; frame characters, setting details, and decorative story elements around the center without crowding it; keep the center softly textured, low-detail, low-contrast, and free of readable text",
