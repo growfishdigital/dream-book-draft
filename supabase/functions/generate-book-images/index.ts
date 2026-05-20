@@ -124,7 +124,12 @@ async function setPipeline(
 ): Promise<void> {
   await supabase
     .from("generated_books")
-    .update({ pipeline_status: status, pipeline_progress: progress })
+    .update({
+      pipeline_status: status,
+      pipeline_progress: progress,
+      // Forward progress clears any stale error from a prior premature/failed attempt.
+      pipeline_error: null,
+    })
     .eq("id", bookId);
 }
 
