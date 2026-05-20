@@ -344,7 +344,8 @@ export default function Step11() {
       } else if (
         status !== "done" &&
         status !== "failed" &&
-        Date.now() - lastProgressAt > 60_000
+        status !== "story" && // story stage = generate-book is doing AI work; kicking images here just breaks the row
+        Date.now() - lastProgressAt > 90_000
       ) {
         // Stalled — nudge the chain.
         lastProgressAt = Date.now();

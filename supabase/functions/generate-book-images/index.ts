@@ -124,7 +124,12 @@ async function setPipeline(
 ): Promise<void> {
   await supabase
     .from("generated_books")
-    .update({ pipeline_status: status, pipeline_progress: progress })
+    .update({
+      pipeline_status: status,
+      pipeline_progress: progress,
+      // Forward progress clears any stale error from a prior premature/failed attempt.
+      pipeline_error: null,
+    })
     .eq("id", bookId);
 }
 
@@ -561,7 +566,16 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (error) throw new Error(`DB read failed: ${error.message}`);
     if (!row) throw new Error(`Book ${bookId} not found`);
-    if (!row.parsed) throw new Error("Book has no parsed payload yet.");
+    if (!row.parsed) {
+      // Premature invocation (e.g. watchdog firing while generate-book is still
+      // writing the story, or a stale tab/retry). Do NOT mark the book failed —
+      // the real chain inside generate-book will fire once parsed is persisted.
+      console.warn(`generate-book-images: book ${bookId} has no parsed payload yet — skipping.`);
+      return new Response(
+        JSON.stringify({ ok: true, book_id: bookId, skipped: "not_ready" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const startedAt = Date.now();
     const deadline = startedAt + MAX_RUN_MS;
