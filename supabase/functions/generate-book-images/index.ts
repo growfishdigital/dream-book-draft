@@ -449,7 +449,8 @@ async function finalSweepGenerations(
 
     const started = Date.now();
     try {
-      const url = await callImageModel(apiKey, userContent);
+      const cfg: ImageConfig = row.kind === "portrait" ? PORTRAIT_IMAGE_CONFIG : PAGE_IMAGE_CONFIG;
+      const url = await callImageModel(apiKey, userContent, cfg);
       await upsertImage(supabase, {
         book_id: bookId, kind: row.kind, slot: row.slot,
         prompt: row.prompt, image_data_url: url,
