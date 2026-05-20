@@ -266,7 +266,7 @@ export default function Step11Generating() {
 
         {done && !errored && (
           <button
-            onClick={() => navigate("/step/11")}
+            onClick={() => navigate("/step/10")}
             className="px-8 py-4 rounded-full text-base font-semibold"
             style={{
               backgroundColor: "hsl(var(--wizard-primary))",
