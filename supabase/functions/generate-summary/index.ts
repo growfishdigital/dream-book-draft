@@ -12,6 +12,7 @@ import {
   STORY_CONCEPT_USER_TEMPLATE,
   summaryPatternForFramework,
   titlePatternForFramework,
+  SUMMARY_EXAMPLES_BY_FRAMEWORK,
   type SummaryFrameworkId,
   type SummaryPatternId,
   type TitlePatternId,
@@ -109,6 +110,11 @@ const TRAIT_ACTION_MAP: Record<string, string> = {
   warm: "noticing feelings, gentle encouragement, or welcoming gestures",
 };
 
+const EXTRA_BANNED_DESCRIPTORS = [
+  "unstoppable", "joyful", "goofy", "warm", "gentle", "creative", "silly", "energetic",
+  "brave", "kind", "clever", "curious", "playful", "whimsical", "magical",
+];
+
 const GENERIC_SUMMARY_TERMS = [
   "magical",
   "wonderful",
@@ -117,6 +123,14 @@ const GENERIC_SUMMARY_TERMS = [
   "what makes a companion",
   "hints at how friendship grows",
   "a tale about how friendship grows",
+  "friendship is the best",
+  "the only way out",
+  "final unexpected choice",
+  "twist or reversal",
+  "bigger, stranger, or funnier",
+  "emotional arc",
+  "invisible structure",
+  "works for about three seconds",
 ];
 
 const GENERIC_TITLE_TERMS = [
@@ -192,7 +206,7 @@ function buildSupportingBehaviorNotes(characters: Brief["supportingCharacters"])
 function collectForbiddenTraitWords(brief: Brief): string[] {
   const heroTraits = uniqueTraits(brief.story?.personality || []);
   const castTraits = (brief.supportingCharacters || []).flatMap((c) => uniqueTraits(c.traits || []));
-  return Array.from(new Set([...heroTraits, ...castTraits]));
+  return Array.from(new Set([...heroTraits, ...castTraits, ...EXTRA_BANNED_DESCRIPTORS]));
 }
 
 function escapeRegExp(s: string): string {
@@ -212,7 +226,18 @@ function countInterestsUsed(text: string, interests: string[]): number {
   return interests.filter((interest) => {
     const clean = String(interest || "").trim().toLowerCase();
     if (!clean || clean.length < 3) return false;
-    return lower.includes(clean);
+    const aliases: Record<string, string[]> = {
+      robots: ["robot", "robots", "bot", "machine", "invention"],
+      robot: ["robot", "robots", "bot", "machine", "invention"],
+      fishing: ["fishing", "fish", "river", "pond", "rod", "line"],
+      skateboarding: ["skateboarding", "skateboard", "skate", "skatepark"],
+      soccer: ["soccer", "goal", "ball"],
+      basketball: ["basketball", "hoop", "ball"],
+      guitar: ["guitar", "song", "strum", "music", "tune"],
+      music: ["music", "song", "tune", "guitar", "singing"],
+    };
+    const terms = aliases[clean] || [clean];
+    return terms.some((term) => lower.includes(term));
   }).length;
 }
 
@@ -240,11 +265,14 @@ function findTitleQualityIssues(title: string, forbiddenTraits: string[], childN
   return Array.from(new Set(issues));
 }
 
-function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], childName: string, interests: string[]): string[] {
+function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], childName: string, interests: string[], frameworkId: SummaryFrameworkId): string[] {
   const issues: string[] = [];
   const lower = summary.toLowerCase();
   for (const term of GENERIC_SUMMARY_TERMS) {
-    if (lower.includes(term)) issues.push(`generic phrase: ${term}`);
+    if (lower.includes(term)) issues.push(`generic/formula phrase: ${term}`);
+  }
+  for (const term of SUMMARY_EXAMPLES_BY_FRAMEWORK[frameworkId].badPhrases) {
+    if (lower.includes(term.toLowerCase())) issues.push(`framework bad phrase: ${term}`);
   }
 
   for (const trait of forbiddenTraits) {
@@ -252,6 +280,7 @@ function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], ch
   }
 
   if (countInterestsUsed(summary, interests) > 2) issues.push("summary uses more than two interests");
+  if (words(summary).length > STORY_LENGTH.max + 8) issues.push("summary too long");
 
   const firstName = childName.trim().split(/\s+/)[0];
   if (firstName) {
@@ -263,7 +292,11 @@ function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], ch
   const appositiveTraitPattern = /\b[A-Z][a-z]+,\s+(?:the\s+)?[^,.]{0,45}\b(?:kid|child|boy|girl|person|friend)\b/i;
   if (appositiveTraitPattern.test(summary)) issues.push("appositive character descriptor pattern");
 
-  if (lower.includes("learns that") || lower.includes("discovers that friendship") || lower.includes("best kind of victory")) {
+  if (/\b(PAUSE|HYPER|DO NOT|MORE|STOP|START|ON|OFF|MESS)\b/.test(summary)) {
+    issues.push("contains likely in-illustration label/button text");
+  }
+
+  if (lower.includes("learns that") || lower.includes("learns how") || lower.includes("discovers that") || lower.includes("discovers what") || lower.includes("best kind of victory")) {
     issues.push("explains moral instead of implying growth");
   }
 
@@ -280,7 +313,7 @@ function conceptToolSchema(firstName: string) {
       },
       user_visible_summary: {
         type: "string",
-        description: `Single paragraph, ~${STORY_LENGTH.target} words (${STORY_LENGTH.min}–${STORY_LENGTH.max}), narrative concept summary shown to the customer. Must follow the requested summary_pattern.`,
+        description: `Single paragraph, ~${STORY_LENGTH.target} words (${STORY_LENGTH.min}–${STORY_LENGTH.max}), narrative concept summary shown to the customer. Must be polished customer-facing copy, not a formula or plot outline.`,
       },
       framework_id: {
         type: "string",
@@ -448,7 +481,7 @@ Deno.serve(async (req) => {
 
     let parsed: StoryConceptResult | null = null;
     let lastIssues: string[] = [];
-    const MAX_ATTEMPTS = 3;
+    const MAX_ATTEMPTS = 2;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
       const feedback = lastIssues.length
@@ -459,9 +492,11 @@ Deno.serve(async (req) => {
           `The framework must remain ${selectedFrameworkId}.`,
           `The summary_pattern must be ${expectedSummaryPattern}.`,
           `The title_pattern must be ${expectedTitlePattern}.`,
-          "Rewrite with fewer visible personalized details. Do not prove every wizard input was used.",
+          "Rewrite as a polished 65-90 word back-cover concept, not a plot outline.",
+          "Do not copy the framework language, examples, bad phrases, or pattern wording.",
+          "Use fewer visible personalized details. Do not prove every wizard input was used.",
           "Use at most two interests in the visible summary and at most one interest in the title.",
-          forbiddenTraitWords.length ? `Do not use these exact trait words in title or visible summary: ${forbiddenTraitWords.join(", ")}.` : "",
+          forbiddenTraitWords.length ? `Do not use these trait words or close adjective labels in title or visible summary: ${forbiddenTraitWords.join(", ")}.` : "",
         ].filter(Boolean).join("\n")
         : undefined;
 
@@ -493,7 +528,7 @@ Deno.serve(async (req) => {
 
       const issues = [
         ...findTitleQualityIssues(candidateTitle, forbiddenTraitWords, childName, interests),
-        ...findSummaryQualityIssues(candidateSummary, forbiddenTraitWords, childName, interests),
+        ...findSummaryQualityIssues(candidateSummary, forbiddenTraitWords, childName, interests, selectedFrameworkId),
       ];
       if ((candidate.framework_id || selectedFrameworkId) !== selectedFrameworkId) issues.push("framework changed from selected framework");
       if ((candidate.summary_pattern || expectedSummaryPattern) !== expectedSummaryPattern) issues.push("wrong summary pattern");
