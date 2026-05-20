@@ -382,6 +382,150 @@ async function generatePages(
   return { remaining, fatal: undefined };
 }
 
+// ---- Final sweep -------------------------------------------------------
+
+/**
+ * One-pass retry of any failed portrait/page rows for this book. Reuses the
+ * prompt already stored on the row + the current portrait references.
+ * Returns the number of rows still failed after the sweep (-1 if we ran out
+ * of time mid-loop and should self-chain).
+ */
+async function finalSweepGenerations(
+  supabase: any,
+  bookId: string,
+  references: string[],
+  apiKey: string,
+  deadline: number,
+  subfolderId: string | null,
+): Promise<number> {
+  const { data: failed, error } = await supabase
+    .from("book_images")
+    .select("id,kind,slot,prompt")
+    .eq("book_id", bookId)
+    .in("kind", ["portrait", "page"])
+    .eq("status", "failed");
+  if (error) {
+    console.error("finalSweep read failed:", error.message);
+    return -1;
+  }
+  if (!failed || failed.length === 0) return 0;
+
+  console.log(`Final sweep: retrying ${failed.length} failed generation(s).`);
+  await setPipeline(supabase, bookId, "retrying", {
+    stage: "retrying", current: 0, total: failed.length,
+    message: `Touching up ${failed.length} image${failed.length === 1 ? "" : "s"}…`,
+  });
+
+  let still = 0;
+  let done = 0;
+  for (const row of failed) {
+    if (Date.now() > deadline) {
+      // Out of time — return -1 so the handler self-chains for another slice.
+      return -1;
+    }
+    if (!row.prompt) {
+      // No prompt to retry against; leave as-is.
+      still += 1;
+      continue;
+    }
+
+    // For portraits, only slot 2/3 use references; slot 1 was generated from
+    // photos, but on retry the original photos aren't reachable here — fall
+    // back to a text-only retry. Pages always use references.
+    const useRefs = row.kind === "page" || (row.kind === "portrait" && row.slot > 1);
+    const userContent: any[] = [{ type: "text", text: row.prompt }];
+    if (useRefs) {
+      for (const url of references) {
+        userContent.push({ type: "image_url", image_url: { url } });
+      }
+    }
+
+    const started = Date.now();
+    try {
+      const url = await callImageModel(apiKey, userContent);
+      await upsertImage(supabase, {
+        book_id: bookId, kind: row.kind, slot: row.slot,
+        prompt: row.prompt, image_data_url: url,
+        status: "ok", generated_ms: Date.now() - started,
+      });
+      scheduleDriveUpload(supabase, bookId, row.kind, row.slot, subfolderId);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error(`Final sweep retry ${row.kind}/${row.slot} failed:`, msg);
+      await supabase
+        .from("book_images")
+        .update({ error: msg.slice(0, 500) })
+        .eq("id", row.id);
+      still += 1;
+    }
+    done += 1;
+    await setPipeline(supabase, bookId, "retrying", {
+      stage: "retrying", current: done, total: failed.length,
+      message: `Touching up image ${Math.min(done + 1, failed.length)} of ${failed.length}…`,
+    });
+  }
+  return still;
+}
+
+interface VerdictGap {
+  kind: "portrait" | "page" | "cover";
+  slot: number;
+  reason: "not_generated" | "not_uploaded";
+}
+
+async function verifyComplete(
+  supabase: any,
+  bookId: string,
+  parsed: any,
+): Promise<{ ok: boolean; gaps: VerdictGap[] }> {
+  const pages = Array.isArray(parsed?.pages) ? parsed.pages : [];
+  const requiredPageSlots = pages
+    .filter((p: any) => p.image_prompt)
+    .map((p: any) => Number(p.page_number));
+
+  const { data: rows, error } = await supabase
+    .from("book_images")
+    .select("kind,slot,status,drive_file_id")
+    .eq("book_id", bookId);
+  if (error) throw new Error(`verifyComplete read failed: ${error.message}`);
+
+  const byKey = new Map<string, { status: string; drive_file_id: string | null }>();
+  for (const r of rows || []) {
+    byKey.set(`${r.kind}/${r.slot}`, { status: r.status, drive_file_id: r.drive_file_id });
+  }
+
+  const gaps: VerdictGap[] = [];
+  const check = (kind: "portrait" | "page" | "cover", slot: number) => {
+    const row = byKey.get(`${kind}/${slot}`);
+    if (!row || row.status !== "ok") {
+      gaps.push({ kind, slot, reason: "not_generated" });
+    } else if (!row.drive_file_id) {
+      gaps.push({ kind, slot, reason: "not_uploaded" });
+    }
+  };
+
+  check("portrait", 1);
+  for (const s of requiredPageSlots) check("page", s);
+  // Cover is generated elsewhere; only enforce if a row exists.
+  if (byKey.has("cover/1")) check("cover", 1);
+
+  return { ok: gaps.length === 0, gaps };
+}
+
+function summarizeGaps(gaps: VerdictGap[]): string {
+  const pagesMissing = gaps.filter((g) => g.kind === "page" && g.reason === "not_generated").map((g) => g.slot);
+  const pagesUnuploaded = gaps.filter((g) => g.kind === "page" && g.reason === "not_uploaded").map((g) => g.slot);
+  const parts: string[] = [];
+  if (pagesMissing.length) parts.push(`missing ${pagesMissing.length} page(s) (${pagesMissing.join(", ")})`);
+  if (pagesUnuploaded.length) parts.push(`${pagesUnuploaded.length} page(s) not uploaded (${pagesUnuploaded.join(", ")})`);
+  for (const g of gaps) {
+    if (g.kind === "page") continue;
+    parts.push(`${g.kind}${g.slot > 1 ? ` ${g.slot}` : ""} ${g.reason === "not_generated" ? "not generated" : "not uploaded"}`);
+  }
+  return `Book incomplete: ${parts.join("; ")}`;
+}
+
+
 
 // ---- Handler -----------------------------------------------------------
 
