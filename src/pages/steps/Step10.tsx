@@ -298,7 +298,7 @@ export default function Step11Generating() {
               ✨ Try again
             </button>
             <button
-              onClick={() => navigate("/step/9")}
+              onClick={() => navigate("/step/8")}
               className="text-xs underline text-[#2b4e18]/60"
             >
               Back to the story
