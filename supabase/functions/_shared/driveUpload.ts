@@ -244,22 +244,58 @@ export interface BookImageRow {
   drive_file_id?: string | null;
 }
 
+export type UploadSource = "progressive" | "cleanup";
+
+async function logAttempt(
+  supabase: any,
+  img: BookImageRow,
+  source: UploadSource,
+  ev: AttemptEvent,
+  drive?: { id: string; webViewLink: string },
+): Promise<void> {
+  try {
+    await supabase.from("book_image_upload_attempts").insert({
+      book_image_id: img.id,
+      book_id: img.book_id,
+      kind: img.kind,
+      slot: img.slot,
+      attempt: ev.attempt,
+      source,
+      outcome: ev.outcome,
+      http_status: ev.http_status ?? null,
+      duration_ms: ev.duration_ms ?? null,
+      error: ev.error ? ev.error.slice(0, 500) : null,
+      drive_file_id: drive?.id ?? null,
+      drive_file_url: drive?.webViewLink ?? null,
+    });
+  } catch (e) {
+    console.error("logAttempt insert failed:", e);
+  }
+}
+
 /**
  * Uploads a single book_images row to Drive and stamps the row with the
  * resulting drive_file_id / drive_file_url. Clears image_data_url on success.
  * Returns true if uploaded (or already had drive_file_id), false on failure.
- * Never throws — failures are logged + recorded in the row's `error` field.
+ * Never throws — failures are logged + recorded in the row's `error` field
+ * and a per-attempt row is appended to book_image_upload_attempts.
  */
 export async function uploadAndStampImage(
   supabase: any,
   img: BookImageRow,
   parentId: string,
+  source: UploadSource = "cleanup",
 ): Promise<boolean> {
   if (img.drive_file_id) return true;
   if (!img.image_data_url) return false;
   const name = fileNameFor(img.kind, img.slot);
+  let lastOk: { id: string; webViewLink: string } | undefined;
+  const pending: AttemptEvent[] = [];
   try {
-    const file = await uploadImageWithRetry(name, parentId, img.image_data_url);
+    const file = await uploadImageWithRetry(name, parentId, img.image_data_url, (ev) => {
+      pending.push(ev);
+    });
+    lastOk = file;
     await supabase
       .from("book_images")
       .update({
@@ -268,6 +304,10 @@ export async function uploadAndStampImage(
         image_data_url: null,
       })
       .eq("id", img.id);
+    // Persist attempt log (fire-and-forget order doesn't matter).
+    for (const ev of pending) {
+      await logAttempt(supabase, img, source, ev, ev.outcome === "ok" ? lastOk : undefined);
+    }
     return true;
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
@@ -278,6 +318,9 @@ export async function uploadAndStampImage(
         .update({ error: msg.slice(0, 500) })
         .eq("id", img.id);
     } catch (_) { /* ignore */ }
+    for (const ev of pending) {
+      await logAttempt(supabase, img, source, ev);
+    }
     return false;
   }
 }
@@ -292,6 +335,7 @@ export async function uploadByKindSlot(
   kind: string,
   slot: number,
   parentId: string,
+  source: UploadSource = "progressive",
 ): Promise<boolean> {
   const { data, error } = await supabase
     .from("book_images")
@@ -304,5 +348,5 @@ export async function uploadByKindSlot(
     console.warn(`uploadByKindSlot: row not found for ${kind}/${slot}: ${error?.message}`);
     return false;
   }
-  return await uploadAndStampImage(supabase, data as BookImageRow, parentId);
+  return await uploadAndStampImage(supabase, data as BookImageRow, parentId, source);
 }
