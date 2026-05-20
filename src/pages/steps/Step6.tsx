@@ -579,6 +579,10 @@ export default function Step6() {
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
 
+  // Kick off the background portrait the moment the first protagonist photo
+  // is uploaded. No visible UI on this step — result is shown on Step 8.
+  useCharacterPortrait();
+
   // Intercept Continue: if no supporting characters, ask "are you sure?"
   const handleBeforeContinue = useCallback(() => {
     if (supportingCharacters.length > 0) return true;
