@@ -481,6 +481,7 @@ Deno.serve(async (req) => {
         model,
         generation_ms,
         validation,
+        drive_export: driveExport,
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
