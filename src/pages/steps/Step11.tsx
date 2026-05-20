@@ -318,9 +318,13 @@ export default function Step11() {
   const planLabel = selected === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
 
   // Poll pipeline_progress while a run is in flight.
+  // Also watchdogs a stalled chain by re-invoking generate-book-images
+  // if progress hasn't advanced in 60s.
   useEffect(() => {
     if (!pipeline.bookId || !pipeline.running) return;
     const bookId = pipeline.bookId;
+    let lastProgressKey = "";
+    let lastProgressAt = Date.now();
     const tick = async () => {
       const { data } = await supabase
         .from("generated_books")
@@ -332,6 +336,24 @@ export default function Step11() {
       const progress = (data.pipeline_progress as any) || null;
       const error = (data.pipeline_error as string) || null;
       setPipeline((p) => ({ ...p, status, progress, error }));
+
+      const key = `${status}:${progress?.stage}:${progress?.current}/${progress?.total}`;
+      if (key !== lastProgressKey) {
+        lastProgressKey = key;
+        lastProgressAt = Date.now();
+      } else if (
+        status !== "done" &&
+        status !== "failed" &&
+        Date.now() - lastProgressAt > 60_000
+      ) {
+        // Stalled — nudge the chain.
+        lastProgressAt = Date.now();
+        console.warn("Pipeline stalled, re-invoking generate-book-images");
+        void supabase.functions.invoke("generate-book-images", {
+          body: { book_id: bookId },
+        });
+      }
+
       if (status === "done") {
         setPipeline((p) => ({ ...p, running: false }));
         setOrderPlaced(true);
@@ -345,6 +367,7 @@ export default function Step11() {
       if (pollRef.current) window.clearInterval(pollRef.current);
     };
   }, [pipeline.bookId, pipeline.running]);
+
 
   const startPipeline = async () => {
     const errs: { name?: string; email?: string } = {};
@@ -389,31 +412,25 @@ export default function Step11() {
 
       setPipeline((p) => ({ ...p, bookId, status: "portraits" }));
 
-      // 2. Image pipeline (orchestrator; long-running).
-      // Fire-and-poll: we don't await the response — the poller picks up
-      // pipeline_status changes from the DB.
+      // 2. Image pipeline (orchestrator; self-chaining slices).
+      // Fire-and-forget: each invocation handles a slice and chains the
+      // next one. The DB poller above is the source of truth for status;
+      // transient invoke errors are non-fatal because the chain (or the
+      // stall watchdog) will recover.
       const seed = (answers.characterPortrait as any)?.dataUrl || null;
       void supabase.functions
         .invoke("generate-book-images", {
           body: { book_id: bookId, seed_portrait_data_url: seed },
         })
-        .then(({ data, error }) => {
+        .then(({ error }) => {
           if (error) {
-            setPipeline((p) => ({
-              ...p,
-              running: false,
-              status: "failed",
-              error: error.message || "Image pipeline failed.",
-            }));
-          } else if (data?.error) {
-            setPipeline((p) => ({
-              ...p,
-              running: false,
-              status: "failed",
-              error: data.error,
-            }));
+            console.warn(
+              "generate-book-images invoke error (non-fatal, poller will reconcile):",
+              error,
+            );
           }
         });
+
     } catch (e: any) {
       setPipeline({
         running: false,

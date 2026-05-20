@@ -255,13 +255,22 @@ async function ensurePortraits(
   return { anchor: anchor!, references };
 }
 
+const MAX_RUN_MS = 50_000;
+const MAX_CONSECUTIVE_PAGE_FAILURES = 3;
+
+interface GeneratePagesResult {
+  remaining: number;
+  fatal?: string;
+}
+
 async function generatePages(
   supabase: any,
   bookId: string,
   parsed: any,
   references: string[],
   apiKey: string,
-): Promise<void> {
+  deadline: number,
+): Promise<GeneratePagesResult> {
   const pages = Array.isArray(parsed?.pages) ? parsed.pages : [];
   const targets = pages.filter((p: any) => p.image_prompt);
   const total = targets.length;
@@ -287,9 +296,15 @@ async function generatePages(
       : `Use Image #1 as the canonical character appearance reference (face, hair, body, outfit).`;
 
   let completed = done.size;
+  let consecutiveFailures = 0;
+  let lastError: string | undefined;
 
   for (const page of targets) {
     if (done.has(page.page_number)) continue;
+    if (Date.now() > deadline) {
+      // Out of time budget; let the chained invocation pick up the rest.
+      break;
+    }
     const promptText = `${anchorPreamble}\n\n${page.image_prompt}`;
     const userContent: any[] = [{ type: "text", text: promptText }];
     for (const url of references) {
@@ -303,13 +318,19 @@ async function generatePages(
         prompt: promptText, image_data_url: url,
         status: "ok", generated_ms: Date.now() - started,
       });
+      consecutiveFailures = 0;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`Page ${page.page_number} failed:`, msg);
+      lastError = msg;
+      consecutiveFailures += 1;
       await upsertImage(supabase, {
         book_id: bookId, kind: "page", slot: page.page_number,
         prompt: promptText, status: "failed", error: msg,
       });
+      if (consecutiveFailures >= MAX_CONSECUTIVE_PAGE_FAILURES) {
+        return { remaining: -1, fatal: `Page generation aborted after ${consecutiveFailures} consecutive failures. Last error: ${msg}` };
+      }
     }
     completed += 1;
     await setPipeline(supabase, bookId, "pages", {
@@ -317,7 +338,20 @@ async function generatePages(
       message: `Painting page ${Math.min(completed + 1, total)} of ${total}…`,
     });
   }
+
+  // Recompute remaining from DB to be authoritative.
+  const { data: after } = await supabase
+    .from("book_images")
+    .select("slot,status")
+    .eq("book_id", bookId)
+    .eq("kind", "page");
+  const okSlots = new Set<number>(
+    (after || []).filter((r: any) => r.status === "ok").map((r: any) => r.slot),
+  );
+  const remaining = targets.filter((p: any) => !okSlots.has(p.page_number)).length;
+  return { remaining, fatal: undefined };
 }
+
 
 // ---- Handler -----------------------------------------------------------
 
@@ -347,15 +381,46 @@ Deno.serve(async (req) => {
     if (!row) throw new Error(`Book ${bookId} not found`);
     if (!row.parsed) throw new Error("Book has no parsed payload yet.");
 
+    const startedAt = Date.now();
+    const deadline = startedAt + MAX_RUN_MS;
+
     // 1. Portraits
     const { references } = await ensurePortraits(
       supabase, bookId, row.brief || {}, seedPortrait, apiKey,
     );
 
-    // 2. Pages
-    await generatePages(supabase, bookId, row.parsed, references, apiKey);
+    // 2. Pages (time-budgeted slice)
+    const { remaining, fatal } = await generatePages(
+      supabase, bookId, row.parsed, references, apiKey, deadline,
+    );
 
-    // 3. Drive export (best-effort)
+    if (fatal) {
+      await supabase
+        .from("generated_books")
+        .update({ pipeline_status: "failed", pipeline_error: fatal.slice(0, 1000) })
+        .eq("id", bookId);
+      return new Response(
+        JSON.stringify({ ok: false, error: fatal }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (remaining > 0) {
+      // More pages to do — hand off to a fresh invocation.
+      try {
+        void supabase.functions.invoke("generate-book-images", {
+          body: { book_id: bookId },
+        });
+      } catch (e) {
+        console.error("Self-chain invoke threw:", e);
+      }
+      return new Response(
+        JSON.stringify({ ok: true, book_id: bookId, continued: true, remaining }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // 3. Drive export (best-effort) — only when all pages are done.
     let exportResult: any = null;
     try {
       const { data, error: invErr } = await supabase.functions.invoke(
@@ -373,9 +438,10 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ ok: true, book_id: bookId, drive_export: exportResult }),
+      JSON.stringify({ ok: true, book_id: bookId, done: true, drive_export: exportResult }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("generate-book-images error:", msg);
