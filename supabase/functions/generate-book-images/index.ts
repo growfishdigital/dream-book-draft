@@ -381,15 +381,46 @@ Deno.serve(async (req) => {
     if (!row) throw new Error(`Book ${bookId} not found`);
     if (!row.parsed) throw new Error("Book has no parsed payload yet.");
 
+    const startedAt = Date.now();
+    const deadline = startedAt + MAX_RUN_MS;
+
     // 1. Portraits
     const { references } = await ensurePortraits(
       supabase, bookId, row.brief || {}, seedPortrait, apiKey,
     );
 
-    // 2. Pages
-    await generatePages(supabase, bookId, row.parsed, references, apiKey);
+    // 2. Pages (time-budgeted slice)
+    const { remaining, fatal } = await generatePages(
+      supabase, bookId, row.parsed, references, apiKey, deadline,
+    );
 
-    // 3. Drive export (best-effort)
+    if (fatal) {
+      await supabase
+        .from("generated_books")
+        .update({ pipeline_status: "failed", pipeline_error: fatal.slice(0, 1000) })
+        .eq("id", bookId);
+      return new Response(
+        JSON.stringify({ ok: false, error: fatal }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    if (remaining > 0) {
+      // More pages to do — hand off to a fresh invocation.
+      try {
+        void supabase.functions.invoke("generate-book-images", {
+          body: { book_id: bookId },
+        });
+      } catch (e) {
+        console.error("Self-chain invoke threw:", e);
+      }
+      return new Response(
+        JSON.stringify({ ok: true, book_id: bookId, continued: true, remaining }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    // 3. Drive export (best-effort) — only when all pages are done.
     let exportResult: any = null;
     try {
       const { data, error: invErr } = await supabase.functions.invoke(
@@ -407,9 +438,10 @@ Deno.serve(async (req) => {
     });
 
     return new Response(
-      JSON.stringify({ ok: true, book_id: bookId, drive_export: exportResult }),
+      JSON.stringify({ ok: true, book_id: bookId, done: true, drive_export: exportResult }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
     );
+
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("generate-book-images error:", msg);
