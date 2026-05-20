@@ -72,6 +72,47 @@ interface StoryConceptResult {
   full_book_instruction?: string;
 }
 
+const TRAIT_ACTION_MAP: Record<string, string> = {
+  adventurous: "choosing to explore, stepping toward the unknown, or trying a new route",
+  brave: "steady choices when something feels hard, uncertain, or a little scary",
+  calm: "slow breaths, careful pauses, or steady hands during a busy moment",
+  caring: "noticing needs, gentle help, or small acts of comfort",
+  cheerful: "bright reactions, hopeful words, or finding a spark of fun",
+  clever: "spotting patterns, testing ideas, or solving a problem in an unexpected way",
+  confident: "standing tall, speaking clearly, or trusting a practiced skill",
+  creative: "making something new, trying an unusual idea, or finding another way",
+  curious: "asking questions, investigating clues, or leaning closer to understand",
+  determined: "trying again, staying focused, or refusing to quit after a setback",
+  energetic: "motion, quick decisions, eager movement, or restless tinkering",
+  funny: "playful timing, goofy observations, or making others laugh kindly",
+  gentle: "careful touch, soft words, or protecting something small",
+  goofy: "playful mistakes, funny faces, or surprising choices",
+  helpful: "pitching in, offering a tool, or looking for what someone needs",
+  imaginative: "pretend ideas, invented worlds, or seeing new possibilities",
+  joyful: "delighted reactions, happy movement, or contagious excitement",
+  kind: "thoughtful choices, including others, or helping without being asked",
+  loving: "warm gestures, loyal attention, or making someone feel safe",
+  playful: "games, teasing ideas, or turning a problem into fun",
+  quiet: "careful watching, thoughtful pauses, or noticing details others miss",
+  resilient: "recovering after disappointment, trying again, or adapting the plan",
+  sensitive: "noticing small emotional changes, caring deeply, or responding tenderly",
+  shy: "hesitating at first, watching closely, or finding a small way to join in",
+  silly: "playful choices, surprising ideas, or physical comedy",
+  smart: "asking sharp questions, connecting clues, or planning the next step",
+  thoughtful: "pausing to consider others, remembering details, or choosing carefully",
+  warm: "noticing feelings, gentle encouragement, or welcoming gestures",
+};
+
+const GENERIC_SUMMARY_TERMS = [
+  "magical",
+  "wonderful",
+  "whimsical",
+  "gentle riddles",
+  "what makes a companion",
+  "hints at how friendship grows",
+  "a tale about how friendship grows",
+];
+
 function describeSpecialThing(
   s: Brief["specialThing"],
 ): string | undefined {
@@ -79,7 +120,6 @@ function describeSpecialThing(
   if (typeof s === "string") return s;
   const cat = s.category?.replace(/-/g, " ");
   const d = s.details || {};
-  // Drop photo data URLs and empty values; keep readable detail bits.
   const bits = Object.entries(d)
     .filter(([k, v]) =>
       v && typeof v === "string" && k !== "photo" && !v.startsWith("data:"),
@@ -91,6 +131,85 @@ function describeSpecialThing(
     });
   if (!cat && !bits.length) return undefined;
   return [cat, bits.join(", ")].filter(Boolean).join(" — ");
+}
+
+function cleanTrait(t: unknown): string | null {
+  if (typeof t !== "string") return null;
+  const clean = t.trim().toLowerCase();
+  if (!clean) return null;
+  return clean.replace(/[^a-z0-9 -]/g, "").replace(/\s+/g, " ");
+}
+
+function uniqueTraits(traits: unknown[]): string[] {
+  return Array.from(new Set((traits || []).map(cleanTrait).filter(Boolean) as string[]));
+}
+
+function traitActionPhrase(trait: string): string {
+  return TRAIT_ACTION_MAP[trait] || "specific actions, choices, gestures, or responses";
+}
+
+function buildHeroBehaviorNotes(traits: string[]): string | undefined {
+  if (!traits.length) return undefined;
+  return [
+    "Hero behavior notes:",
+    "Use these only to decide actions. Do not repeat these words in the visible summary:",
+    ...traits.map((trait) => `- ${trait} should appear as ${traitActionPhrase(trait)}.`),
+  ].join("\n");
+}
+
+function buildSupportingBehaviorNotes(characters: Brief["supportingCharacters"]): string | undefined {
+  const lines = (characters || [])
+    .map((c) => {
+      const name = c.name?.trim() || c.relationship?.trim();
+      const traits = uniqueTraits(c.traits || []);
+      if (!name || !traits.length) return "";
+      const traitList = traits.join(" or ");
+      const actionHints = traits.map(traitActionPhrase).join("; ");
+      return `${name}'s traits are private direction only. Show them through what ${name} notices, offers, fixes, asks, chooses, or how ${name} responds. Useful behavior cues: ${actionHints}. Do not describe ${name} as ${traitList}.`;
+    })
+    .filter(Boolean);
+  if (!lines.length) return undefined;
+  return ["Supporting character behavior notes:", ...lines].join("\n");
+}
+
+function collectForbiddenTraitWords(brief: Brief): string[] {
+  const heroTraits = uniqueTraits(brief.story?.personality || []);
+  const castTraits = (brief.supportingCharacters || []).flatMap((c) => uniqueTraits(c.traits || []));
+  return Array.from(new Set([...heroTraits, ...castTraits]));
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], childName: string): string[] {
+  const issues: string[] = [];
+  const lower = summary.toLowerCase();
+  for (const term of GENERIC_SUMMARY_TERMS) {
+    if (lower.includes(term)) issues.push(`generic phrase: ${term}`);
+  }
+
+  for (const trait of forbiddenTraits) {
+    const word = escapeRegExp(trait);
+    const traitRe = new RegExp(`\\b${word}\\b`, "i");
+    if (traitRe.test(summary)) issues.push(`visible trait word: ${trait}`);
+  }
+
+  const firstName = childName.trim().split(/\s+/)[0];
+  if (firstName) {
+    const name = escapeRegExp(firstName);
+    const directDescriptor = new RegExp(`\\b${name}\\s+(?:is|was)\\s+(?:an?\\s+)?[^.]{0,45}\\b(?:kid|child|boy|girl|person)\\b`, "i");
+    if (directDescriptor.test(summary)) {
+      issues.push("direct hero descriptor pattern");
+    }
+  }
+
+  const appositiveTraitPattern = /\b[A-Z][a-z]+,\s+(?:the\s+)?[^,.]{0,45}\b(?:kid|child|boy|girl|person|friend)\b/i;
+  if (appositiveTraitPattern.test(summary)) {
+    issues.push("appositive character descriptor pattern");
+  }
+
+  return Array.from(new Set(issues));
 }
 
 function conceptToolSchema(firstName: string) {
@@ -195,19 +314,18 @@ Deno.serve(async (req) => {
 
     const childName = brief.child?.name || "the child";
     const ageBand = brief.child?.ageRange || "young";
+    const heroTraits = uniqueTraits(brief.story?.personality || []);
+    const forbiddenTraitWords = collectForbiddenTraitWords(brief);
 
     const supporting = (brief.supportingCharacters || [])
       .map((c: any) => {
         const rel = c.relationship?.trim();
         const nm = c.name?.trim();
-        const traits = Array.isArray(c.traits) && c.traits.length
-          ? ` — ${c.traits.join(", ")}`
-          : "";
         const desc = c.description?.trim()
           ? `. ${c.description.trim()}`
           : "";
         const base = nm && rel ? `${nm} (${rel})` : nm || rel;
-        return base ? `${base}${traits}${desc}` : "";
+        return base ? `${base}${desc}` : "";
       })
       .filter(Boolean)
       .join("; ");
@@ -216,9 +334,7 @@ Deno.serve(async (req) => {
       .filter(Boolean)
       .join(", ");
 
-    const personalityLine = (brief.story?.personality || [])
-      .filter(Boolean)
-      .join(", ");
+    const personalityLine = heroTraits.join(", ");
 
     const conceptCtx = {
       childName,
@@ -230,7 +346,10 @@ Deno.serve(async (req) => {
       lesson: brief.story?.lesson,
       interestsLine,
       personalityLine,
+      heroBehaviorNotes: buildHeroBehaviorNotes(heroTraits),
       supportingLine: supporting,
+      supportingBehaviorNotes: buildSupportingBehaviorNotes(brief.supportingCharacters || []),
+      forbiddenTraitWords: forbiddenTraitWords.join(", "),
       specialThing: describeSpecialThing(brief.specialThing),
       heroQuirk: brief.protagonist?.special as string | undefined,
       thingsAlreadyGoodAt: brief.story?.thingsAlreadyGoodAt,
@@ -289,15 +408,26 @@ Deno.serve(async (req) => {
       });
     };
 
-    // Try up to 3 times — if the title contains the child's name, re-prompt with feedback.
     let parsed: StoryConceptResult | null = null;
     let lastBadTitle: string | null = null;
+    let lastQualityIssues: string[] = [];
     const MAX_ATTEMPTS = 3;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const feedback = lastBadTitle
-        ? TITLE_RETRY_INSTRUCTION(lastBadTitle, firstName)
-        : undefined;
+      const feedbackParts: string[] = [];
+      if (lastBadTitle) feedbackParts.push(TITLE_RETRY_INSTRUCTION(lastBadTitle, firstName));
+      if (lastQualityIssues.length) {
+        feedbackParts.push([
+          "The previous summary failed quality checks:",
+          ...lastQualityIssues.map((issue) => `- ${issue}`),
+          "Rewrite the user_visible_summary so personality is shown only through action, not direct descriptors.",
+          forbiddenTraitWords.length
+            ? `Do not use these exact trait words in the visible summary: ${forbiddenTraitWords.join(", ")}.`
+            : "",
+          "Avoid generic pitch language. Use concrete, visual behavior instead.",
+        ].filter(Boolean).join("\n"));
+      }
+      const feedback = feedbackParts.length ? feedbackParts.join("\n\n") : undefined;
 
       const aiResp = await callModel(feedback);
 
@@ -337,30 +467,34 @@ Deno.serve(async (req) => {
 
       const candidate = JSON.parse(argsStr) as StoryConceptResult;
       const candidateTitle = String(candidate.title || "").slice(0, 80).trim();
+      const candidateSummary = String(candidate.user_visible_summary || candidate.summary || "").trim();
+      const qualityIssues = findSummaryQualityIssues(candidateSummary, forbiddenTraitWords, childName);
+      const badTitle = titleHasName(candidateTitle);
 
-      if (!titleHasName(candidateTitle)) {
-        parsed = {
-          ...candidate,
-          title: candidateTitle,
-          framework_id: candidate.framework_id || selectedFrameworkId,
-        };
-        console.log(`Title validated on attempt ${attempt}: "${candidateTitle}"`);
-        break;
-      }
-
-      console.warn(`Attempt ${attempt}: title "${candidateTitle}" contains "${firstName}" — re-prompting.`);
-      lastBadTitle = candidateTitle;
       parsed = {
         ...candidate,
         title: candidateTitle,
         framework_id: candidate.framework_id || selectedFrameworkId,
       };
+
+      if (!badTitle && qualityIssues.length === 0) {
+        console.log(`Summary validated on attempt ${attempt}: "${candidateTitle}"`);
+        break;
+      }
+
+      if (badTitle) {
+        console.warn(`Attempt ${attempt}: title "${candidateTitle}" contains "${firstName}" — re-prompting.`);
+        lastBadTitle = candidateTitle;
+      }
+      if (qualityIssues.length) {
+        console.warn(`Attempt ${attempt}: summary failed quality checks: ${qualityIssues.join("; ")}`);
+        lastQualityIssues = qualityIssues;
+      }
     }
 
-    // Final safety net: if all attempts produced a name-containing title, scrub it.
     let cleanTitle = String(parsed?.title || "").slice(0, 80);
     if (nameRe && titleHasName(cleanTitle)) {
-      console.warn(`All ${MAX_ATTEMPTS} attempts violated rule. Scrubbing "${cleanTitle}".`);
+      console.warn(`All ${MAX_ATTEMPTS} attempts violated title rule. Scrubbing "${cleanTitle}".`);
       const stripRe = new RegExp(`\\b${firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s|s')?\\b`, "gi");
       cleanTitle = cleanTitle
         .replace(stripRe, "")
