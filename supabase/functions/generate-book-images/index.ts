@@ -152,6 +152,7 @@ async function ensurePortraits(
   brief: any,
   seedPortrait: string | null,
   apiKey: string,
+  subfolderId: string | null,
 ): Promise<PortraitsResult> {
   const proto = brief.protagonist || {};
   const photos: string[] = Array.isArray(proto.photos)
