@@ -107,13 +107,12 @@ export default function Step10Summary() {
     const editedSummary = draft.trim();
     setTitle(editedTitle);
     setSummary(editedSummary);
-    setConcept((prev) => ({
-      ...(prev || {}),
+    setConcept({
       title: editedTitle,
       summary: editedSummary,
       user_visible_summary: editedSummary,
       user_edited: true,
-    }));
+    });
     setEditing(false);
   };
 
@@ -121,12 +120,26 @@ export default function Step10Summary() {
     setEditing(false);
   };
 
-  const buildApprovedConcept = (): StoryConcept => ({
-    ...(concept || {}),
-    title: title.trim() || `${name}'s Adventure`,
-    summary: summary.trim(),
-    user_visible_summary: summary.trim(),
-  });
+  const buildApprovedConcept = (): StoryConcept => {
+    const visibleTitle = title.trim() || `${name}'s Adventure`;
+    const visibleSummary = summary.trim();
+
+    if (concept?.user_edited) {
+      return {
+        title: visibleTitle,
+        summary: visibleSummary,
+        user_visible_summary: visibleSummary,
+        user_edited: true,
+      };
+    }
+
+    return {
+      ...(concept || {}),
+      title: visibleTitle,
+      summary: visibleSummary,
+      user_visible_summary: visibleSummary,
+    };
+  };
 
   const approve = async () => {
     if (!summary.trim()) return;
