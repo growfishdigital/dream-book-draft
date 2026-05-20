@@ -1,116 +1,95 @@
 
-# Auto-export generated books to Google Drive
+# Goal
 
-## Goal
+The book is now a fixed 32-page structure (1 title + 1 dedication + 30 story pages), but `prompts.ts` still talks like the old 8–14 "spread" engine. The KERNEL tells the model "Spread count: exactly 30 spreads," the framework files only show beat allocations for 10 or 12 spreads, and the per-page word budgets are a single hardcoded constant that doesn't scale with the age-band total. The model has been making it work, but we're leaving a lot of quality on the table.
 
-When `generate-book` finishes and persists a `generated_books` row, automatically:
+This plan rewrites the prompt layer so the 32-page structure is the source of truth, beat allocations scale to 30 pages, and per-page word counts derive cleanly from the age-band total.
 
-1. Ensure the folder `ThistleBooks / Unprocessed Books / [YYYY-MM-DD]_[Buyer]_[BookTitle]` exists in Drive.
-2. Create a formatted Google Doc containing the full book text (one page per page, with image prompt + layout id as metadata) and place it inside that folder.
-3. Persist the resulting Drive folder + doc IDs/URLs back on the `generated_books` row so we can re-find them and later drop images into the same folder.
+---
 
-Images are intentionally out of scope for this pass — but the folder is set up so we can add them next.
+# 1. Switch terminology from "spread" to "page" on the V2 path
 
-## Connectors required
+Right now the system prompt (KERNEL) and all 5 framework files say "spread" everywhere, while the V2 user message says "page." The model gets contradictory signals.
 
-- **Google Drive** (`google_drive`) — folder lookup, folder create, move file.
-- **Google Docs** (`google_docs`) — create the doc + `batchUpdate` to insert formatted content.
+Two viable approaches:
 
-Both go through the Lovable connector gateway under your developer Drive/Docs account, so no per-user OAuth needed. We'll trigger the `standard_connectors--connect` flow for each in the build phase.
+- **A. In-place rename** — Edit KERNEL + frameworks so every "spread" becomes "page." Cleaner long-term, but deletes the legacy V1 path (which we don't use anymore — `generate-book` only calls V2).
+- **B. Add a V2 KERNEL + V2 framework variants** — Keep the originals untouched as historical reference. More code, no real benefit.
 
-## Naming + folder logic
+**Recommendation: A.** V1 spread parsing (`parseBookOutput`, `GeneratedBook` interface) can stay for any old DB rows, but the prompt strings should reflect what we actually ship.
 
-- Folder name: `YYYY-MM-DD_{Buyer}_{BookTitle}` where:
-  - `YYYY-MM-DD` from the generation timestamp (UTC).
-  - `Buyer` from `brief.buyer_relationship` label (e.g. "Mom", "Grandma", "Friend"), sanitized.
-  - `BookTitle` from `parsed.meta.title`, sanitized (strip `/`, `\`, control chars, trim, collapse whitespace, cap at ~80 chars).
-- Parent resolution is cached in module scope per cold start:
-  - Find `ThistleBooks` (root-level folder, `mimeType='application/vnd.google-apps.folder' and name='ThistleBooks' and 'root' in parents and trashed=false`). Fail loudly if missing — do not silently create it.
-  - Find or create `Unprocessed Books` inside `ThistleBooks`.
-  - Always create a fresh `[date]_[Buyer]_[BookTitle]` subfolder (don't reuse, even on duplicate titles — append `-2`, `-3` if a collision is detected on the same day).
+Specifically:
+- KERNEL: drop the `[COVER TEXT]/[OUTFIT]/[SPREAD N]` text-format block at the bottom (lines ~547–569). V2 uses tool-calling JSON; that block actively misleads the model.
+- KERNEL: change "Spread count: exactly N spreads" → "Page count: exactly N story pages (the book also has a title page and a dedication page handled separately)."
+- KERNEL rules that say "per spread" become "per page" (name usage rule, opening variation rule, micro-cliffhanger rule). Soften "every page ends on a cliffhanger" — at 30 pages, that's too much. Make it "most pages end with a hook; quiet pages may settle."
+- Frameworks: rename "spreads" → "pages" in the beat headers and bodies.
 
-## Doc structure
+# 2. Dynamic beat allocation for 30 pages
 
-One Google Doc per book, page-broken so a human reader can scroll the manuscript.
+Currently each framework hardcodes "For 12 spreads: …" / "For 10 spreads: …" mappings. With V2 always passing `spread_count = 30`, the model has no map to follow.
 
-```
-{Book Title}                                ← Heading 1
-By {child_name} • Generated YYYY-MM-DD       ← small italic line
-Framework: {framework_id} • Age: {age_band} • Words: {word_count_total}
+Two ways to handle this:
 
-────────────────────────────────────────────
-Page 1 — Title page                          ← Heading 2
-Layout: title
-Text: {page.text}
-Image prompt: {page.image_prompt or "(uses cover art)"}
-[page break]
+- **Percentage-based (recommended)** — Each framework declares beats with a `weight` (fraction of the story). A helper distributes 30 pages across the beats using largest-remainder rounding. The framework prose then renders the resulting page ranges inline: e.g., for `curiosity_journey`, "THE SPARK: pages 3–5 (3 pages), THE FIRST DISCOVERY: pages 6–8, THE CHAIN: pages 9–22 (the engine, ~14 pages)…"
+- **Hardcoded 30-page tables** — Simpler, but if we ever change page count (40-page deluxe?) we redo all five.
 
-Page 2 — Dedication                          ← Heading 2
-Layout: dedication-spot
-Text: {page.text}
-Image prompt: {page.image_prompt}
-[page break]
+Recommended structure in `prompts.ts`:
 
-Page 3 — Story (beat: opening)               ← Heading 2
-Layout: text-bottom-third
-Text: {page.text}
-Image prompt: {page.image_prompt}
-Continuity: {page.continuity_notes}
-[page break]
-... (repeats through page 32)
+```ts
+type BeatSpec = { id: StoryBeat; label: string; weight: number; body: (v) => string };
+const FRAMEWORK_BEATS: Record<FrameworkId, BeatSpec[]> = { … };
+
+function allocateBeats(beats: BeatSpec[], storyPageCount: number,
+                       firstStoryPage: number): BeatAllocation[] { … }
 ```
 
-Implemented via Google Docs `documents.batchUpdate` with `insertText` + `updateParagraphStyle` (Heading 1 / Heading 2) + `insertPageBreak` between pages. No HTML intermediate.
+The framework function then renders the rendered allocation table at the top, followed by the per-beat prose bodies. This makes 30-page allocations self-documenting and lets us change `STORY_LENGTH_BOOK.pageCount` in one place.
 
-## Trigger + flow
+# 3. Age-scaled per-page word budgets
 
-In `supabase/functions/generate-book/index.ts`, immediately after the successful `generated_books` insert (and only when `status === 'ok'`), fire-and-await a new helper module that performs the export. If the export throws, log it and attach `drive_export_error` to the response but still return the book to the client — generation must never fail because Drive is flaky.
+Today: `STORY_LENGTH_BOOK.perPageTarget = 16`, `perPageMin/Max = 4/28` — fixed regardless of age.
 
-New edge function: **`export-book-to-drive`** (`verify_jwt = false`, added to `supabase/config.toml`).
+At the 0–2 band the total is 250 words. 250 / 30 ≈ **8 words/page** — the model is being told target 16 (2× too high) and floor 4 (fine). At the 11+ band the total is 900 / 30 = **30 words/page**, which exceeds the current per-page max of 28. So the model gets contradictory bounds at both ends of the age range.
 
-- Input: `{ book_id }` (it re-reads `generated_books` server-side so callers don't need to ship the full payload).
-- Steps: resolve parent folders → create dated subfolder → create Doc → batchUpdate Doc body → move Doc into the dated folder → write `drive_folder_id`, `drive_folder_url`, `drive_doc_id`, `drive_doc_url` back onto the row.
-- Returns: `{ folder_url, doc_url }`.
+Fix by deriving per-page bounds from the band's total:
 
-`generate-book` calls it via `supabase.functions.invoke('export-book-to-drive', { body: { book_id } })` after insert. Keeping it as a separate function lets us also expose a "Re-export to Drive" button on `/dev/story-preview/:id` later with zero new wiring.
+```ts
+function perPageWordBounds(age_band: AgeBand) {
+  const target = totalByAgeBand[age_band] / pageCount; // e.g. 16.7
+  return {
+    target: Math.round(target),
+    min: Math.max(2, Math.round(target * 0.35)),  // quiet pages allowed
+    max: Math.round(target * 2.2),                // climax can be ~2× target
+  };
+}
+```
 
-## DB changes
+For the 0–2 band specifically (250 / 30 = ~8 words/page), explicitly tell the model that **many pages can be 0–3 words** (single sound, single label) or even image-only — and bias `layout_id` toward `full-bleed` / `caption-only` (we'd need a caption-only layout if it doesn't exist). The whole point of 0–2 books is that text is a garnish.
 
-Migration on `public.generated_books` — add nullable columns:
+The V2 user message (`buildBookUserMessageV2`) already prints these numbers. Wire the new helper in and replace the constants.
 
-- `drive_folder_id text`
-- `drive_folder_url text`
-- `drive_doc_id text`
-- `drive_doc_url text`
-- `drive_export_status text` — `pending` | `ok` | `failed`
-- `drive_export_error text`
+# 4. Image prompt updates
 
-No RLS change needed (table is already permissive for the prototype).
+The per-page image-prompt builder (`buildPageImagePrompt`) is structurally fine — it composes art style + scene + appearance blocks + layout cue + "no text" rule. What's missing for a 30-page run:
 
-## Dev preview tweaks (small)
+- **Continuity discipline.** Add a sentence to the V2 user message reminding the model that `continuity_notes` is critical at 30 pages (time of day, outfit, location carryover between consecutive pages).
+- **Beat-aware composition hints.** When the model picks `layout_id`, give it stronger guidance: opening beats favor establishing wides; climax beats favor `full-bleed`; resolution beats favor warm mid-shots; closing beats favor calm/symmetric. This is a 4-line table added to the layouts section of the user message — no schema change.
+- **Hero outfit lock.** V1's KERNEL had an `[OUTFIT]` field we're now dropping. We should preserve the spirit: tell the model in the V2 user message to mention the hero's outfit in `continuity_notes` on page 3, then carry it forward unchanged. Optionally add an explicit `book_outfit` field at the `meta` level so the server can inject "wearing {outfit}" into every appearance block. Cheap consistency win.
 
-`src/pages/DevStoryPreview.tsx`: if the loaded book has `drive_folder_url` / `drive_doc_url`, render two small link buttons ("Open Drive folder", "Open Google Doc") next to the existing Download buttons. If export failed, show the error inline so we can debug without leaving the preview.
+# 5. Cleanup of stale references
 
-## Technical notes for the implementer
+- `SPREAD_COUNT_BY_AGE_AND_FRAMEWORK` is computed in `generate-book/index.ts` but then overwritten with 30. Either delete it (and `KernelVars.spread_count`) or rename to `legacySpreadCount` and keep for the V1 parser. Recommend delete.
+- `STORY_LENGTH` (80/100/130 words) at the top of `prompts.ts` is for the *summary* (Step 9 wizard), not the book — leave it alone but add a comment so future-me doesn't conflate it with the book length.
+- "Each supporting character should appear in 1–3 spreads" → "1–3 pages" (and probably bump to "2–6 pages" at 30 pages, otherwise supporting cast feels like cameos).
 
-- Gateway URLs:
-  - Drive: `https://connector-gateway.lovable.dev/google_drive/drive/v3`
-  - Docs:  `https://connector-gateway.lovable.dev/google_docs/v1`
-  - Headers on every call: `Authorization: Bearer ${LOVABLE_API_KEY}`, `X-Connection-Api-Key: ${GOOGLE_DRIVE_API_KEY}` / `${GOOGLE_DOCS_API_KEY}`.
-- Drive folder creation: `POST /files` with `{ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] }`.
-- Doc creation flow: `POST /documents { title }` → capture `documentId` → `POST /files/{documentId}?addParents={folderId}&removeParents=root&supportsAllDrives=true` to move it (Drive API), → `POST /documents/{documentId}:batchUpdate` for content. Order matters because batchUpdate appends from index 1.
-- Track a running insertion index for `batchUpdate` requests; build the request list in one pass over `parsed.pages`. Apply `updateParagraphStyle` ranges right after each heading insert. Insert `\n` between blocks; insert a `pageBreak` after each page block.
-- Sanitization helper: `s.replace(/[\\/:*?"<>|\u0000-\u001F]/g, '').replace(/\s+/g,' ').trim().slice(0,80)`.
+# 6. Files touched
 
-## Build order
+- `supabase/functions/_shared/prompts.ts` — main work (KERNEL rewrite, framework refactor, per-page bound helper, V2 user message tweaks).
+- `supabase/functions/generate-book/index.ts` — drop `SPREAD_COUNT_BY_AGE_AND_FRAMEWORK` import + the legacy `spread_count` override block; pass the new per-page bounds into the V2 user message helper if I move that logic.
+- `supabase/functions/_shared/layouts.ts` — possibly add a `caption-only` / `text-minimal` layout for the 0–2 age band (optional, can ship later).
 
-1. Migration: add Drive columns to `generated_books`.
-2. `standard_connectors--connect` for `google_drive`, then `google_docs`.
-3. New edge function `supabase/functions/export-book-to-drive/index.ts` with the helpers above (folder resolution, doc builder, batchUpdate). Add `[functions.export-book-to-drive] verify_jwt = false` to `supabase/config.toml`.
-4. Wire `generate-book/index.ts` to invoke it after insert (best-effort, never blocks success response).
-5. Add Drive links + error display to `DevStoryPreview.tsx`.
-6. Test end-to-end with `?dev=1`, confirm folder + doc appear in `ThistleBooks/Unprocessed Books`.
+# Open questions for you
 
-## Open question
-
-The folder name uses `buyer_relationship` (Mom / Grandma / Friend / …). If you'd rather use the **buyer's actual name** (e.g. their typed first name) we don't currently collect that anywhere in the wizard — let me know and I'll add a tiny field, otherwise I'll go with the relationship label.
+1. **Confirm 30 pages is fixed for v1 of the product.** If a deluxe 40-page tier is on the horizon, I'll keep `pageCount` as the single knob and make sure everything downstream reads it (no new constants to chase).
+2. **0–2 band:** are you OK with many image-only / 1–word pages for that age group? It's the right answer pedagogically but worth confirming before I encode it as a hard rule.
+3. **Hero outfit lock:** want me to add an explicit `meta.book_outfit` field to the JSON schema so the server can stitch it into every page's appearance prompt? It's the single highest-leverage move for visual consistency across 30 illustrations.
