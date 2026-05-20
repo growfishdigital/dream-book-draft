@@ -365,7 +365,7 @@ Deno.serve(async (req) => {
       .from("generated_books")
       .insert({
         framework_id,
-        brief: { ...brief, approvedConcept, _engine_input: engineInput },
+        brief: { ...brief, approvedConcept },
         model,
         prompt_hash: promptHash,
         status: "pending",
