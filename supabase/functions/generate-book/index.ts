@@ -38,7 +38,6 @@ import {
   VOCAB_TIER_BY_AGE,
 } from "../_shared/prompts.ts";
 
-
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -46,6 +45,38 @@ const corsHeaders = {
 };
 
 // ---------- Wizard brief -> engine input mapping ----------------------------
+
+type ApprovedConcept = {
+  title?: string;
+  summary?: string;
+  user_visible_summary?: string;
+  framework_id?: string;
+  framework_reason?: string;
+  story_seed?: {
+    core_conflict?: string;
+    emotional_arc?: string;
+    visual_world?: string;
+    recurring_motif?: string;
+    ending_feeling?: string;
+    image_opportunities?: string[];
+  };
+  personalization_notes?: {
+    personality_through_action?: string;
+    interests_used?: string;
+    cast_and_companion_use?: string;
+    avoid_as_obstacle?: string;
+  };
+  full_book_instruction?: string;
+  user_edited?: boolean;
+};
+
+const FRAMEWORK_IDS: FrameworkId[] = [
+  "curiosity_journey",
+  "bedtime_wind_down",
+  "brave_choice",
+  "generous_heart",
+  "silly_escalation",
+];
 
 const AGE_BAND_TO_INT: Record<string, number> = {
   "0-2": 2,
@@ -87,6 +118,10 @@ const GENRE_PASSTHROUGH = new Set([
 const COMPANION_CATEGORIES = new Set([
   "pet", "stuffed-animal", "stuffed_animal", "toy", "doll", "toy_vehicle",
 ]);
+
+function isFrameworkId(value: unknown): value is FrameworkId {
+  return typeof value === "string" && FRAMEWORK_IDS.includes(value as FrameworkId);
+}
 
 function mapGenre(g?: string): BookEngineInput["genre"] {
   if (!g) return "everyday";
@@ -192,10 +227,42 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
 
     art_style: brief.artStyle,
 
-    things_already_good_at: brief.things_already_good_at ?? null,
-    things_currently_tricky: brief.things_currently_tricky ?? null,
-    recent_meaningful_moment: brief.recent_meaningful_moment ?? null,
+    things_already_good_at: story.thingsAlreadyGoodAt ?? brief.things_already_good_at ?? null,
+    things_currently_tricky: story.thingsCurrentlyTricky ?? brief.things_currently_tricky ?? null,
+    recent_meaningful_moment: story.recentMeaningfulMoment ?? brief.recent_meaningful_moment ?? null,
   };
+}
+
+function buildApprovedConceptInstruction(concept?: ApprovedConcept | null): string {
+  if (!concept) return "";
+
+  const summary = concept.user_visible_summary || concept.summary;
+  const seed = concept.story_seed || {};
+  const notes = concept.personalization_notes || {};
+  const imageOps = Array.isArray(seed.image_opportunities) && seed.image_opportunities.length
+    ? seed.image_opportunities.map((x, i) => `${i + 1}. ${x}`).join("\n")
+    : "";
+
+  return [
+    "# Approved story concept — AUTHORITATIVE",
+    "The customer approved this concept in the summary step. Expand this exact concept into the full 32-page book. Do not replace it with a different premise, different core conflict, different emotional arc, different recurring motif, or different framework.",
+    concept.title ? `Approved title: ${concept.title}` : "",
+    summary ? `Approved user-visible summary: ${summary}` : "",
+    concept.framework_id ? `Approved framework_id: ${concept.framework_id}` : "",
+    concept.framework_reason ? `Framework reason: ${concept.framework_reason}` : "",
+    seed.core_conflict ? `Core conflict: ${seed.core_conflict}` : "",
+    seed.emotional_arc ? `Emotional arc: ${seed.emotional_arc}` : "",
+    seed.visual_world ? `Visual world: ${seed.visual_world}` : "",
+    seed.recurring_motif ? `Recurring motif: ${seed.recurring_motif}` : "",
+    seed.ending_feeling ? `Ending feeling: ${seed.ending_feeling}` : "",
+    imageOps ? `Image opportunities to draw from:\n${imageOps}` : "",
+    notes.personality_through_action ? `Personality through action: ${notes.personality_through_action}` : "",
+    notes.interests_used ? `Interests used: ${notes.interests_used}` : "",
+    notes.cast_and_companion_use ? `Cast and companion use: ${notes.cast_and_companion_use}` : "",
+    notes.avoid_as_obstacle ? `Avoid as obstacle: ${notes.avoid_as_obstacle}` : "",
+    concept.full_book_instruction ? `Full-book expansion instruction: ${concept.full_book_instruction}` : "",
+    concept.user_edited ? "The customer manually edited the displayed title or summary. Preserve those edited visible choices while keeping the hidden story_seed as guidance." : "",
+  ].filter(Boolean).join("\n");
 }
 
 // ---------- Variable bag from engine input ----------------------------------
@@ -242,7 +309,6 @@ function buildKernelVars(input: BookEngineInput, framework_id: FrameworkId): Ker
   };
 }
 
-
 async function shortHash(s: string): Promise<string> {
   const buf = new TextEncoder().encode(s);
   const digest = await crypto.subtle.digest("SHA-256", buf);
@@ -270,26 +336,35 @@ Deno.serve(async (req) => {
     const model: string = body.modelOverride || MODELS.book;
     const seed_portrait_data_url: string | null = body.seed_portrait_data_url || null;
 
+    const approvedConcept: ApprovedConcept | null = brief.approvedConcept || brief.selectedConcept || null;
+    const approvedConceptInstruction = buildApprovedConceptInstruction(approvedConcept);
+
     const engineInput = mapBriefToEngineInput(brief);
-    const framework_id = selectFramework({
-      value: engineInput.value,
-      genre: engineInput.genre,
-      mood_tags: engineInput.mood_tags,
-    });
+    const framework_id = isFrameworkId(approvedConcept?.framework_id)
+      ? approvedConcept.framework_id
+      : selectFramework({
+          value: engineInput.value,
+          genre: engineInput.genre,
+          mood_tags: engineInput.mood_tags,
+        });
     const vars = buildKernelVars(engineInput, framework_id);
     const age_band = vars.age_band;
 
     const systemPrompt =
       STORY_KERNEL(vars) + "\n\n---\n\n" + STORY_FRAMEWORKS[framework_id](vars);
-    const promptHash = await shortHash(systemPrompt);
+    const promptHash = await shortHash(systemPrompt + "\n\n" + approvedConceptInstruction);
 
-    const userMessage = buildBookUserMessageV2({
-      age_band,
-      include_belongs_to_page: engineInput.include_belongs_to_page,
-      buyer_relationship_label: vars.buyer_relationship,
-      occasion_label: vars.occasion,
-      child_name: engineInput.child_name,
-    }) + (revision_note ? `\n\nRevision note: ${revision_note}` : "");
+    const userMessage = [
+      buildBookUserMessageV2({
+        age_band,
+        include_belongs_to_page: engineInput.include_belongs_to_page,
+        buyer_relationship_label: vars.buyer_relationship,
+        occasion_label: vars.occasion,
+        child_name: engineInput.child_name,
+      }),
+      approvedConceptInstruction,
+      revision_note ? `Revision note: ${revision_note}` : "",
+    ].filter(Boolean).join("\n\n");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -300,7 +375,7 @@ Deno.serve(async (req) => {
       .from("generated_books")
       .insert({
         framework_id,
-        brief: { ...brief, _engine_input: engineInput },
+        brief: { ...brief, approvedConcept, _engine_input: engineInput },
         model,
         prompt_hash: promptHash,
         status: "pending",
@@ -506,4 +581,3 @@ Deno.serve(async (req) => {
     });
   }
 });
-
