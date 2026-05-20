@@ -111,7 +111,7 @@ export default function Step10Summary() {
       }
     }
 
-    navigate("/step/10");
+    navigate("/step/9");
   };
 
   const wordCount = (s: string) =>
