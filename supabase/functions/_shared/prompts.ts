@@ -24,13 +24,15 @@ export const MODELS = {
   book: "google/gemini-2.5-pro",
 } as const;
 
-// ---- Story length knobs -----------------------------------------------------
-// Used inside the user prompt and as a soft target the model aims for.
+// ---- Summary length knobs (Step 9 summary ONLY — not the full book) --------
+// The full-book engine has its own length config (STORY_LENGTH_BOOK + the
+// perPageWordBounds helper, both lower in this file). Don't conflate them.
 export const STORY_LENGTH = {
   min: 80,
   target: 100,
   max: 130,
 } as const;
+
 
 // ---- Art style fragments ----------------------------------------------------
 // Verbatim style descriptors fed to the cover image model. The frontend
