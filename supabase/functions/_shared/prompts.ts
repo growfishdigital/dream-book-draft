@@ -1347,26 +1347,28 @@ export function buildBookJsonSchema() {
         },
       },
       pages: {
+        // 32-page count is enforced by the prompt + a server-side guard
+        // after JSON.parse. We deliberately omit minItems/maxItems and
+        // numeric integer bounds because Gemini's constrained decoder
+        // rejects schemas with too many states.
         type: "array",
-        minItems: 32,
-        maxItems: 32,
         items: {
           type: "object",
           additionalProperties: false,
           required: ["page_number", "role", "text", "layout_id"],
           properties: {
-            page_number: { type: "integer", minimum: 1, maximum: 32 },
+            page_number: { type: "integer" },
             role: { type: "string", enum: ["title", "dedication", "story"] },
             beat: {
-              type: ["string", "null"],
-              enum: ["opening", "rising", "turn", "climax", "resolution", "closing", null],
+              type: "string",
+              enum: ["opening", "rising", "turn", "climax", "resolution", "closing"],
             },
             text: { type: "string" },
-            image_scene: { type: ["string", "null"] },
+            image_scene: { type: "string" },
             characters_present: { type: "array", items: { type: "string" } },
-            setting: { type: ["string", "null"] },
-            mood: { type: ["string", "null"] },
-            continuity_notes: { type: ["string", "null"] },
+            setting: { type: "string" },
+            mood: { type: "string" },
+            continuity_notes: { type: "string" },
             layout_id: { type: "string", enum: allLayoutIds() },
           },
         },
