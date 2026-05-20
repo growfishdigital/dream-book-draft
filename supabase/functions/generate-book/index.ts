@@ -160,143 +160,132 @@ function inferRole(rel?: string, category?: string): "character" | "companion" {
   return "character";
 }
 
-function joinAppearance(a: any): string | null {
-  if (!a) return null;
-  const bits = [
-    a.hairColor && `hair ${a.hairColor}`,
-    a.hairStyle && `${a.hairStyle} hair`,
-    a.skinTone && `${a.skinTone} skin`,
-    a.glasses && `wears glasses`,
-    a.features,
-  ].filter(Boolean);
-  return bits.length ? bits.join(", ") : null;
+function parseAgeInt(ageRange?: string): number | undefined {
+  if (!ageRange) return undefined;
+  if (AGE_BAND_TO_INT[ageRange]) return AGE_BAND_TO_INT[ageRange];
+  const n = parseInt(ageRange, 10);
+  return Number.isFinite(n) ? n : undefined;
 }
 
-function ageRangeMidpoint(band?: string): number {
-  if (!band) return 5;
-  return AGE_BAND_TO_INT[band] ?? 5;
+function pronounFromGender(gender?: string): "he" | "she" | "they" {
+  if (!gender) return "they";
+  const k = gender.toLowerCase().replace(/_/g, "-");
+  return GENDER_TO_PRONOUN[k] || "they";
 }
 
 function mapBriefToEngineInput(brief: any): BookEngineInput {
   const child = brief.child || {};
   const story = brief.story || {};
-  const proto = brief.protagonist || {};
-  const cast: any[] = Array.isArray(brief.supportingCharacters)
-    ? brief.supportingCharacters
-    : [];
+  const protagonist = brief.protagonist || {};
   const special = flattenSpecialThing(brief.specialThing);
+  const artStyle = brief.artStyle || "storybook-soft";
 
-  const moodTags: string[] = Array.isArray(story.mood)
-    ? story.mood
-    : story.mood
-      ? [story.mood]
-      : [];
+  const age = parseAgeInt(child.ageRange) ?? 6;
+  const gender = pronounFromGender(child.gender);
+  const hero_pronouns = pronounsFor(gender);
 
-  const childAge = Number.isFinite(brief.child_age_int)
-    ? brief.child_age_int
-    : ageRangeMidpoint(child.ageRange);
+  const supportingFromWizard = (brief.supportingCharacters || []).map((c: any, idx: number) => ({
+    name: c.name || c.relationship || `Friend ${idx + 1}`,
+    role: inferRole(c.relationship, c.category),
+    description: [c.relationship, c.ageRange, c.description, (c.traits || []).join(", ")]
+      .filter(Boolean)
+      .join("; "),
+  }));
+
+  const specialAsCompanion = special.detail
+    ? [{
+        name: special.detail,
+        role: COMPANION_CATEGORIES.has((brief.specialThing?.category || "").toString())
+          ? "companion" as const
+          : "character" as const,
+        description: special.detail,
+      }]
+    : [];
 
   return {
-    child_name: (child.name || "the child").toString().trim(),
-    child_age: childAge,
-    child_pronouns: GENDER_TO_PRONOUN[(child.gender || "").toLowerCase()] ?? "they",
-    child_appearance_notes: joinAppearance(proto.appearance),
-    child_special: proto.special || null,
-    personality_traits: Array.isArray(story.personality) ? story.personality.slice(0, 3) : [],
-
-    buyer_relationship: (brief.buyer_relationship || undefined) as BookEngineInput["buyer_relationship"],
-    occasion: (brief.occasion || null) as BookEngineInput["occasion"],
-    include_belongs_to_page: brief.bookBelongsTo !== false,
-
-    genre: mapGenre(story.genre),
-    mood_tags: moodTags,
+    child_name: child.name || "the child",
+    age,
+    gender,
+    hero_pronouns,
+    appearance: protagonist.special || undefined,
+    traits: story.personality || [],
+    interests: story.interests || [],
     value: mapValue(story.lesson),
-
-    interests: Array.isArray(story.interests) ? story.interests : [],
-    cameo_type: special.type ?? null,
-    cameo_detail: special.detail ?? null,
-
-    supporting_cast: cast.map((c) => ({
-      name: c.name || "Friend",
-      role: inferRole(c.relationship, c.category),
-      relationship: c.relationship,
-      age: typeof c.age === "number" ? c.age : undefined,
-      description: c.description,
-      personality_traits: Array.isArray(c.traits) ? c.traits.slice(0, 2) : [],
-    })),
-
-    art_style: brief.artStyle,
-
-    things_already_good_at: story.thingsAlreadyGoodAt ?? brief.things_already_good_at ?? null,
-    things_currently_tricky: story.thingsCurrentlyTricky ?? brief.things_currently_tricky ?? null,
-    recent_meaningful_moment: story.recentMeaningfulMoment ?? brief.recent_meaningful_moment ?? null,
+    genre: mapGenre(story.genre),
+    mood_tags: [story.mood].filter(Boolean),
+    supporting_cast: [...supportingFromWizard, ...specialAsCompanion],
+    special_item: special.detail,
+    art_style: artStyle,
+    buyer_relationship: brief.buyer_relationship || brief.buyerRelationship,
+    occasion: brief.occasion,
+    include_belongs_to_page: !!brief.include_belongs_to_page,
+    things_already_good_at: story.thingsAlreadyGoodAt,
+    things_currently_tricky: story.thingsCurrentlyTricky,
+    recent_meaningful_moment: story.recentMeaningfulMoment,
   };
 }
 
-function buildApprovedConceptInstruction(concept?: ApprovedConcept | null): string {
+function buildApprovedConceptInstruction(concept: ApprovedConcept | null): string {
   if (!concept) return "";
 
-  const summary = concept.user_visible_summary || concept.summary;
+  const title = concept.title || "";
+  const summary = concept.user_visible_summary || concept.summary || "";
   const seed = concept.story_seed || {};
   const notes = concept.personalization_notes || {};
-  const imageOps = Array.isArray(seed.image_opportunities) && seed.image_opportunities.length
-    ? seed.image_opportunities.map((x, i) => `${i + 1}. ${x}`).join("\n")
+  const manualEdit = concept.user_edited
+    ? "The visible concept was manually edited by the user. Treat its title and summary as highest priority for tone and story direction. If hidden metadata conflicts with the edited visible summary, follow the visible summary."
     : "";
 
   return [
-    "# Approved story concept — AUTHORITATIVE",
-    "The customer approved this concept in the summary step. Expand this exact concept into the full 32-page book. Do not replace it with a different premise, different core conflict, different emotional arc, different recurring motif, or different framework.",
-    concept.title ? `Approved title: ${concept.title}` : "",
-    summary ? `Approved user-visible summary: ${summary}` : "",
+    "APPROVED STORY CONCEPT — follow this as the binding story seed.",
+    title ? `Approved title: ${title}` : "",
+    summary ? `Approved visible summary: ${summary}` : "",
     concept.framework_id ? `Approved framework_id: ${concept.framework_id}` : "",
     concept.framework_reason ? `Framework reason: ${concept.framework_reason}` : "",
     seed.core_conflict ? `Core conflict: ${seed.core_conflict}` : "",
     seed.emotional_arc ? `Emotional arc: ${seed.emotional_arc}` : "",
     seed.visual_world ? `Visual world: ${seed.visual_world}` : "",
-    seed.recurring_motif ? `Recurring verbal motif: ${seed.recurring_motif}` : "",
-    seed.recurring_motif ? "Use the recurring verbal motif according to the child's age: for younger readers it may appear as a clear refrain; for older readers it should echo subtly as a line, question, sound, image, or sentence pattern. Do not force it onto every page." : "",
+    seed.recurring_motif ? `Recurring motif: ${seed.recurring_motif}` : "",
     seed.ending_feeling ? `Ending feeling: ${seed.ending_feeling}` : "",
-    imageOps ? `Image opportunities to draw from:\n${imageOps}` : "",
+    seed.image_opportunities?.length ? `Image opportunities: ${seed.image_opportunities.join("; ")}` : "",
     notes.personality_through_action ? `Personality through action: ${notes.personality_through_action}` : "",
     notes.interests_used ? `Interests used: ${notes.interests_used}` : "",
     notes.cast_and_companion_use ? `Cast and companion use: ${notes.cast_and_companion_use}` : "",
     notes.avoid_as_obstacle ? `Avoid as obstacle: ${notes.avoid_as_obstacle}` : "",
-    concept.full_book_instruction ? `Full-book expansion instruction: ${concept.full_book_instruction}` : "",
-    concept.user_edited ? "The customer manually edited the displayed title or summary. Preserve those edited visible choices while keeping the hidden story_seed as guidance." : "",
+    concept.full_book_instruction ? `Full book instruction: ${concept.full_book_instruction}` : "",
+    manualEdit,
   ].filter(Boolean).join("\n");
 }
 
-// ---------- Variable bag from engine input ----------------------------------
-
 function buildKernelVars(input: BookEngineInput, framework_id: FrameworkId): KernelVars {
-  const age_band = ageToBand(input.child_age);
+  const age_band = ageToBand(input.age);
+  const pronouns = input.hero_pronouns || pronounsFor(input.gender);
   const vocab_tier = VOCAB_TIER_BY_AGE[age_band];
-  const p = pronounsFor(input.child_pronouns);
   const cast_summary = formatCastSummary(input.supporting_cast);
+  const value = input.value;
+  const mood_tags = input.mood_tags?.length ? input.mood_tags : ["warm", "playful"];
+  const interests = input.interests?.length
+    ? grammaticalJoin(input.interests)
+    : "the child's favorite things";
 
   return {
     child_name: input.child_name,
-    child_age: input.child_age,
-    child_pronouns: input.child_pronouns,
-    child_pronouns_subject: p.subject,
-    child_pronouns_object: p.object,
-    child_pronouns_possessive: p.possessive,
-    child_pronouns_subject_capitalized: p.subject_capitalized,
-    buyer_relationship: BUYER_RELATIONSHIP_LABEL[input.buyer_relationship || "other"] || "loved one",
-    personality_traits: (input.personality_traits || []).join(", ") || undefined,
-    child_special: input.child_special || undefined,
-    child_appearance_notes: input.child_appearance_notes || undefined,
-    interest_phrase: grammaticalJoin(input.interests),
-    cameo_detail: input.cameo_detail || undefined,
-    cameo_type: input.cameo_type || undefined,
-    things_already_good_at: input.things_already_good_at || undefined,
-    things_currently_tricky: input.things_currently_tricky || undefined,
-    recent_meaningful_moment: input.recent_meaningful_moment || undefined,
-    cast_summary: cast_summary || undefined,
-    framework_id,
-    value: input.value,
-    mood_tags: (input.mood_tags || []).join(", ") || "warm",
-    occasion: input.occasion ? (OCCASION_LABEL[input.occasion] || "none specified") : "none specified",
+    hero_pronouns: pronouns,
+    age_band,
+    vocab_tier,
+    value,
+    value_label: value.replace(/_/g, " "),
+    genre: input.genre,
+    mood_tags,
+    mood_label: grammaticalJoin(mood_tags),
+    interests,
+    special_item: input.special_item,
+    cast_summary,
+    buyer_relationship: BUYER_RELATIONSHIP_LABEL[input.buyer_relationship || ""] || input.buyer_relationship || "someone who loves the child",
+    occasion: OCCASION_LABEL[input.occasion || ""] || input.occasion || "just because",
+    things_already_good_at: input.things_already_good_at,
+    things_currently_tricky: input.things_currently_tricky,
+    recent_meaningful_moment: input.recent_meaningful_moment,
     bedtime_setting_modifier: input.genre === "bedtime" && framework_id !== "bedtime_wind_down",
     // V2 book-level totals — single source of truth (see prompts.ts).
     word_count_target: (() => {
@@ -416,7 +405,6 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({
             model,
-            temperature: 0.8,
             messages: [
               { role: "system", content: systemPrompt },
               { role: "user", content: userMessage },
