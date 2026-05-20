@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { Pencil, RefreshCw, Check, X } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";

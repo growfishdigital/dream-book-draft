@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 import { supabase } from "@/integrations/supabase/client";
