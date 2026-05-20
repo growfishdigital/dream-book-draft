@@ -23,6 +23,30 @@ import {
   MODELS,
   type PortraitPose,
 } from "../_shared/prompts.ts";
+import {
+  ensureBookImagesSubfolder,
+  uploadByKindSlot,
+} from "../_shared/driveUpload.ts";
+
+// Fire-and-forget Drive upload for a single (kind, slot). Safe to call
+// without awaiting — surface failures only via console + the row's error
+// column; the final cleanup pass will re-attempt anything that slipped.
+function scheduleDriveUpload(
+  supabase: any,
+  bookId: string,
+  kind: string,
+  slot: number,
+  parentId: string | null,
+): void {
+  if (!parentId) return;
+  const p = uploadByKindSlot(supabase, bookId, kind, slot, parentId)
+    .catch((e) => console.error(`scheduleDriveUpload ${kind}/${slot} threw:`, e));
+  // Keep the upload alive past the HTTP response when the runtime supports it.
+  const ert = (globalThis as any).EdgeRuntime;
+  if (ert && typeof ert.waitUntil === "function") {
+    try { ert.waitUntil(p); } catch (_) { /* ignore */ }
+  }
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
