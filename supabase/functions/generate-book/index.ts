@@ -276,17 +276,8 @@ Deno.serve(async (req) => {
     const vars = buildKernelVars(engineInput, framework_id);
     const age_band = vars.age_band;
 
-    // Override the kernel's word target with the V2 book-level total so the
-    // model targets ~500 across 30 pages instead of the legacy spread totals.
-    const wordRange = bookWordTotalRange(age_band);
-    const v2Vars: KernelVars = {
-      ...vars,
-      word_count_target: `${wordRange.min}-${wordRange.max}`,
-      spread_count: STORY_LENGTH_BOOK.pageCount,
-    };
-
     const systemPrompt =
-      STORY_KERNEL(v2Vars) + "\n\n---\n\n" + STORY_FRAMEWORKS[framework_id](v2Vars);
+      STORY_KERNEL(vars) + "\n\n---\n\n" + STORY_FRAMEWORKS[framework_id](vars);
     const promptHash = await shortHash(systemPrompt);
 
     const userMessage = buildBookUserMessageV2({
@@ -296,6 +287,7 @@ Deno.serve(async (req) => {
       occasion_label: vars.occasion,
       child_name: engineInput.child_name,
     }) + (revision_note ? `\n\nRevision note: ${revision_note}` : "");
+
 
     const startedAt = Date.now();
     const schema = buildBookJsonSchema();
