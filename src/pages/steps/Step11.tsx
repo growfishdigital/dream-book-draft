@@ -318,9 +318,13 @@ export default function Step11() {
   const planLabel = selected === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
 
   // Poll pipeline_progress while a run is in flight.
+  // Also watchdogs a stalled chain by re-invoking generate-book-images
+  // if progress hasn't advanced in 60s.
   useEffect(() => {
     if (!pipeline.bookId || !pipeline.running) return;
     const bookId = pipeline.bookId;
+    let lastProgressKey = "";
+    let lastProgressAt = Date.now();
     const tick = async () => {
       const { data } = await supabase
         .from("generated_books")
@@ -332,6 +336,24 @@ export default function Step11() {
       const progress = (data.pipeline_progress as any) || null;
       const error = (data.pipeline_error as string) || null;
       setPipeline((p) => ({ ...p, status, progress, error }));
+
+      const key = `${status}:${progress?.stage}:${progress?.current}/${progress?.total}`;
+      if (key !== lastProgressKey) {
+        lastProgressKey = key;
+        lastProgressAt = Date.now();
+      } else if (
+        status !== "done" &&
+        status !== "failed" &&
+        Date.now() - lastProgressAt > 60_000
+      ) {
+        // Stalled — nudge the chain.
+        lastProgressAt = Date.now();
+        console.warn("Pipeline stalled, re-invoking generate-book-images");
+        void supabase.functions.invoke("generate-book-images", {
+          body: { book_id: bookId },
+        });
+      }
+
       if (status === "done") {
         setPipeline((p) => ({ ...p, running: false }));
         setOrderPlaced(true);
@@ -345,6 +367,7 @@ export default function Step11() {
       if (pollRef.current) window.clearInterval(pollRef.current);
     };
   }, [pipeline.bookId, pipeline.running]);
+
 
   const startPipeline = async () => {
     const errs: { name?: string; email?: string } = {};
