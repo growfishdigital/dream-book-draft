@@ -445,6 +445,8 @@ Deno.serve(async (req) => {
             status: validation.valid ? "ok" : "needs_review",
             pipeline_status: "portraits",
             pipeline_progress: { stage: "story", current: 1, total: 1, message: "Story written." },
+            // Clear any stale error from a premature generate-book-images call.
+            pipeline_error: null,
           })
           .eq("id", bookId);
 
