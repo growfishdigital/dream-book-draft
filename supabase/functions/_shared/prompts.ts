@@ -237,28 +237,62 @@ export function COVER_PROMPT_TEMPLATE(ctx: CoverPromptCtx): string {
 // summary AND passed to generate-cover as the primary likeness anchor so
 // the cover matches the rendition the user has already accepted.
 
+export type PortraitPose = "front" | "side" | "action";
+
 export interface CharacterPortraitCtx {
   childName: string;
   protoDesc: string;
   styleHint: string;
   heroPhotoCount: number;
+  pose?: PortraitPose;
+  /** Optional: short interest phrase to flavor the "action" pose. */
+  interestPhrase?: string;
+  /** Whether an anchor portrait (Image #1) is attached as the canonical
+   *  appearance reference. When true, alt photos are treated as
+   *  supplemental likeness cues only. */
+  hasAnchorPortrait?: boolean;
 }
 
 export function CHARACTER_PORTRAIT_PROMPT_TEMPLATE(
   ctx: CharacterPortraitCtx,
 ): string {
-  const { childName, protoDesc, styleHint, heroPhotoCount } = ctx;
-  const likenessLine = heroPhotoCount === 0
+  const {
+    childName,
+    protoDesc,
+    styleHint,
+    heroPhotoCount,
+    pose = "front",
+    interestPhrase,
+    hasAnchorPortrait,
+  } = ctx;
+
+  const poseLine = pose === "side"
+    ? `Pose: a relaxed 3/4 side turn, full body visible head to toe, weight on one leg, looking gently toward the camera. Keep the same outfit, hair, and proportions as the anchor reference.`
+    : pose === "action"
+      ? `Pose: a mid-motion expressive action pose${interestPhrase ? ` inspired by ${interestPhrase}` : ""} — full body visible, dynamic but grounded, joyful expression. Keep the same outfit, hair, and proportions as the anchor reference.`
+      : `Pose: standing, facing the viewer in a relaxed neutral pose, full body visible head to toe.`;
+
+  const anchorLine = hasAnchorPortrait
+    ? `Image #1 is the CANONICAL CHARACTER REFERENCE — match the exact face, hair, body, and outfit shown there. Any other attached photos are only supplemental likeness cues.`
+    : "";
+
+  const likenessLine = hasAnchorPortrait
     ? ""
-    : heroPhotoCount === 1
-      ? `The attached image is a LIKENESS REFERENCE for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically.`
-      : `The attached images are LIKENESS REFERENCES for the hero child from different angles. Use them together to capture face shape, hair, and skin tone. Render in the chosen art style — not photo-realistically.`;
+    : heroPhotoCount === 0
+      ? ""
+      : heroPhotoCount === 1
+        ? `The attached image is a LIKENESS REFERENCE for the hero child (face shape, hair, skin tone). Render them in the chosen art style — not photo-realistically.`
+        : `The attached images are LIKENESS REFERENCES for the hero child from different angles. Use them together to capture face shape, hair, and skin tone. Render in the chosen art style — not photo-realistically.`;
 
   return [
     `Full-body character portrait in ${styleHint}.`,
+    anchorLine,
     likenessLine,
-    `Subject: ONLY the hero child — ${childName} — alone, standing, facing the viewer in a relaxed neutral pose, full body visible head to toe.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
-    `Choose a single charming outfit appropriate for the child's age and personality — this outfit should feel iconic and could be reused on the cover and inside the book.`,
+    `Subject: ONLY the hero child — ${childName} — alone.${protoDesc ? ` Character details — ${protoDesc}.` : ""}`,
+    poseLine,
+    hasAnchorPortrait
+      ? `Outfit: REUSE the exact outfit from the anchor reference (Image #1).`
+      : `Choose a single charming outfit appropriate for the child's age and personality — this outfit should feel iconic and could be reused on the cover and inside the book.`,
     `Background: plain soft cream/neutral background, no scenery, no props, no other characters.`,
     `Composition: portrait orientation (2:3), the child centered with comfortable margin on all sides.`,
     `No text, no title, no captions, no watermarks, no borders, no name labels.`,
