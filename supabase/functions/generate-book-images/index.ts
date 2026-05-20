@@ -347,6 +347,7 @@ async function generatePages(
         prompt: promptText, image_data_url: url,
         status: "ok", generated_ms: Date.now() - started,
       });
+      scheduleDriveUpload(supabase, bookId, "page", page.page_number, subfolderId);
       consecutiveFailures = 0;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
