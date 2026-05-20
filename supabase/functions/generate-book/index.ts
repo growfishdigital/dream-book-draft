@@ -31,14 +31,13 @@ import {
   parseBookPagesOutput,
   pronounsFor,
   selectFramework,
-  SPREAD_COUNT_BY_AGE_AND_FRAMEWORK,
   STORY_FRAMEWORKS,
   STORY_KERNEL,
   STORY_LENGTH_BOOK,
   validateBook,
   VOCAB_TIER_BY_AGE,
-  WORD_COUNT_BY_AGE,
 } from "../_shared/prompts.ts";
+
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -203,8 +202,6 @@ function mapBriefToEngineInput(brief: any): BookEngineInput {
 
 function buildKernelVars(input: BookEngineInput, framework_id: FrameworkId): KernelVars {
   const age_band = ageToBand(input.child_age);
-  const [wmin, wmax] = WORD_COUNT_BY_AGE[age_band];
-  const spread_count = SPREAD_COUNT_BY_AGE_AND_FRAMEWORK[age_band][framework_id];
   const vocab_tier = VOCAB_TIER_BY_AGE[age_band];
   const p = pronounsFor(input.child_pronouns);
   const cast_summary = formatCastSummary(input.supporting_cast);
@@ -233,13 +230,18 @@ function buildKernelVars(input: BookEngineInput, framework_id: FrameworkId): Ker
     mood_tags: (input.mood_tags || []).join(", ") || "warm",
     occasion: input.occasion ? (OCCASION_LABEL[input.occasion] || "none specified") : "none specified",
     bedtime_setting_modifier: input.genre === "bedtime" && framework_id !== "bedtime_wind_down",
-    word_count_target: `${wmin}-${wmax}`,
-    spread_count,
+    // V2 book-level totals — single source of truth (see prompts.ts).
+    word_count_target: (() => {
+      const r = bookWordTotalRange(age_band);
+      return `${r.min}-${r.max}`;
+    })(),
+    spread_count: STORY_LENGTH_BOOK.pageCount,
     vocab_tier,
     age_band,
     include_belongs_to_page: input.include_belongs_to_page,
   };
 }
+
 
 async function shortHash(s: string): Promise<string> {
   const buf = new TextEncoder().encode(s);
@@ -273,17 +275,8 @@ Deno.serve(async (req) => {
     const vars = buildKernelVars(engineInput, framework_id);
     const age_band = vars.age_band;
 
-    // Override the kernel's word target with the V2 book-level total so the
-    // model targets ~500 across 30 pages instead of the legacy spread totals.
-    const wordRange = bookWordTotalRange(age_band);
-    const v2Vars: KernelVars = {
-      ...vars,
-      word_count_target: `${wordRange.min}-${wordRange.max}`,
-      spread_count: STORY_LENGTH_BOOK.pageCount,
-    };
-
     const systemPrompt =
-      STORY_KERNEL(v2Vars) + "\n\n---\n\n" + STORY_FRAMEWORKS[framework_id](v2Vars);
+      STORY_KERNEL(vars) + "\n\n---\n\n" + STORY_FRAMEWORKS[framework_id](vars);
     const promptHash = await shortHash(systemPrompt);
 
     const userMessage = buildBookUserMessageV2({
@@ -293,6 +286,7 @@ Deno.serve(async (req) => {
       occasion_label: vars.occasion,
       child_name: engineInput.child_name,
     }) + (revision_note ? `\n\nRevision note: ${revision_note}` : "");
+
 
     const startedAt = Date.now();
     const schema = buildBookJsonSchema();
@@ -370,6 +364,7 @@ Deno.serve(async (req) => {
     // Build canonical appearance blocks once, reuse on every page's image prompt.
     const appearance = buildAppearanceBlocks(brief);
     const artStyleFragment = getArtStylePrompt(engineInput.art_style);
+    const bookOutfit = parsedRaw.meta.book_outfit;
 
     // Bake the per-page image prompts and assemble the cover prompt.
     const pages = parsedRaw.pages.map((p) => ({
@@ -377,13 +372,17 @@ Deno.serve(async (req) => {
       image_prompt:
         p.role === "title"
           ? null
-          : buildPageImagePrompt(p, appearance, artStyleFragment),
+          : buildPageImagePrompt(p, appearance, artStyleFragment, bookOutfit),
     }));
+
+    const heroCoverDesc = bookOutfit
+      ? `${appearance.hero.description}, wearing ${bookOutfit}`
+      : appearance.hero.description;
 
     const coverImagePrompt = [
       `${artStyleFragment}.`,
       `Children's book cover illustration.`,
-      `Characters: ${appearance.hero.description}. HERO ONLY — no other people, friends, family, or supporting characters.`,
+      `Characters: ${heroCoverDesc}. HERO ONLY — no other people, friends, family, or supporting characters.`,
       parsedRaw.cover.image_scene ? `Scene: ${parsedRaw.cover.image_scene}.` : "",
       parsedRaw.cover.setting ? `Setting: ${parsedRaw.cover.setting}.` : "",
       parsedRaw.cover.mood ? `Mood: ${parsedRaw.cover.mood}.` : "",
@@ -406,6 +405,7 @@ Deno.serve(async (req) => {
         age_band,
         art_style: engineInput.art_style || null,
         repeating_phrase: parsedRaw.meta.repeating_phrase,
+        book_outfit: bookOutfit,
         generated_at: new Date().toISOString(),
         model,
         prompt_version: promptHash,
@@ -418,6 +418,7 @@ Deno.serve(async (req) => {
       },
       pages,
     };
+
 
     const validation = validateBook(parsed, engineInput);
 
