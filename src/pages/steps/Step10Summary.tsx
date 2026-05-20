@@ -4,9 +4,10 @@ import { Pencil, RefreshCw, Check, X } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
 import { buildBrief } from "@/lib/buildBrief";
-import { summaryMessages, useRotatingMessage } from "@/lib/loadingMessages";
+import { summaryMessages, portraitMessages, useRotatingMessage } from "@/lib/loadingMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 
 export default function Step10Summary() {
   const { answers, setAnswer } = useWizard();
