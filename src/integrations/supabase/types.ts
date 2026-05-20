@@ -18,6 +18,12 @@ export type Database = {
         Row: {
           brief: Json
           created_at: string
+          drive_doc_id: string | null
+          drive_doc_url: string | null
+          drive_export_error: string | null
+          drive_export_status: string | null
+          drive_folder_id: string | null
+          drive_folder_url: string | null
           framework_id: string
           generation_ms: number | null
           id: string
@@ -30,6 +36,12 @@ export type Database = {
         Insert: {
           brief: Json
           created_at?: string
+          drive_doc_id?: string | null
+          drive_doc_url?: string | null
+          drive_export_error?: string | null
+          drive_export_status?: string | null
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
           framework_id: string
           generation_ms?: number | null
           id?: string
@@ -42,6 +54,12 @@ export type Database = {
         Update: {
           brief?: Json
           created_at?: string
+          drive_doc_id?: string | null
+          drive_doc_url?: string | null
+          drive_export_error?: string | null
+          drive_export_status?: string | null
+          drive_folder_id?: string | null
+          drive_folder_url?: string | null
           framework_id?: string
           generation_ms?: number | null
           id?: string

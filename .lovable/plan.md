@@ -1,135 +1,116 @@
 
-# Plan: 32-page book engine with per-page image prompts + extensible layout system
+# Auto-export generated books to Google Drive
 
-Same scope as before — fixed 32-page structure, ~500 words, paired image prompt per page, persisted JSON for manual layout. Updated so adding new layout types later is a one-file change.
+## Goal
 
-## Page model (unchanged)
+When `generate-book` finishes and persists a `generated_books` row, automatically:
 
-```text
-page 1     — title page
-page 2     — dedication page (+ belongs-to line if enabled)
-pages 3–32 — story pages (30 pages, ~500 words total)
+1. Ensure the folder `ThistleBooks / Unprocessed Books / [YYYY-MM-DD]_[Buyer]_[BookTitle]` exists in Drive.
+2. Create a formatted Google Doc containing the full book text (one page per page, with image prompt + layout id as metadata) and place it inside that folder.
+3. Persist the resulting Drive folder + doc IDs/URLs back on the `generated_books` row so we can re-find them and later drop images into the same folder.
+
+Images are intentionally out of scope for this pass — but the folder is set up so we can add them next.
+
+## Connectors required
+
+- **Google Drive** (`google_drive`) — folder lookup, folder create, move file.
+- **Google Docs** (`google_docs`) — create the doc + `batchUpdate` to insert formatted content.
+
+Both go through the Lovable connector gateway under your developer Drive/Docs account, so no per-user OAuth needed. We'll trigger the `standard_connectors--connect` flow for each in the build phase.
+
+## Naming + folder logic
+
+- Folder name: `YYYY-MM-DD_{Buyer}_{BookTitle}` where:
+  - `YYYY-MM-DD` from the generation timestamp (UTC).
+  - `Buyer` from `brief.buyer_relationship` label (e.g. "Mom", "Grandma", "Friend"), sanitized.
+  - `BookTitle` from `parsed.meta.title`, sanitized (strip `/`, `\`, control chars, trim, collapse whitespace, cap at ~80 chars).
+- Parent resolution is cached in module scope per cold start:
+  - Find `ThistleBooks` (root-level folder, `mimeType='application/vnd.google-apps.folder' and name='ThistleBooks' and 'root' in parents and trashed=false`). Fail loudly if missing — do not silently create it.
+  - Find or create `Unprocessed Books` inside `ThistleBooks`.
+  - Always create a fresh `[date]_[Buyer]_[BookTitle]` subfolder (don't reuse, even on duplicate titles — append `-2`, `-3` if a collision is detected on the same day).
+
+## Doc structure
+
+One Google Doc per book, page-broken so a human reader can scroll the manuscript.
+
+```
+{Book Title}                                ← Heading 1
+By {child_name} • Generated YYYY-MM-DD       ← small italic line
+Framework: {framework_id} • Age: {age_band} • Words: {word_count_total}
+
+────────────────────────────────────────────
+Page 1 — Title page                          ← Heading 2
+Layout: title
+Text: {page.text}
+Image prompt: {page.image_prompt or "(uses cover art)"}
+[page break]
+
+Page 2 — Dedication                          ← Heading 2
+Layout: dedication-spot
+Text: {page.text}
+Image prompt: {page.image_prompt}
+[page break]
+
+Page 3 — Story (beat: opening)               ← Heading 2
+Layout: text-bottom-third
+Text: {page.text}
+Image prompt: {page.image_prompt}
+Continuity: {page.continuity_notes}
+[page break]
+... (repeats through page 32)
 ```
 
-Total: 32 interior pages + cover. Word total scales by age band (350 / 500 / 650 / 850 for 0-2 / 3-5 / 6-8 / 9-12), page count stays 32.
+Implemented via Google Docs `documents.batchUpdate` with `insertText` + `updateParagraphStyle` (Heading 1 / Heading 2) + `insertPageBreak` between pages. No HTML intermediate.
 
-## Extensible layout system — the key new piece
+## Trigger + flow
 
-Layouts are first-class, registered objects. The model never invents one; it only picks from a registry. Adding a new layout = adding one entry to the registry. No engine, parser, or renderer code changes.
+In `supabase/functions/generate-book/index.ts`, immediately after the successful `generated_books` insert (and only when `status === 'ok'`), fire-and-await a new helper module that performs the export. If the export throws, log it and attach `drive_export_error` to the response but still return the book to the client — generation must never fail because Drive is flaky.
 
-### New file: `supabase/functions/_shared/layouts.ts`
+New edge function: **`export-book-to-drive`** (`verify_jwt = false`, added to `supabase/config.toml`).
 
-```ts
-export interface PageLayout {
-  id: string;                 // "full-bleed", "text-bottom-third", "spot-illustration", ...
-  label: string;              // human label for the dev preview
-  appliesTo: Array<"title"|"dedication"|"story">;
-  /** Soft hint passed to the image model so it leaves space in the right place. */
-  compositionCue: string;     // e.g. "leave the lower third visually calm — sky, water, or soft ground — for a text overlay"
-  /** Renderer hint for the dev preview / future layout tool. */
-  textPlacement: "none"|"top"|"bottom"|"left"|"right"|"overlay-center"|"facing-page";
-  /** How much of the page the illustration occupies. */
-  illustrationCoverage: "full"|"three-quarter"|"half"|"spot"|"none";
-  /** Optional: which page roles this is *preferred* for, for the model's selection heuristic. */
-  preferFor?: Array<"opening"|"rising"|"turn"|"climax"|"resolution"|"closing">;
-}
+- Input: `{ book_id }` (it re-reads `generated_books` server-side so callers don't need to ship the full payload).
+- Steps: resolve parent folders → create dated subfolder → create Doc → batchUpdate Doc body → move Doc into the dated folder → write `drive_folder_id`, `drive_folder_url`, `drive_doc_id`, `drive_doc_url` back onto the row.
+- Returns: `{ folder_url, doc_url }`.
 
-export const PAGE_LAYOUTS: PageLayout[] = [
-  { id: "title", appliesTo: ["title"], textPlacement: "overlay-center", illustrationCoverage: "full",
-    compositionCue: "reuse the cover artwork; no new illustration prompt" , label: "Title page" },
-  { id: "dedication-spot", appliesTo: ["dedication"], textPlacement: "top", illustrationCoverage: "spot",
-    compositionCue: "small, centered decorative spot illustration — single motif on white background, no scene", label: "Dedication w/ spot" },
-  { id: "full-bleed", appliesTo: ["story"], textPlacement: "none", illustrationCoverage: "full",
-    compositionCue: "edge-to-edge illustration; no reserved text area — this page has no text overlay", label: "Full bleed (image only)", preferFor: ["climax","turn"] },
-  { id: "text-bottom-third", appliesTo: ["story"], textPlacement: "bottom", illustrationCoverage: "three-quarter",
-    compositionCue: "keep the lower third visually quiet (sky, water, soft ground) so text overlays cleanly", label: "Text bottom" },
-  { id: "text-top-third", appliesTo: ["story"], textPlacement: "top", illustrationCoverage: "three-quarter",
-    compositionCue: "keep the upper third visually quiet (sky, ceiling, plain wall) for a text overlay", label: "Text top" },
-  { id: "text-left-half", appliesTo: ["story"], textPlacement: "left", illustrationCoverage: "half",
-    compositionCue: "compose the scene on the right half of the canvas; left half is plain backdrop for text", label: "Text left / image right" },
-  { id: "text-right-half", appliesTo: ["story"], textPlacement: "right", illustrationCoverage: "half",
-    compositionCue: "compose the scene on the left half of the canvas; right half is plain backdrop for text", label: "Text right / image left" },
-];
-```
+`generate-book` calls it via `supabase.functions.invoke('export-book-to-drive', { body: { book_id } })` after insert. Keeping it as a separate function lets us also expose a "Re-export to Drive" button on `/dev/story-preview/:id` later with zero new wiring.
 
-Adding a future layout (e.g. "vignette circular frame", "split-spread diptych", "all-caps single word overlay") = push a new object into `PAGE_LAYOUTS`. The engine, schema, parser, persistence, dev preview, and downloads all pick it up automatically.
+## DB changes
 
-### How the engine uses the registry
+Migration on `public.generated_books` — add nullable columns:
 
-1. **Schema constraint** — `BookOutputSchema` (zod) declares `layout_id: z.enum([...PAGE_LAYOUTS.map(l => l.id)])`. The structured-output call physically can't return an unknown layout.
-2. **Prompt** — `STORY_BOOK_USER_MESSAGE` is built by serializing the registry into a short table the model sees: `id — label — when to use — composition cue`. Updates flow automatically.
-3. **Image prompt assembly** — when we bake the per-page image prompt, we look up `compositionCue` for the page's `layout_id` and append it. So a new layout's composition rule is honored without touching the engine.
-4. **Renderer** — the dev preview iterates pages, calls `renderLayout(page)` which switches on `textPlacement` + `illustrationCoverage`. New layouts that fit those enums render with zero code change. Truly novel placements add a new enum value + one render branch.
+- `drive_folder_id text`
+- `drive_folder_url text`
+- `drive_doc_id text`
+- `drive_doc_url text`
+- `drive_export_status text` — `pending` | `ok` | `failed`
+- `drive_export_error text`
 
-## Per-page output schema (final)
+No RLS change needed (table is already permissive for the prototype).
 
-```ts
-{
-  meta: { title, framework_id, word_count_total, page_count: 32, age_band, art_style, repeating_phrase, generated_at },
-  cover: { title, subtitle, image_prompt },
-  pages: [
-    {
-      page_number: 1..32,
-      role: "title"|"dedication"|"story",
-      beat?: "opening"|"rising"|"turn"|"climax"|"resolution"|"closing", // story pages only
-      text: string,                       // 8–25 words for story pages; total 450–550 across all story pages (scaled by age band)
-      image_prompt: string|null,          // null for title page only
-      continuity_notes: string,           // short reminder of outfit/time/setting carried from previous page
-      layout_id: string,                  // must be a registry id valid for this role
-    },
-    ...
-  ]
-}
-```
+## Dev preview tweaks (small)
 
-Image prompts are server-assembled (model writes only the scene; we own the style + appearance + composition boilerplate) so character & style consistency holds across all 30 pages.
+`src/pages/DevStoryPreview.tsx`: if the loaded book has `drive_folder_url` / `drive_doc_url`, render two small link buttons ("Open Drive folder", "Open Google Doc") next to the existing Download buttons. If export failed, show the error inline so we can debug without leaving the preview.
 
-## Prompt changes (`supabase/functions/_shared/prompts.ts`)
+## Technical notes for the implementer
 
-1. New `STORY_LENGTH_BOOK` with per-age totals + `pageCount: 30` + per-page word range.
-2. New `buildPageImagePromptTemplate(page, layout, briefBlocks)` helper.
-3. New `buildAppearanceBlocks(brief)` — computes hero + named-supporter appearance blocks **once** for reuse across all 30 pages (single biggest lever for character consistency).
-4. New `serializeLayoutRegistryForPrompt()` — turns `PAGE_LAYOUTS` into the markdown table the model sees, so adding a layout updates the prompt with no further edits.
-5. Rewritten `STORY_BOOK_USER_MESSAGE` — enforces the rigid 32-page structure, total + per-page word ranges, and demands the model pick `layout_id` from the registry, varying it page-to-page so identical layouts don't repeat back-to-back.
-6. New exported `BookOutputSchema` (zod) used directly by the engine's structured output call.
-
-Old `SPREAD_COUNT_BY_AGE_AND_FRAMEWORK` and the bracket-format instructions stay in the file but are unused by the book path (kept for backward-compat with anything that imports them).
-
-## Engine (`supabase/functions/generate-book/index.ts`)
-
-- Drop the regex `[SPREAD N]` parser entirely.
-- Switch to AI SDK `generateText` + `Output.object(BookOutputSchema)` against the Lovable AI Gateway (existing `MODELS.book` constant).
-- Post-process pass:
-  - validate page count = 32 and roles in expected slots; fix or fail loud
-  - compute appearance blocks once
-  - for each page: build final `image_prompt` = `artStyleFragment + scene (from model) + appearance blocks (filtered to characters in scene) + setting + mood + layout.compositionCue + "no text in image"`
-  - compute `meta.word_count_total` and stamp `generated_at`
-- Persist to `generated_books` unchanged (`parsed` jsonb already holds anything).
-
-## Storage & access
-
-No schema migration. Existing `generated_books` table; existing public-read RLS.
-
-Three access paths on `/dev/story-preview/:id`:
-
-1. **Rendered preview** — 32 page cards. Each card shows page number, role, layout label, text, image prompt (copyable `<pre>`), continuity notes. A small layout-aware preview block uses `textPlacement` + `illustrationCoverage` to show roughly where text/image sit. New layouts that fit those enums get a preview for free.
-2. **Download `book.json`** — the full `parsed` object, ready to drop into a layout tool or pipeline.
-3. **Download `pages.csv`** — one row per page: `page_number, role, beat, layout_id, text, image_prompt, continuity_notes`. Spreadsheet-friendly for InDesign data merge or hand layout.
-
-Per-page "Copy JSON" and "Copy image prompt" buttons on each card.
+- Gateway URLs:
+  - Drive: `https://connector-gateway.lovable.dev/google_drive/drive/v3`
+  - Docs:  `https://connector-gateway.lovable.dev/google_docs/v1`
+  - Headers on every call: `Authorization: Bearer ${LOVABLE_API_KEY}`, `X-Connection-Api-Key: ${GOOGLE_DRIVE_API_KEY}` / `${GOOGLE_DOCS_API_KEY}`.
+- Drive folder creation: `POST /files` with `{ name, mimeType: 'application/vnd.google-apps.folder', parents: [parentId] }`.
+- Doc creation flow: `POST /documents { title }` → capture `documentId` → `POST /files/{documentId}?addParents={folderId}&removeParents=root&supportsAllDrives=true` to move it (Drive API), → `POST /documents/{documentId}:batchUpdate` for content. Order matters because batchUpdate appends from index 1.
+- Track a running insertion index for `batchUpdate` requests; build the request list in one pass over `parsed.pages`. Apply `updateParagraphStyle` ranges right after each heading insert. Insert `\n` between blocks; insert a `pageBreak` after each page block.
+- Sanitization helper: `s.replace(/[\\/:*?"<>|\u0000-\u001F]/g, '').replace(/\s+/g,' ').trim().slice(0,80)`.
 
 ## Build order
 
-1. `supabase/functions/_shared/layouts.ts` — new file, the registry above.
-2. `supabase/functions/_shared/prompts.ts` — add `STORY_LENGTH_BOOK`, appearance-block + image-prompt builders, registry serializer, new `STORY_BOOK_USER_MESSAGE`, exported `BookOutputSchema`.
-3. `supabase/functions/generate-book/index.ts` — switch to AI SDK structured output, run post-process, persist.
-4. `src/pages/DevStoryPreview.tsx` — render the new shape, copy buttons, JSON + CSV downloads, layout-aware page preview.
-5. Update `mem://features/story-engine` to record: fixed 32 pages, ~500 words (scaled by age), registry-driven layouts, JSON/CSV export from dev preview.
+1. Migration: add Drive columns to `generated_books`.
+2. `standard_connectors--connect` for `google_drive`, then `google_docs`.
+3. New edge function `supabase/functions/export-book-to-drive/index.ts` with the helpers above (folder resolution, doc builder, batchUpdate). Add `[functions.export-book-to-drive] verify_jwt = false` to `supabase/config.toml`.
+4. Wire `generate-book/index.ts` to invoke it after insert (best-effort, never blocks success response).
+5. Add Drive links + error display to `DevStoryPreview.tsx`.
+6. Test end-to-end with `?dev=1`, confirm folder + doc appear in `ThistleBooks/Unprocessed Books`.
 
-## Defaults applied (you can override)
+## Open question
 
-- Word total scales by age band: 350 / 500 / 650 / 850.
-- Dedication stays auto-generated from `buyer_relationship` + `occasion`; no new wizard field.
-- Layouts include the 7 in the registry above, with the model picking per page and avoiding back-to-back repeats.
-
-If you want any of those three flipped, say so and I'll adjust before building. Otherwise approving this plan executes it end-to-end.
+The folder name uses `buyer_relationship` (Mom / Grandma / Friend / …). If you'd rather use the **buyer's actual name** (e.g. their typed first name) we don't currently collect that anywhere in the wizard — let me know and I'll add a tiny field, otherwise I'll go with the relationship label.
