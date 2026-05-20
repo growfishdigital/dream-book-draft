@@ -263,13 +263,12 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const rawBrief = body.brief || {};
-    // Stamp the buyer info onto the brief so the Drive exporter (which keys
-    // its folder names off brief.buyer_name) picks it up.
     const buyer_name: string | undefined = body.buyer_name || rawBrief.buyer_name;
     const buyer_email: string | undefined = body.buyer_email || rawBrief.buyer_email;
     const brief = { ...rawBrief, buyer_name, buyer_email };
     const revision_note: string | undefined = body.revision_note || undefined;
     const model: string = body.modelOverride || MODELS.book;
+    const seed_portrait_data_url: string | null = body.seed_portrait_data_url || null;
 
     const engineInput = mapBriefToEngineInput(brief);
     const framework_id = selectFramework({
@@ -292,11 +291,48 @@ Deno.serve(async (req) => {
       child_name: engineInput.child_name,
     }) + (revision_note ? `\n\nRevision note: ${revision_note}` : "");
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseAnon);
 
-    const startedAt = Date.now();
-    const schema = buildBookJsonSchema();
+    // Insert stub row immediately so the client has an id to poll.
+    const { data: stubRow, error: stubErr } = await supabase
+      .from("generated_books")
+      .insert({
+        framework_id,
+        brief: { ...brief, _engine_input: engineInput },
+        model,
+        prompt_hash: promptHash,
+        status: "pending",
+        buyer_name: buyer_name || null,
+        buyer_email: buyer_email || null,
+        pipeline_status: "story",
+        pipeline_progress: {
+          stage: "story",
+          current: 0,
+          total: 1,
+          message: "Writing the story…",
+        },
+      })
+      .select("id")
+      .single();
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    if (stubErr || !stubRow?.id) {
+      console.error("Stub insert failed", stubErr);
+      return new Response(
+        JSON.stringify({ error: stubErr?.message || "Could not create book row." }),
+        { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+
+    const bookId = stubRow.id as string;
+
+    // Background work — story AI call + persist + chain image pipeline.
+    const work = async () => {
+      const startedAt = Date.now();
+      try {
+        const schema = buildBookJsonSchema();
+        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
