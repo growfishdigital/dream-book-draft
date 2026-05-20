@@ -1307,10 +1307,26 @@ export function buildBookUserMessageV2(opts: {
   occasion_label: string;
   child_name: string;
 }): string {
+// ---- V2 user prompt builder -------------------------------------------------
+
+export function buildBookUserMessageV2(opts: {
+  age_band: AgeBand;
+  include_belongs_to_page: boolean;
+  buyer_relationship_label: string;
+  occasion_label: string;
+  child_name: string;
+}): string {
   const { age_band, include_belongs_to_page, buyer_relationship_label, occasion_label, child_name } = opts;
   const { min, target, max } = bookWordTotalRange(age_band);
+  const pp = perPageWordBounds(age_band);
   const layoutsTable = serializeLayoutRegistryForPrompt();
   const storyPages = STORY_LENGTH_BOOK.pageCount; // 30
+  const firstStoryPage = 3;
+  const lastStoryPage = STORY_LENGTH_BOOK.totalPageCount;
+
+  const quietPagesGuidance = age_band === "0-2"
+    ? `Because this is the 0–2 age band, many pages SHOULD be image-only (0 words) or 1–3 words (a sound, a name, a label). The total stays under ${max} words — text is a garnish, not the meal.`
+    : `Roughly 4–6 pages should be deliberately quiet (under ${pp.softMin} words) to give the pacing room to breathe. The climax and emotional turn can run up to ${pp.max} words.`;
 
   return `You are now writing the FINAL printed book.
 
@@ -1323,37 +1339,53 @@ The book has exactly **${STORY_LENGTH_BOOK.totalPageCount} interior pages**:
   - image_scene: null. image_prompt is reused from the cover.
 - **Page 2 — Dedication page** (role: "dedication", layout_id: "dedication-spot").
   - text: A warm 1–2 sentence dedication. Tone matches the buyer (${buyer_relationship_label}) and the occasion (${occasion_label}).${include_belongs_to_page ? ` On a new line, append: "This book belongs to ${child_name}."` : ""}
-- **Pages 3–${STORY_LENGTH_BOOK.totalPageCount} — Story pages** (role: "story"). Exactly ${storyPages} pages.
+- **Pages ${firstStoryPage}–${lastStoryPage} — Story pages** (role: "story"). Exactly ${storyPages} pages.
   - Each page has its own short narrative text AND its own illustration scene.
-  - The story arc plays out across these ${storyPages} pages, following the framework's beats from the system prompt. Tag each page's beat: opening / rising / turn / climax / resolution / closing.
+  - The story arc plays out across these ${storyPages} pages, following the beat allocation table from the system prompt. Tag each page's beat: opening / rising / turn / climax / resolution / closing.
 
 # Word counts (HARD)
 
-- Total story-page text (pages 3–${STORY_LENGTH_BOOK.totalPageCount}) must land between **${min} and ${max} words**, target ~${target}.
-- Each individual story page: ${STORY_LENGTH_BOOK.perPageMin}–${STORY_LENGTH_BOOK.perPageMax} words. Target ~${STORY_LENGTH_BOOK.perPageTarget}.
-- Vary page lengths — quiet pages can be very short; the climax can be longer.
+- Total story-page text (pages ${firstStoryPage}–${lastStoryPage}) must land between **${min} and ${max} words**, target ~${target}.
+- Each individual story page: **${pp.min}–${pp.max} words**. Target ~${pp.target} per page.
+- ${quietPagesGuidance}
+- Page text length should follow the emotional shape, not a uniform line count.
+
+# Hero outfit (locked)
+
+Pick ONE distinctive visible outfit the hero wears on every illustrated page (shirt + bottoms + shoes + optional accessory, ≤10 words). Return it in \`meta.book_outfit\`. The server stitches this outfit into every page's image prompt automatically — do NOT repeat outfit details inside per-page \`image_scene\` text.
 
 # Per-page illustration prompts
 
 For every story page, also provide:
-- \`image_scene\`: 1 sentence, what is physically happening on this page (action, posture, key props).
-- \`characters_present\`: array of character names appearing on this page. Use the hero's exact name and any supporting character's exact name.
+- \`image_scene\`: 1 sentence, what is physically happening on this page (action, posture, key props). Do NOT describe the outfit — that's handled by \`book_outfit\`.
+- \`characters_present\`: array of character names appearing on this page. Use the hero's exact name and any supporting character's exact name. Omit the hero only if the page is intentionally environmental.
 - \`setting\`: where + time of day + weather, in a short phrase.
 - \`mood\`: a single emotional word (e.g. "wonder", "tender", "playful").
-- \`continuity_notes\`: short reminder of what carries from the previous page (outfit detail, time of day, location). Locks visual continuity.
+- \`continuity_notes\`: short reminder of what carries from the previous page (time of day, location, prop, weather). Critical at 30 pages — without it, locations and time-of-day drift visibly.
 
-DO NOT write style instructions, art direction, lighting, color, or composition. The server bakes those in from the chosen art style, character appearance blocks, and the chosen layout. Just describe WHAT IS HAPPENING and WHO IS THERE.
+DO NOT write style instructions, art direction, lighting, color, or composition. The server bakes those in from the chosen art style, character appearance blocks, the locked outfit, and the chosen layout. Just describe WHAT IS HAPPENING and WHO IS THERE.
 
-# Layouts (pick one per story page)
+# Layout selection (one per story page)
 
-Vary layouts across the book — never use the same layout on three back-to-back pages. Reserve \`full-bleed\` for high-emotion beats (climax, turn). The dedication page must use \`dedication-spot\`. The title page must use \`title\`.
+Vary layouts across the book — never use the same layout on three back-to-back pages. Bias by beat:
+
+- **opening / rising** → \`text-left-half\`, \`text-bottom-third\`, \`text-top-third\` (room to establish + read).
+- **turn / climax** → \`full-bleed\` (image carries the emotional weight; minimal or no text on that page).
+- **resolution / closing** → \`text-right-half\`, \`text-bottom-third\` (warm, settled mid-shots).
+
+The dedication page must use \`dedication-spot\`. The title page must use \`title\`.
 
 ${layoutsTable}
+
+# Repeating phrase placement
+
+The repeating phrase (returned in \`meta.repeating_phrase\`) must appear verbatim, or with a small, intentional variation, on 4–6 of the story pages — distributed across the arc (one early, one or two in the middle, one near the end). Do NOT use it on every page.
 
 # Output
 
 Call the provided tool \`return_book\` with the exact structured payload. No prose outside the tool call.`;
 }
+
 
 // ---- V2 parser / normaliser -------------------------------------------------
 
