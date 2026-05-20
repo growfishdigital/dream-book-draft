@@ -230,13 +230,15 @@ function AppearanceAccordion({ appearance, onChange, name, defaultExpanded, feat
             <Checkbox checked={appearance.glasses} onCheckedChange={(v) => upd({ glasses: !!v })} id="glasses" />
             <label htmlFor="glasses" className="text-sm text-muted-foreground cursor-pointer">Wears glasses</label>
           </div>
-          <div className="space-y-1.5">
-            <FieldLabel optional>Other distinguishing features</FieldLabel>
-            <Input className="rounded-xl" placeholder="Freckles, hearing aid, uses a wheelchair…"
-              maxLength={100} value={appearance.features}
-              onChange={(e) => upd({ features: e.target.value })} />
-            <CharCounter current={appearance.features.length} max={100} />
-          </div>
+          {featuresSlot !== undefined ? featuresSlot : (
+            <div className="space-y-1.5">
+              <FieldLabel optional>Other distinguishing features</FieldLabel>
+              <Input className="rounded-xl" placeholder="Freckles, hearing aid, uses a wheelchair…"
+                maxLength={100} value={appearance.features}
+                onChange={(e) => upd({ features: e.target.value })} />
+              <CharCounter current={appearance.features.length} max={100} />
+            </div>
+          )}
         </div>
       )}
     </div>
