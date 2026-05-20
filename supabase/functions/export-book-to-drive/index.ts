@@ -307,8 +307,14 @@ async function exportBook(bookId: string, supabase: any) {
   const unprocessed = await ensureSubfolder("Unprocessed Books", thistleId);
 
   const date = todayUTC();
+  // Prefer the real buyer name (collected at checkout); fall back to the
+  // wizard's relationship label for dev runs before payment is wired up.
+  const buyerName = (brief.buyer_name || brief.buyer?.name || "").toString().trim();
   const buyerKey = (brief.buyer_relationship || "other").toString().toLowerCase();
-  const buyer = sanitize(BUYER_LABEL[buyerKey] || buyerKey, 30);
+  const buyer = sanitize(
+    buyerName || BUYER_LABEL[buyerKey] || buyerKey,
+    40,
+  );
   const title = sanitize(parsed.meta.title || "Untitled", 80);
   const folderName = `${date}_${buyer}_${title}`;
 
