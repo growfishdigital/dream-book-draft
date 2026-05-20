@@ -1,7 +1,7 @@
 // export-book-to-drive
 //
 // Reads a generated_books row, ensures the Drive folder tree
-//   ThistleBooks / Unprocessed Books / [YYYY-MM-DD]_[Buyer]_[BookTitle]
+//   Thistle Books / Unprocessed Books / [YYYY-MM-DD]_[Buyer]_[BookTitle]
 // exists in the developer's Drive (via Lovable Google Drive connector),
 // creates a formatted Google Doc with the full manuscript (page by page,
 // including layout id + image prompt as metadata under each page), moves
@@ -298,10 +298,10 @@ async function exportBook(bookId: string, supabase: any) {
   const brief = row.brief || {};
 
   // 1. Resolve folder tree
-  const thistleId = await findFolder("ThistleBooks", "root");
+  const thistleId = await findFolder("Thistle Books", "root");
   if (!thistleId) {
     throw new Error(
-      "Couldn't find a top-level 'ThistleBooks' folder in the connected Drive. Create it (or share it with the connected account) and re-run.",
+      "Couldn't find a top-level 'Thistle Books' folder in the connected Drive. Create it (or share it with the connected account) and re-run.",
     );
   }
   const unprocessed = await ensureSubfolder("Unprocessed Books", thistleId);
