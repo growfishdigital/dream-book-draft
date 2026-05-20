@@ -1,62 +1,61 @@
 ## Goal
 
-Make Drive upload behavior debuggable by recording every upload attempt for every `book_images` row, including retries, HTTP status, timing, and final `drive_file_id`. Today the only signal is `book_images.error` (last error message, overwritten) plus edge function console logs that scroll out of view.
+At the end of the run, do a single final sweep that retries any **failed image generations** and any **failed Drive uploads** once. If after that pass any planned page (or portrait 1, or the cover when present) is still missing, the book is marked **failed**, not partially-done.
 
-## Schema
+No second sweep, no per-row retry counter, no `completed_with_errors` state.
 
-New table `public.book_image_upload_attempts`:
+## Where the sweep runs
 
-| column | type | notes |
-|---|---|---|
-| `id` | uuid PK | `gen_random_uuid()` |
-| `book_image_id` | uuid | the `book_images.id` being uploaded; indexed |
-| `book_id` | uuid | denormalized for fast filtering per book; indexed |
-| `kind` | text | `portrait` / `page` / `cover` (denormalized) |
-| `slot` | int | denormalized |
-| `attempt` | int | 1-based attempt number within this upload sequence |
-| `source` | text | `progressive` (from `generate-book-images`) or `cleanup` (from `export-book-images-to-drive`) |
-| `outcome` | text | `ok` / `retry` / `failed` |
-| `http_status` | int nullable | upstream status when applicable |
-| `duration_ms` | int nullable | wall time of this single attempt |
-| `error` | text nullable | truncated error message (≤500 chars) |
-| `drive_file_id` | text nullable | populated on `ok` |
-| `drive_file_url` | text nullable | populated on `ok` |
-| `created_at` | timestamptz | `now()` |
+In `generate-book-images/index.ts`, inside the `remaining === 0` branch:
 
-Indexes: `(book_id, created_at desc)`, `(book_image_id, created_at desc)`.
+```text
+1. ensurePortraits        (unchanged)
+2. generatePages          (unchanged; may take multiple invocations)
+3. when remaining === 0:
+   a. finalSweepGenerations()      ← NEW, single pass
+   b. invoke export-book-images-to-drive (existing, retries failed uploads)
+   c. verifyComplete() → setPipeline("done") OR "failed"
+```
 
-RLS: enable + the same permissive "anyone can read/insert" policies the existing tables use (matches `book_images` — this is a public prototype with no auth). No update/delete policies needed; rows are append-only.
+## (3a) Generation retry sweep — single pass
 
-No changes to `book_images` itself — `drive_file_id`/`drive_file_url`/`error` stay as the "current state" summary; the new table is the full history.
+- Query `book_images` for the book where `status='failed'` AND `kind IN ('portrait','page')`.
+- For each failed row, exactly **one** retry attempt:
+  - Reuse the stored `prompt` already on the row.
+  - Rebuild `userContent`: text prompt + `references` (anchor portrait + alt portraits) as image_url parts. Same anchor-preamble logic `generatePages` already uses.
+  - Call `callImageModel`. On success: upsert `status='ok'` and `scheduleDriveUpload(...)`. On failure: leave row as `failed` with updated `error`.
+- Time budget: if `Date.now() > deadline` mid-loop, stop and self-chain via the existing `generate-book-images` invoke pattern with `pipeline_status='retry_generations'`. The next slice's `remaining === 0` will re-enter this branch and finish the sweep. Net effect is still "one retry per failed row" because successful ones drop out of the failed-set.
 
-## Edge function changes
+No schema change. No per-row attempt counter — if the single retry fails, that's the verdict.
 
-### `_shared/driveUpload.ts`
+## (3b) Upload retry sweep
 
-`uploadImageWithRetry` currently swallows per-attempt detail. Refactor it (or add a sibling) so each attempt fires a callback with `{ attempt, outcome, http_status, duration_ms, error }`. `HttpError` already carries `status`.
+`export-book-images-to-drive` already handles this: selects every `status='ok'` row missing `drive_file_id` and re-uploads via `uploadAndStampImage` (4-attempt jittered backoff + audit log). Runs after (3a) so freshly regenerated images get uploaded in the same pass.
 
-`uploadAndStampImage` becomes the single place that records attempts:
+## (3c) Completion verdict — strict
 
-- Accepts a `source: 'progressive' | 'cleanup'` argument.
-- For each attempt the upload helper makes, insert one row into `book_image_upload_attempts` (`outcome: 'retry'` for retried failures, `outcome: 'failed'` for the terminal failure, `outcome: 'ok'` for success).
-- Inserts are best-effort — wrapped in try/catch so a logging failure never breaks the upload.
+After cleanup, recompute against `parsed.pages`:
 
-### Call sites
+- Required pages = every `parsed.pages[i]` that has an `image_prompt`.
+- Required portrait = portrait slot 1 only (slots 2/3 stay best-effort; they only affect page reference quality, not whether the book is shippable).
 
-- `generate-book-images` (`uploadByKindSlot` → `uploadAndStampImage`) passes `source: 'progressive'`.
-- `export-book-images-to-drive` passes `source: 'cleanup'`.
+A page is **complete** when its `book_images` row has `status='ok'` AND `drive_file_id IS NOT NULL` (image generated AND uploaded to Drive). Same rule for portrait 1.
 
-No changes to the public contract of either function.
+- If any required row is incomplete → `pipeline_status='failed'`, `pipeline_error` summarizes what's missing (e.g. `"Book incomplete: missing 2 page(s) (7, 19); cover not uploaded"`).
+- Otherwise → `pipeline_status='done'`.
 
-## Out of scope
-
-- UI surface for the audit log. (Inspect via the database tools or a quick `select` for now.)
-- Retention policy / pruning. Volume is tiny (≤ ~4 attempts × ~35 images per book).
-- Backfilling history for books generated before this change.
+This makes "done" actually mean "every planned image was generated and is in Drive". A book missing pages is never silently shipped.
 
 ## Files touched
 
-- New migration: create `book_image_upload_attempts` + indexes + RLS.
-- `supabase/functions/_shared/driveUpload.ts` — emit per-attempt callbacks, write rows in `uploadAndStampImage`, accept `source`.
-- `supabase/functions/generate-book-images/index.ts` — pass `'progressive'` through `uploadByKindSlot`.
-- `supabase/functions/export-book-images-to-drive/index.ts` — pass `'cleanup'`.
+- `supabase/functions/generate-book-images/index.ts`:
+  - New `finalSweepGenerations(supabase, bookId, parsed, references, apiKey, deadline, subfolderId)`.
+  - New `verifyComplete(supabase, bookId, parsed)` returning `{ ok, missing[] }`.
+  - Wire both into the `remaining === 0` branch; replace the current unconditional `setPipeline("done")` with the verdict.
+- `_shared/driveUpload.ts`, `export-book-images-to-drive/index.ts`: unchanged.
+
+## Out of scope
+
+- Cover: today this function doesn't generate the cover (it's a separate `generate-cover` path). Verdict checks the cover row only if one exists in `book_images`.
+- Surfacing `failed` to the UI beyond what's already on `generated_books.pipeline_status` / `pipeline_error`.
+- Restarting/regenerating from the UI — the book stays `failed` until a manual re-run.
