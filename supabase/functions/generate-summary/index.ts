@@ -10,7 +10,11 @@ import {
   selectSummaryFramework,
   STORY_CONCEPT_SYSTEM_PROMPT,
   STORY_CONCEPT_USER_TEMPLATE,
+  summaryPatternForFramework,
+  titlePatternForFramework,
   type SummaryFrameworkId,
+  type SummaryPatternId,
+  type TitlePatternId,
 } from "../_shared/storyConceptPrompt.ts";
 
 const corsHeaders = {
@@ -54,6 +58,8 @@ interface StoryConceptResult {
   user_visible_summary?: string;
   summary?: string;
   framework_id?: SummaryFrameworkId;
+  summary_pattern?: SummaryPatternId;
+  title_pattern?: TitlePatternId;
   framework_reason?: string;
   story_seed?: {
     core_conflict?: string;
@@ -111,6 +117,17 @@ const GENERIC_SUMMARY_TERMS = [
   "what makes a companion",
   "hints at how friendship grows",
   "a tale about how friendship grows",
+];
+
+const GENERIC_TITLE_TERMS = [
+  "adventure",
+  "journey",
+  "magical",
+  "wonderful",
+  "special",
+  "confidence",
+  "friendship",
+  "kindness",
 ];
 
 function describeSpecialThing(
@@ -182,7 +199,48 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], childName: string): string[] {
+function words(s: string): string[] {
+  return s.trim().split(/\s+/).filter(Boolean);
+}
+
+function containsWord(text: string, term: string): boolean {
+  return new RegExp(`\\b${escapeRegExp(term)}\\b`, "i").test(text);
+}
+
+function countInterestsUsed(text: string, interests: string[]): number {
+  const lower = text.toLowerCase();
+  return interests.filter((interest) => {
+    const clean = String(interest || "").trim().toLowerCase();
+    if (!clean || clean.length < 3) return false;
+    return lower.includes(clean);
+  }).length;
+}
+
+function findTitleQualityIssues(title: string, forbiddenTraits: string[], childName: string, interests: string[]): string[] {
+  const issues: string[] = [];
+  const clean = title.trim();
+  const lower = clean.toLowerCase();
+  const firstName = childName.trim().split(/\s+/)[0];
+
+  if (!clean) issues.push("empty title");
+  if (firstName && containsWord(clean, firstName)) issues.push("title contains child name");
+  if (clean.includes(",")) issues.push("title is a list / contains comma");
+  if (words(clean).length > 9) issues.push("title too long");
+
+  for (const trait of forbiddenTraits) {
+    if (containsWord(clean, trait)) issues.push(`title uses trait word: ${trait}`);
+  }
+  for (const term of GENERIC_TITLE_TERMS) {
+    if (containsWord(clean, term)) issues.push(`generic title word: ${term}`);
+  }
+  if (countInterestsUsed(clean, interests) > 1) issues.push("title uses multiple interests");
+  if (/\b(and|&)\b/i.test(clean) && countInterestsUsed(clean, interests) >= 1) issues.push("title may be an ingredient list");
+  if (lower.includes("learns to") || lower.includes("story about")) issues.push("moral-label title");
+
+  return Array.from(new Set(issues));
+}
+
+function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], childName: string, interests: string[]): string[] {
   const issues: string[] = [];
   const lower = summary.toLowerCase();
   for (const term of GENERIC_SUMMARY_TERMS) {
@@ -190,23 +248,23 @@ function findSummaryQualityIssues(summary: string, forbiddenTraits: string[], ch
   }
 
   for (const trait of forbiddenTraits) {
-    const word = escapeRegExp(trait);
-    const traitRe = new RegExp(`\\b${word}\\b`, "i");
-    if (traitRe.test(summary)) issues.push(`visible trait word: ${trait}`);
+    if (containsWord(summary, trait)) issues.push(`visible trait word: ${trait}`);
   }
+
+  if (countInterestsUsed(summary, interests) > 2) issues.push("summary uses more than two interests");
 
   const firstName = childName.trim().split(/\s+/)[0];
   if (firstName) {
     const name = escapeRegExp(firstName);
     const directDescriptor = new RegExp(`\\b${name}\\s+(?:is|was)\\s+(?:an?\\s+)?[^.]{0,45}\\b(?:kid|child|boy|girl|person)\\b`, "i");
-    if (directDescriptor.test(summary)) {
-      issues.push("direct hero descriptor pattern");
-    }
+    if (directDescriptor.test(summary)) issues.push("direct hero descriptor pattern");
   }
 
   const appositiveTraitPattern = /\b[A-Z][a-z]+,\s+(?:the\s+)?[^,.]{0,45}\b(?:kid|child|boy|girl|person|friend)\b/i;
-  if (appositiveTraitPattern.test(summary)) {
-    issues.push("appositive character descriptor pattern");
+  if (appositiveTraitPattern.test(summary)) issues.push("appositive character descriptor pattern");
+
+  if (lower.includes("learns that") || lower.includes("discovers that friendship") || lower.includes("best kind of victory")) {
+    issues.push("explains moral instead of implying growth");
   }
 
   return Array.from(new Set(issues));
@@ -218,11 +276,11 @@ function conceptToolSchema(firstName: string) {
     properties: {
       title: {
         type: "string",
-        description: `Short, kid-friendly working title (max 60 chars). MUST NOT contain the child's first name${firstName ? ` "${firstName}"` : ""}.`,
+        description: `Short, kid-friendly working title. Must follow the requested title_pattern. MUST NOT contain the child's first name${firstName ? ` "${firstName}"` : ""}.`,
       },
       user_visible_summary: {
         type: "string",
-        description: `Single paragraph, ~${STORY_LENGTH.target} words (${STORY_LENGTH.min}–${STORY_LENGTH.max}), narrative concept summary shown to the customer.`,
+        description: `Single paragraph, ~${STORY_LENGTH.target} words (${STORY_LENGTH.min}–${STORY_LENGTH.max}), narrative concept summary shown to the customer. Must follow the requested summary_pattern.`,
       },
       framework_id: {
         type: "string",
@@ -234,6 +292,26 @@ function conceptToolSchema(firstName: string) {
           "silly_escalation",
         ],
         description: "Framework used as the hidden narrative shape.",
+      },
+      summary_pattern: {
+        type: "string",
+        enum: [
+          "discovery_trail",
+          "softening_ritual",
+          "hard_but_safe_test",
+          "need_noticed",
+          "escalating_absurd_rule",
+        ],
+      },
+      title_pattern: {
+        type: "string",
+        enum: [
+          "wonder_object_place",
+          "soft_ritual_goodnight_object",
+          "hard_thing_brave_object",
+          "shared_thing_room_making",
+          "absurd_rule_funny_problem",
+        ],
       },
       framework_reason: {
         type: "string",
@@ -250,19 +328,9 @@ function conceptToolSchema(firstName: string) {
             description: "Age-aware recurring verbal motif: a phrase, question, sound, image, or sentence pattern that can echo through the full book without feeling like a forced chorus.",
           },
           ending_feeling: { type: "string" },
-          image_opportunities: {
-            type: "array",
-            items: { type: "string" },
-          },
+          image_opportunities: { type: "array", items: { type: "string" } },
         },
-        required: [
-          "core_conflict",
-          "emotional_arc",
-          "visual_world",
-          "recurring_motif",
-          "ending_feeling",
-          "image_opportunities",
-        ],
+        required: ["core_conflict", "emotional_arc", "visual_world", "recurring_motif", "ending_feeling", "image_opportunities"],
         additionalProperties: false,
       },
       personalization_notes: {
@@ -273,36 +341,21 @@ function conceptToolSchema(firstName: string) {
           cast_and_companion_use: { type: "string" },
           avoid_as_obstacle: { type: "string" },
         },
-        required: [
-          "personality_through_action",
-          "interests_used",
-          "cast_and_companion_use",
-          "avoid_as_obstacle",
-        ],
+        required: ["personality_through_action", "interests_used", "cast_and_companion_use", "avoid_as_obstacle"],
         additionalProperties: false,
       },
       full_book_instruction: {
         type: "string",
-        description: "2–4 sentence instruction for the full-book engine, including motif usage guidance.",
+        description: "2–4 sentence instruction for the full-book engine, including pattern and motif usage guidance.",
       },
     },
-    required: [
-      "title",
-      "user_visible_summary",
-      "framework_id",
-      "framework_reason",
-      "story_seed",
-      "personalization_notes",
-      "full_book_instruction",
-    ],
+    required: ["title", "user_visible_summary", "framework_id", "summary_pattern", "title_pattern", "framework_reason", "story_seed", "personalization_notes", "full_book_instruction"],
     additionalProperties: false,
   };
 }
 
 Deno.serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
@@ -316,24 +369,20 @@ Deno.serve(async (req) => {
     const ageBand = brief.child?.ageRange || "young";
     const heroTraits = uniqueTraits(brief.story?.personality || []);
     const forbiddenTraitWords = collectForbiddenTraitWords(brief);
+    const interests = (brief.story?.interests || []).filter(Boolean).map(String);
 
     const supporting = (brief.supportingCharacters || [])
       .map((c: any) => {
         const rel = c.relationship?.trim();
         const nm = c.name?.trim();
-        const desc = c.description?.trim()
-          ? `. ${c.description.trim()}`
-          : "";
+        const desc = c.description?.trim() ? `. ${c.description.trim()}` : "";
         const base = nm && rel ? `${nm} (${rel})` : nm || rel;
         return base ? `${base}${desc}` : "";
       })
       .filter(Boolean)
       .join("; ");
 
-    const interestsLine = (brief.story?.interests || [])
-      .filter(Boolean)
-      .join(", ");
-
+    const interestsLine = interests.join(", ");
     const personalityLine = heroTraits.join(", ");
 
     const conceptCtx = {
@@ -361,15 +410,12 @@ Deno.serve(async (req) => {
     };
 
     const selectedFrameworkId = selectSummaryFramework(conceptCtx);
-    const userPrompt = STORY_CONCEPT_USER_TEMPLATE({
-      ...conceptCtx,
-      frameworkId: selectedFrameworkId,
-    });
+    const expectedSummaryPattern = summaryPatternForFramework(selectedFrameworkId).id;
+    const expectedTitlePattern = titlePatternForFramework(selectedFrameworkId).id;
+    const userPrompt = STORY_CONCEPT_USER_TEMPLATE({ ...conceptCtx, frameworkId: selectedFrameworkId });
 
     const firstName = String(childName).trim().split(/\s+/)[0];
-    const nameRe = firstName
-      ? new RegExp(`\\b${firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s|s')?\\b`, "i")
-      : null;
+    const nameRe = firstName ? new RegExp(`\\b${escapeRegExp(firstName)}(?:'s|s')?\\b`, "i") : null;
     const titleHasName = (t: string) => !!(nameRe && nameRe.test(t));
 
     const callModel = async (extraInstruction?: string) => {
@@ -377,16 +423,11 @@ Deno.serve(async (req) => {
         { role: "system", content: STORY_CONCEPT_SYSTEM_PROMPT },
         { role: "user", content: userPrompt },
       ];
-      if (extraInstruction) {
-        messages.push({ role: "user", content: extraInstruction });
-      }
+      if (extraInstruction) messages.push({ role: "user", content: extraInstruction });
 
       return await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
+        headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           model: MODELS.summary,
           messages,
@@ -400,58 +441,42 @@ Deno.serve(async (req) => {
               },
             },
           ],
-          tool_choice: {
-            type: "function",
-            function: { name: "return_story_concept" },
-          },
+          tool_choice: { type: "function", function: { name: "return_story_concept" } },
         }),
       });
     };
 
     let parsed: StoryConceptResult | null = null;
-    let lastBadTitle: string | null = null;
-    let lastQualityIssues: string[] = [];
+    let lastIssues: string[] = [];
     const MAX_ATTEMPTS = 3;
 
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-      const feedbackParts: string[] = [];
-      if (lastBadTitle) feedbackParts.push(TITLE_RETRY_INSTRUCTION(lastBadTitle, firstName));
-      if (lastQualityIssues.length) {
-        feedbackParts.push([
-          "The previous summary failed quality checks:",
-          ...lastQualityIssues.map((issue) => `- ${issue}`),
-          "Rewrite the user_visible_summary so personality is shown only through action, not direct descriptors.",
-          forbiddenTraitWords.length
-            ? `Do not use these exact trait words in the visible summary: ${forbiddenTraitWords.join(", ")}.`
-            : "",
-          "Avoid generic pitch language. Use concrete, visual behavior instead.",
-        ].filter(Boolean).join("\n"));
-      }
-      const feedback = feedbackParts.length ? feedbackParts.join("\n\n") : undefined;
+      const feedback = lastIssues.length
+        ? [
+          "The previous attempt failed quality checks:",
+          ...lastIssues.map((issue) => `- ${issue}`),
+          titleHasName(parsed?.title || "") ? TITLE_RETRY_INSTRUCTION(parsed?.title || "", firstName) : "",
+          `The framework must remain ${selectedFrameworkId}.`,
+          `The summary_pattern must be ${expectedSummaryPattern}.`,
+          `The title_pattern must be ${expectedTitlePattern}.`,
+          "Rewrite with fewer visible personalized details. Do not prove every wizard input was used.",
+          "Use at most two interests in the visible summary and at most one interest in the title.",
+          forbiddenTraitWords.length ? `Do not use these exact trait words in title or visible summary: ${forbiddenTraitWords.join(", ")}.` : "",
+        ].filter(Boolean).join("\n")
+        : undefined;
 
       const aiResp = await callModel(feedback);
 
       if (!aiResp.ok) {
         if (aiResp.status === 429) {
-          return new Response(
-            JSON.stringify({ error: "We're a bit busy — please try again in a moment." }),
-            { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
+          return new Response(JSON.stringify({ error: "We're a bit busy — please try again in a moment." }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         if (aiResp.status === 402) {
-          return new Response(
-            JSON.stringify({
-              error: "Out of AI credits. Please add credits in Settings → Workspace → Usage.",
-            }),
-            { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-          );
+          return new Response(JSON.stringify({ error: "Out of AI credits. Please add credits in Settings → Workspace → Usage." }), { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } });
         }
         const t = await aiResp.text();
         console.error("AI gateway error", aiResp.status, t);
-        return new Response(JSON.stringify({ error: "AI gateway error" }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return new Response(JSON.stringify({ error: "AI gateway error" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       const data = await aiResp.json();
@@ -459,43 +484,42 @@ Deno.serve(async (req) => {
       const argsStr = toolCall?.function?.arguments;
       if (!argsStr) {
         console.error("No tool call in AI response", JSON.stringify(data));
-        return new Response(
-          JSON.stringify({ error: "Model did not return a structured story concept." }),
-          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } },
-        );
+        return new Response(JSON.stringify({ error: "Model did not return a structured story concept." }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
       }
 
       const candidate = JSON.parse(argsStr) as StoryConceptResult;
       const candidateTitle = String(candidate.title || "").slice(0, 80).trim();
       const candidateSummary = String(candidate.user_visible_summary || candidate.summary || "").trim();
-      const qualityIssues = findSummaryQualityIssues(candidateSummary, forbiddenTraitWords, childName);
-      const badTitle = titleHasName(candidateTitle);
+
+      const issues = [
+        ...findTitleQualityIssues(candidateTitle, forbiddenTraitWords, childName, interests),
+        ...findSummaryQualityIssues(candidateSummary, forbiddenTraitWords, childName, interests),
+      ];
+      if ((candidate.framework_id || selectedFrameworkId) !== selectedFrameworkId) issues.push("framework changed from selected framework");
+      if ((candidate.summary_pattern || expectedSummaryPattern) !== expectedSummaryPattern) issues.push("wrong summary pattern");
+      if ((candidate.title_pattern || expectedTitlePattern) !== expectedTitlePattern) issues.push("wrong title pattern");
 
       parsed = {
         ...candidate,
         title: candidateTitle,
-        framework_id: candidate.framework_id || selectedFrameworkId,
+        framework_id: selectedFrameworkId,
+        summary_pattern: expectedSummaryPattern,
+        title_pattern: expectedTitlePattern,
       };
 
-      if (!badTitle && qualityIssues.length === 0) {
+      if (issues.length === 0) {
         console.log(`Summary validated on attempt ${attempt}: "${candidateTitle}"`);
         break;
       }
 
-      if (badTitle) {
-        console.warn(`Attempt ${attempt}: title "${candidateTitle}" contains "${firstName}" — re-prompting.`);
-        lastBadTitle = candidateTitle;
-      }
-      if (qualityIssues.length) {
-        console.warn(`Attempt ${attempt}: summary failed quality checks: ${qualityIssues.join("; ")}`);
-        lastQualityIssues = qualityIssues;
-      }
+      console.warn(`Attempt ${attempt}: story concept failed quality checks: ${Array.from(new Set(issues)).join("; ")}`);
+      lastIssues = Array.from(new Set(issues));
     }
 
     let cleanTitle = String(parsed?.title || "").slice(0, 80);
     if (nameRe && titleHasName(cleanTitle)) {
       console.warn(`All ${MAX_ATTEMPTS} attempts violated title rule. Scrubbing "${cleanTitle}".`);
-      const stripRe = new RegExp(`\\b${firstName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}(?:'s|s')?\\b`, "gi");
+      const stripRe = new RegExp(`\\b${escapeRegExp(firstName)}(?:'s|s')?\\b`, "gi");
       cleanTitle = cleanTitle
         .replace(stripRe, "")
         .replace(/\s+(and|&)\s+the\b/i, " The")
@@ -503,7 +527,7 @@ Deno.serve(async (req) => {
         .replace(/\s{2,}/g, " ")
         .replace(/\s+([,.!?;:])/g, "$1")
         .trim();
-      if (!cleanTitle) cleanTitle = "A Brave Little Spark";
+      if (!cleanTitle) cleanTitle = titlePatternForFramework(selectedFrameworkId).examples[0] || "The Little Spark";
     }
 
     const userVisibleSummary = String(parsed?.user_visible_summary || parsed?.summary || "");
@@ -513,7 +537,9 @@ Deno.serve(async (req) => {
         title: cleanTitle,
         summary: userVisibleSummary,
         user_visible_summary: userVisibleSummary,
-        framework_id: parsed?.framework_id || selectedFrameworkId,
+        framework_id: selectedFrameworkId,
+        summary_pattern: expectedSummaryPattern,
+        title_pattern: expectedTitlePattern,
         framework_reason: parsed?.framework_reason || "Selected from wizard story preferences.",
         story_seed: parsed?.story_seed,
         personalization_notes: parsed?.personalization_notes,
@@ -524,9 +550,6 @@ Deno.serve(async (req) => {
   } catch (e) {
     console.error("generate-summary error", e);
     const msg = e instanceof Error ? e.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(JSON.stringify({ error: msg }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
