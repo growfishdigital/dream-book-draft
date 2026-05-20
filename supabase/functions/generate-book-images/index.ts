@@ -296,9 +296,15 @@ async function generatePages(
       : `Use Image #1 as the canonical character appearance reference (face, hair, body, outfit).`;
 
   let completed = done.size;
+  let consecutiveFailures = 0;
+  let lastError: string | undefined;
 
   for (const page of targets) {
     if (done.has(page.page_number)) continue;
+    if (Date.now() > deadline) {
+      // Out of time budget; let the chained invocation pick up the rest.
+      break;
+    }
     const promptText = `${anchorPreamble}\n\n${page.image_prompt}`;
     const userContent: any[] = [{ type: "text", text: promptText }];
     for (const url of references) {
@@ -312,13 +318,19 @@ async function generatePages(
         prompt: promptText, image_data_url: url,
         status: "ok", generated_ms: Date.now() - started,
       });
+      consecutiveFailures = 0;
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error(`Page ${page.page_number} failed:`, msg);
+      lastError = msg;
+      consecutiveFailures += 1;
       await upsertImage(supabase, {
         book_id: bookId, kind: "page", slot: page.page_number,
         prompt: promptText, status: "failed", error: msg,
       });
+      if (consecutiveFailures >= MAX_CONSECUTIVE_PAGE_FAILURES) {
+        return { remaining: -1, fatal: `Page generation aborted after ${consecutiveFailures} consecutive failures. Last error: ${msg}` };
+      }
     }
     completed += 1;
     await setPipeline(supabase, bookId, "pages", {
@@ -326,7 +338,20 @@ async function generatePages(
       message: `Painting page ${Math.min(completed + 1, total)} of ${total}…`,
     });
   }
+
+  // Recompute remaining from DB to be authoritative.
+  const { data: after } = await supabase
+    .from("book_images")
+    .select("slot,status")
+    .eq("book_id", bookId)
+    .eq("kind", "page");
+  const okSlots = new Set<number>(
+    (after || []).filter((r: any) => r.status === "ok").map((r: any) => r.slot),
+  );
+  const remaining = targets.filter((p: any) => !okSlots.has(p.page_number)).length;
+  return { remaining, fatal: undefined };
 }
+
 
 // ---- Handler -----------------------------------------------------------
 
