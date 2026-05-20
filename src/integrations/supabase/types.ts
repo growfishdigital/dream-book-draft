@@ -14,9 +14,56 @@ export type Database = {
   }
   public: {
     Tables: {
+      book_images: {
+        Row: {
+          book_id: string
+          created_at: string
+          drive_file_id: string | null
+          drive_file_url: string | null
+          error: string | null
+          generated_ms: number | null
+          id: string
+          image_data_url: string | null
+          kind: string
+          prompt: string | null
+          slot: number
+          status: string
+        }
+        Insert: {
+          book_id: string
+          created_at?: string
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          error?: string | null
+          generated_ms?: number | null
+          id?: string
+          image_data_url?: string | null
+          kind: string
+          prompt?: string | null
+          slot: number
+          status?: string
+        }
+        Update: {
+          book_id?: string
+          created_at?: string
+          drive_file_id?: string | null
+          drive_file_url?: string | null
+          error?: string | null
+          generated_ms?: number | null
+          id?: string
+          image_data_url?: string | null
+          kind?: string
+          prompt?: string | null
+          slot?: number
+          status?: string
+        }
+        Relationships: []
+      }
       generated_books: {
         Row: {
           brief: Json
+          buyer_email: string | null
+          buyer_name: string | null
           created_at: string
           drive_doc_id: string | null
           drive_doc_url: string | null
@@ -29,12 +76,17 @@ export type Database = {
           id: string
           model: string
           parsed: Json | null
+          pipeline_error: string | null
+          pipeline_progress: Json | null
+          pipeline_status: string
           prompt_hash: string | null
           raw_output: string | null
           status: string
         }
         Insert: {
           brief: Json
+          buyer_email?: string | null
+          buyer_name?: string | null
           created_at?: string
           drive_doc_id?: string | null
           drive_doc_url?: string | null
@@ -47,12 +99,17 @@ export type Database = {
           id?: string
           model: string
           parsed?: Json | null
+          pipeline_error?: string | null
+          pipeline_progress?: Json | null
+          pipeline_status?: string
           prompt_hash?: string | null
           raw_output?: string | null
           status?: string
         }
         Update: {
           brief?: Json
+          buyer_email?: string | null
+          buyer_name?: string | null
           created_at?: string
           drive_doc_id?: string | null
           drive_doc_url?: string | null
@@ -65,6 +122,9 @@ export type Database = {
           id?: string
           model?: string
           parsed?: Json | null
+          pipeline_error?: string | null
+          pipeline_progress?: Json | null
+          pipeline_status?: string
           prompt_hash?: string | null
           raw_output?: string | null
           status?: string

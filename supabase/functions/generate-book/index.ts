@@ -262,7 +262,12 @@ Deno.serve(async (req) => {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
     const body = await req.json();
-    const brief = body.brief || {};
+    const rawBrief = body.brief || {};
+    // Stamp the buyer info onto the brief so the Drive exporter (which keys
+    // its folder names off brief.buyer_name) picks it up.
+    const buyer_name: string | undefined = body.buyer_name || rawBrief.buyer_name;
+    const buyer_email: string | undefined = body.buyer_email || rawBrief.buyer_email;
+    const brief = { ...rawBrief, buyer_name, buyer_email };
     const revision_note: string | undefined = body.revision_note || undefined;
     const model: string = body.modelOverride || MODELS.book;
 
@@ -437,6 +442,10 @@ Deno.serve(async (req) => {
         prompt_hash: promptHash,
         generation_ms,
         status: validation.valid ? "ok" : "needs_review",
+        buyer_name: buyer_name || null,
+        buyer_email: buyer_email || null,
+        pipeline_status: "portraits",
+        pipeline_progress: { stage: "story", current: 1, total: 1, message: "Story written." },
       })
       .select("id")
       .single();
