@@ -1,50 +1,34 @@
-# Refresh the 4 illustration styles
+# Make Cozy Gouache more painterly and colorful
 
-Replace all four art-style options on Step 6 with new names, slugs, descriptions, emojis, and detailed prompts. Generate fresh thumbnails from the new prompts. Add a legacy alias map so any in-flight wizard state (or the existing `storybook-soft` backend default) keeps working.
+The current prompt is overcorrecting toward "muted desaturated earth tones" and "sepia-toned ink outlines visible throughout every element" — that produces the washed-out, brown-dominant result you're seeing. The reference image actually has gently saturated reds/blues/greens, loose painterly brush strokes, and only minimal linework. We rewrite the prompt to match that.
 
-## The four new styles
+## What changes in the prompt
 
-| Slot | Old slug → New slug | New label | Emoji |
-|---|---|---|---|
-| 1 | `watercolor` → `cozy-gouache` | Cozy Gouache | 🎨 |
-| 2 | `cozy-sketch` → `geometric-pop` | Geometric Pop | 🔷 |
-| 3 | `bold-bright` → `papercraft-collage` | Papercraft Collage | 📜 |
-| 4 | `dreamy-pastel` → `hand-drawn-charm` | Hand-Drawn Charm | ✏️ |
+**Loosen the palette** (was: strict muted earth tones only)
+→ "warm, gently saturated storybook palette — soft reds, mustard yellows, bright leaf greens, sky blues, terracotta, warm browns — anchored by a warm cream/butter paper ground. Avoid neon and over-saturation, but the image should read as colorful and inviting, not sepia or washed out."
 
-Each gets the full descriptive prompt you sent (medium, palette, texture, character features, negatives) wired in as a single fragment string — that fragment is what `generate-cover`, `generate-character-portrait`, and `generate-book-images` inject into their image prompts.
+**Add explicit painterly direction** (was barely mentioned)
+→ "loose visible gouache and watercolor brush strokes, dappled leaf dabs, painterly washes with soft expressive edges, hand-painted texture throughout backgrounds and clothing, brushwork clearly visible — not flat or digitally smooth."
 
-## Files to change
+**Soften the linework rule** (was: visible throughout every element)
+→ "minimal soft brown linework only where needed for character features and a few key edges; most forms are defined by painted shape and color, not outline. No bold black ink outlines and no heavy sepia overlay."
 
-1. **`src/lib/artStyles.ts`** — replace the `ART_STYLES` array with the four new entries (label, value=new slug, emoji, desc, prompt, preview path).
-2. **`supabase/functions/_shared/prompts.ts`** — replace the four entries in `ART_STYLE_PROMPTS` with the new slugs + matching prompts. Keep `storybook-soft` (backend-only fallback). Update the `getArtStylePrompt` default fallback from `watercolor` → `cozy-gouache`.
-3. **Legacy alias map** (new, small) — in `prompts.ts` and mirrored in `artStyles.ts`:
-   - `watercolor` → `cozy-gouache`
-   - `cozy-sketch` → `geometric-pop`
-   - `bold-bright` → `papercraft-collage`
-   - `dreamy-pastel` → `hand-drawn-charm`
-   - `storybook-soft` → `cozy-gouache` (closest match for the backend fallback)
-   `getArtStylePrompt(value)` resolves through the alias map before lookup so any stored state, default mapping, or in-flight book still renders.
-4. **`src/pages/steps/Step6ArtStyle.tsx`** — update `getDefaultArtStyle(genre)` to point at the new slugs (same genre buckets):
-   - adventure / superhero / sports → `geometric-pop`
-   - bedtime / everyday → `hand-drawn-charm`
-   - fantasy / fairy-tale → `cozy-gouache`
-   - default → `papercraft-collage`
-5. **`public/art-styles/*.jpg`** — generate four new 2:3 thumbnails (one per style) using each new prompt with a consistent subject ("a small child sitting under a tree with a small animal companion") so the picker shows true differentiation. Saved as:
-   - `public/art-styles/cozy-gouache.jpg`
-   - `public/art-styles/geometric-pop.jpg`
-   - `public/art-styles/papercraft-collage.jpg`
-   - `public/art-styles/hand-drawn-charm.jpg`
-   Old files (`watercolor.jpg`, etc.) get deleted to avoid stale references.
+**Keep what's working**: cold-pressed paper grain, soft pigment bleeds, character recipe (rounded contours, tiny widely-spaced dot eyes, subtle curved mouth, symmetrical rosy cheek patches), vintage rustic clothing, nostalgic mood.
+
+## Files to update
+
+1. `src/lib/artStyles.ts` — replace the `cozy-gouache` entry's `prompt` field.
+2. `supabase/functions/_shared/prompts.ts` — replace `ART_STYLE_PROMPTS["cozy-gouache"]` with the exact same string (the two must stay in sync).
+3. `public/art-styles/cozy-gouache.jpg` — regenerate the thumbnail with the new prompt (same subject: child + sleeping cat under a tree) so the Step 6 picker matches what the model will actually paint.
+4. Deploy `generate-cover`, `generate-character-portrait`, `generate-book-images`, and `generate-book` so the new fragment takes effect for both the wizard preview cover and any full-book run.
 
 ## Out of scope
 
-- No changes to Step 6 UI/layout, the 2-column grid, or the "we pre-selected the best style" copy.
-- No changes to `generate-cover` / `generate-character-portrait` / `generate-book-images` — they consume `getArtStylePrompt()` and pick up the new prompts automatically.
-- No DB migration needed (art style is a wizard-state string, not a stored column with a check constraint).
+- No code/logic changes — only the prompt string and the thumbnail.
+- The other three styles (Geometric Pop, Papercraft Collage, Hand-Drawn Charm) are not touched.
+- No changes to the alias map or default-by-genre mapping.
 
 ## Verification
 
-- Load `/step/6-art-style` and confirm all four new cards render with new labels, emojis, descriptions, and the freshly generated thumbnails.
-- Click each card → continue → confirm the brief carries the new slug.
-- Spot-check `getArtStylePrompt("watercolor")` resolves to the `cozy-gouache` prompt (alias works).
-- Trigger a cover gen on one new style and confirm the image visibly matches the new prompt direction.
+- Open `/step/6-art-style` and confirm the Cozy Gouache card shows the new, more colorful and painterly thumbnail.
+- Generate a cover with Cozy Gouache selected and confirm it reads as painterly + warm + gently colorful (not sepia-washed).
