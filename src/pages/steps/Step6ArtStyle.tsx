@@ -4,11 +4,12 @@ import { useWizard } from "@/contexts/WizardContext";
 import { ART_STYLES } from "@/lib/artStyles";
 
 function getDefaultArtStyle(genre: string): string {
-  if (["adventure", "superhero", "sports"].includes(genre)) return "bold-bright";
-  if (["bedtime", "everyday"].includes(genre)) return "dreamy-pastel";
-  if (["fantasy", "fairy-tale"].includes(genre)) return "watercolor";
-  return "cozy-sketch";
+  if (["adventure", "superhero", "sports"].includes(genre)) return "geometric-pop";
+  if (["bedtime", "everyday"].includes(genre)) return "hand-drawn-charm";
+  if (["fantasy", "fairy-tale"].includes(genre)) return "cozy-gouache";
+  return "papercraft-collage";
 }
+
 
 export default function Step7() {
   const { answers, setAnswer, setCanContinue } = useWizard();
