@@ -1,78 +1,50 @@
-## What's going wrong
+# Refresh the 4 illustration styles
 
-When you hit "purchase," `Step10Preview` calls the `generate-book` edge function with:
+Replace all four art-style options on Step 6 with new names, slugs, descriptions, emojis, and detailed prompts. Generate fresh thumbnails from the new prompts. Add a legacy alias map so any in-flight wizard state (or the existing `storybook-soft` backend default) keeps working.
 
-- `brief` — built by `buildBrief`, which currently includes raw uploaded reference photos as base64 `data:` URLs (`protagonist.photos`, `protagonist.photoDataUrl`, `supportingCharacters[].photos`, possibly `specialThing.details.photo`).
-- `seed_portrait_data_url` — the generated hero portrait, also a base64 `data:` URL (~1–3 MB).
+## The four new styles
 
-Edge logs confirm it: the request returns HTTP **546** ("WORKER_LIMIT — Memory limit exceeded") and the function dies before it can even insert the stub row. Recent successful rows had `brief` sizes of **7.6 MB** and **0.5 MB**; the new request is even bigger because we now also pass `seed_portrait_data_url` alongside. Edge runtime memory ceiling is ~150 MB, but JSON parsing + multiple in-memory copies (`brief`, `_engine_input`, stub insert payload, AI request body) multiply that several times over.
+| Slot | Old slug → New slug | New label | Emoji |
+|---|---|---|---|
+| 1 | `watercolor` → `cozy-gouache` | Cozy Gouache | 🎨 |
+| 2 | `cozy-sketch` → `geometric-pop` | Geometric Pop | 🔷 |
+| 3 | `bold-bright` → `papercraft-collage` | Papercraft Collage | 📜 |
+| 4 | `dreamy-pastel` → `hand-drawn-charm` | Hand-Drawn Charm | ✏️ |
 
-None of this base64 data is needed by `generate-book`. The text model never sees the photos, and the seed portrait is only forwarded to `generate-book-images` later.
+Each gets the full descriptive prompt you sent (medium, palette, texture, character features, negatives) wired in as a single fragment string — that fragment is what `generate-cover`, `generate-character-portrait`, and `generate-book-images` inject into their image prompts.
 
-## Fix — strip base64 at the edge of `generate-book`
+## Files to change
 
-Keep the change tightly scoped to `generate-book`; don't touch the client or `generate-book-images` behavior.
-
-1. **Add a `stripDataUrls(value)` helper** in `generate-book/index.ts` that walks the brief and replaces any string starting with `data:` (or any field literally named `photo`, `photos`, `photoDataUrl`) with `null`. Recursive, runs over arrays + objects.
-2. **Apply it before anything else:**
-   - Run on `rawBrief` immediately after parsing the request body. Use the stripped version everywhere (mapping to `engineInput`, building the approved-concept instruction, inserting into `generated_books.brief`).
-   - Drop `seed_portrait_data_url` from the stub insert payload entirely — it's only kept in the in-memory closure and passed to the `generate-book-images` invoke at the end.
-3. **Guard the forwarded seed portrait too**: if `seed_portrait_data_url` is over, say, 4 MB, log a warning and pass it through anyway (generate-book-images already accepts large bodies fine in current logs — only generate-book is dying because it does additional heavy work). This is just a canary, not a hard cap.
-4. **Don't store `_engine_input`** in the persisted `brief` jsonb — it duplicates the trimmed brief and balloons row size. It's only a debugging aid; if we want it, we can recompute. Remove the `_engine_input: engineInput` spread from the stub insert.
-
-That's it. No schema migration, no storage bucket, no client changes.
-
-## Technical details
-
-Touched file: `supabase/functions/generate-book/index.ts`
-
-```ts
-function stripDataUrls<T>(value: T): T {
-  if (value == null) return value;
-  if (typeof value === "string") {
-    return (value.startsWith("data:") ? null : value) as any;
-  }
-  if (Array.isArray(value)) {
-    return value.map(stripDataUrls) as any;
-  }
-  if (typeof value === "object") {
-    const out: Record<string, unknown> = {};
-    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      if (k === "photo" || k === "photos" || k === "photoDataUrl") {
-        out[k] = null;
-        continue;
-      }
-      out[k] = stripDataUrls(v);
-    }
-    return out as any;
-  }
-  return value;
-}
-```
-
-In the handler:
-
-```ts
-const body = await req.json();
-const rawBrief = stripDataUrls(body.brief || {});
-// ...existing buyer_name/email merge...
-const brief = { ...rawBrief, buyer_name, buyer_email };
-```
-
-And in the stub insert:
-
-```ts
-brief: { ...brief, approvedConcept },   // drop _engine_input
-```
-
-## Smoke test after the fix
-
-1. Deploy `generate-book`.
-2. From the wizard, trigger purchase. Expect the request to return 202 with `{ id, queued: true }` instead of 546.
-3. Poll `generated_books` for that id: `pipeline_status` should advance `story → portraits → pages → done`.
-4. Confirm `length(brief::text)` for the new row is small (< ~50 KB), proving stripping worked.
+1. **`src/lib/artStyles.ts`** — replace the `ART_STYLES` array with the four new entries (label, value=new slug, emoji, desc, prompt, preview path).
+2. **`supabase/functions/_shared/prompts.ts`** — replace the four entries in `ART_STYLE_PROMPTS` with the new slugs + matching prompts. Keep `storybook-soft` (backend-only fallback). Update the `getArtStylePrompt` default fallback from `watercolor` → `cozy-gouache`.
+3. **Legacy alias map** (new, small) — in `prompts.ts` and mirrored in `artStyles.ts`:
+   - `watercolor` → `cozy-gouache`
+   - `cozy-sketch` → `geometric-pop`
+   - `bold-bright` → `papercraft-collage`
+   - `dreamy-pastel` → `hand-drawn-charm`
+   - `storybook-soft` → `cozy-gouache` (closest match for the backend fallback)
+   `getArtStylePrompt(value)` resolves through the alias map before lookup so any stored state, default mapping, or in-flight book still renders.
+4. **`src/pages/steps/Step6ArtStyle.tsx`** — update `getDefaultArtStyle(genre)` to point at the new slugs (same genre buckets):
+   - adventure / superhero / sports → `geometric-pop`
+   - bedtime / everyday → `hand-drawn-charm`
+   - fantasy / fairy-tale → `cozy-gouache`
+   - default → `papercraft-collage`
+5. **`public/art-styles/*.jpg`** — generate four new 2:3 thumbnails (one per style) using each new prompt with a consistent subject ("a small child sitting under a tree with a small animal companion") so the picker shows true differentiation. Saved as:
+   - `public/art-styles/cozy-gouache.jpg`
+   - `public/art-styles/geometric-pop.jpg`
+   - `public/art-styles/papercraft-collage.jpg`
+   - `public/art-styles/hand-drawn-charm.jpg`
+   Old files (`watercolor.jpg`, etc.) get deleted to avoid stale references.
 
 ## Out of scope
 
-- Cover vs portrait visual divergence — separate issue; the user noted outfit matches, which is the part this engine controls. We can revisit cover prompting after this fix lands.
-- Moving portraits into a storage bucket — nice-to-have but not needed; stripping fixes the immediate crash.
+- No changes to Step 6 UI/layout, the 2-column grid, or the "we pre-selected the best style" copy.
+- No changes to `generate-cover` / `generate-character-portrait` / `generate-book-images` — they consume `getArtStylePrompt()` and pick up the new prompts automatically.
+- No DB migration needed (art style is a wizard-state string, not a stored column with a check constraint).
+
+## Verification
+
+- Load `/step/6-art-style` and confirm all four new cards render with new labels, emojis, descriptions, and the freshly generated thumbnails.
+- Click each card → continue → confirm the brief carries the new slug.
+- Spot-check `getArtStylePrompt("watercolor")` resolves to the `cozy-gouache` prompt (alias works).
+- Trigger a cover gen on one new style and confirm the image visibly matches the new prompt direction.
