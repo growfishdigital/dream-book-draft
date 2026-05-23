@@ -24,13 +24,28 @@ export interface CharacterPortraitState {
   sourceHash?: string;
 }
 
-function computeSourceHash(firstPhoto: string | undefined, artStyle: string | undefined): string {
-  if (!firstPhoto) return "";
-  // Cheap, stable-enough fingerprint. Photo data URLs are huge; the head +
-  // length is plenty for change detection within a session.
-  const head = firstPhoto.slice(0, 96);
-  const tail = firstPhoto.slice(-32);
-  return `${head.length}|${firstPhoto.length}|${tail}|${artStyle || ""}`;
+function computeSourceHash(
+  firstPhoto: string | undefined,
+  artStyle: string | undefined,
+  proto?: any,
+): string {
+  if (firstPhoto) {
+    const head = firstPhoto.slice(0, 96);
+    const tail = firstPhoto.slice(-32);
+    return `p:${head.length}|${firstPhoto.length}|${tail}|${artStyle || ""}`;
+  }
+  // No photo: hash based on the descriptive fields we'll send to the model.
+  if (!proto?.name) return "";
+  const app = proto?.appearance || {};
+  const traits = Array.isArray(proto?.traits)
+    ? proto.traits.map((t: any) => t?.word).filter(Boolean).join(",")
+    : "";
+  const sig = [
+    proto?.name, proto?.age, proto?.gender, proto?.special,
+    app.hairColor, app.hairStyle, app.skinTone, app.glasses ? "g" : "",
+    app.features, traits, artStyle || "",
+  ].join("|");
+  return `i:${sig}`;
 }
 
 export function useCharacterPortrait() {
@@ -48,7 +63,7 @@ export function useCharacterPortrait() {
   const photos: string[] = Array.isArray(proto.photos) ? proto.photos : [];
   const firstPhoto = photos[0];
   const artStyle: string | undefined = answers.artStyle;
-  const sourceHash = computeSourceHash(firstPhoto, artStyle);
+  const sourceHash = computeSourceHash(firstPhoto, artStyle, proto);
 
   const abortRef = useRef<AbortController | null>(null);
   const inflightHashRef = useRef<string | null>(null);
@@ -61,13 +76,13 @@ export function useCharacterPortrait() {
         ? protoNowAtStart.photos
         : [];
       const firstPhotoAtStart = photosNowAtStart[0];
+      const hasPhotoAtStart =
+        !!firstPhotoAtStart && String(firstPhotoAtStart).startsWith("data:image/");
 
-      // Do not generate a placeholder/generic portrait. If the latest wizard
-      // state does not include a real uploaded photo yet, wait for state to
-      // settle and let the auto-trigger run again.
-      if (!firstPhotoAtStart || !String(firstPhotoAtStart).startsWith("data:image/")) {
-        return;
-      }
+      // We allow firing without a photo (imagined hero), but we still need
+      // at least a name to anchor the portrait. If the wizard is still empty,
+      // bail and let the auto-trigger re-fire once state arrives.
+      if (!hasPhotoAtStart && !protoNowAtStart?.name) return;
 
       // Cancel any in-flight call.
       abortRef.current?.abort();
@@ -90,60 +105,66 @@ export function useCharacterPortrait() {
         // ---- Step 1: vision pre-pass to extract appearance traits ----
         // Only fills blanks; never overwrites traits the user manually set.
         // Cached per source hash so we don't re-call on portrait regenerate.
+        // Skipped entirely when no photo was uploaded.
         const protoNow = (currentAnswers.protagonist as any) || {};
         const photosNow: string[] = Array.isArray(protoNow.photos) ? protoNow.photos : [];
         const firstPhotoNow = photosNow[0];
-        if (!firstPhotoNow || !String(firstPhotoNow).startsWith("data:image/")) return;
+        const hasPhotoNow =
+          !!firstPhotoNow && String(firstPhotoNow).startsWith("data:image/");
 
         let mergedAppearance: Record<string, any> =
           (protoNow.appearance as Record<string, any>) || {};
-        const cachedHash: string | undefined = currentAnswers.appearanceAutofillHash;
-        const baseHash = forceHash.split("|r")[0];
 
-        if (cachedHash !== baseHash) {
-          try {
-            const { data: traitData } = await supabase.functions.invoke(
-              "extract-appearance-traits",
-              { body: { photoDataUrl: firstPhotoNow } },
-            );
-            if (ctrl.signal.aborted) return;
-            const t = (traitData?.traits ?? {}) as Record<string, any>;
-            const current = mergedAppearance;
-            const onlyIfBlank = (cur: any, val: any) =>
-              cur && String(cur).trim() ? cur : val || "";
-            const featuresExtra = [
-              t.distinguishing,
-              t.eye_color ? `${t.eye_color} eyes` : "",
-            ].filter(Boolean).join(", ");
-            const next = {
-              hairColor: onlyIfBlank(current.hairColor, t.hair_color),
-              hairStyle: onlyIfBlank(
-                current.hairStyle,
-                t.hair_length || t.hair_style,
-              ),
-              skinTone: onlyIfBlank(current.skinTone, t.skin_tone),
-              glasses:
-                typeof current.glasses === "boolean" && current.glasses
-                  ? true
-                  : !!t.glasses,
-              features:
-                current.features && String(current.features).trim()
-                  ? current.features
-                  : featuresExtra,
-            };
-            mergedAppearance = next;
-            const nextAnswers = latestAnswersRef.current;
-            latestAnswersRef.current = {
-              ...nextAnswers,
-              protagonist: { ...protoNow, appearance: next },
-              appearanceAutofillHash: baseHash,
-            };
-            setAnswer("protagonist", { ...protoNow, appearance: next });
-            setAnswer("appearanceAutofillHash", baseHash);
-          } catch (traitErr) {
-            console.warn("appearance trait extraction failed", traitErr);
+        if (hasPhotoNow) {
+          const cachedHash: string | undefined = currentAnswers.appearanceAutofillHash;
+          const baseHash = forceHash.split("|r")[0];
+
+          if (cachedHash !== baseHash) {
+            try {
+              const { data: traitData } = await supabase.functions.invoke(
+                "extract-appearance-traits",
+                { body: { photoDataUrl: firstPhotoNow } },
+              );
+              if (ctrl.signal.aborted) return;
+              const t = (traitData?.traits ?? {}) as Record<string, any>;
+              const current = mergedAppearance;
+              const onlyIfBlank = (cur: any, val: any) =>
+                cur && String(cur).trim() ? cur : val || "";
+              const featuresExtra = [
+                t.distinguishing,
+                t.eye_color ? `${t.eye_color} eyes` : "",
+              ].filter(Boolean).join(", ");
+              const next = {
+                hairColor: onlyIfBlank(current.hairColor, t.hair_color),
+                hairStyle: onlyIfBlank(
+                  current.hairStyle,
+                  t.hair_length || t.hair_style,
+                ),
+                skinTone: onlyIfBlank(current.skinTone, t.skin_tone),
+                glasses:
+                  typeof current.glasses === "boolean" && current.glasses
+                    ? true
+                    : !!t.glasses,
+                features:
+                  current.features && String(current.features).trim()
+                    ? current.features
+                    : featuresExtra,
+              };
+              mergedAppearance = next;
+              const nextAnswers = latestAnswersRef.current;
+              latestAnswersRef.current = {
+                ...nextAnswers,
+                protagonist: { ...protoNow, appearance: next },
+                appearanceAutofillHash: baseHash,
+              };
+              setAnswer("protagonist", { ...protoNow, appearance: next });
+              setAnswer("appearanceAutofillHash", baseHash);
+            } catch (traitErr) {
+              console.warn("appearance trait extraction failed", traitErr);
+            }
           }
         }
+
 
         // ---- Step 2: portrait generation ----
         // Build brief from a snapshot that includes the freshest answers and
@@ -187,26 +208,22 @@ export function useCharacterPortrait() {
     [setAnswer],
   );
 
-  // Auto-trigger on first photo / art-style change.
+  // Auto-trigger on hero info / art-style / photo change.
   useEffect(() => {
-    if (!firstPhoto) return;
-    if (!String(firstPhoto).startsWith("data:image/")) return;
     if (!sourceHash) return;
     if (portrait.sourceHash === sourceHash && portrait.status !== "idle") return;
     if (inflightHashRef.current === sourceHash) return;
     void run(sourceHash);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourceHash, firstPhoto]);
+  }, [sourceHash]);
 
   const regenerate = useCallback(() => {
     const latest = latestAnswersRef.current;
     const latestProto = (latest.protagonist as any) || {};
     const latestPhotos: string[] = Array.isArray(latestProto.photos) ? latestProto.photos : [];
     const latestFirstPhoto = latestPhotos[0];
-    const latestSourceHash = computeSourceHash(latestFirstPhoto, latest.artStyle);
-    if (!latestFirstPhoto || !String(latestFirstPhoto).startsWith("data:image/")) return;
+    const latestSourceHash = computeSourceHash(latestFirstPhoto, latest.artStyle, latestProto);
     if (!latestSourceHash) return;
-    // Force a fresh call even if sourceHash matches.
     void run(latestSourceHash + "|r" + Date.now());
   }, [run]);
 
