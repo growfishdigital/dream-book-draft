@@ -208,26 +208,22 @@ export function useCharacterPortrait() {
     [setAnswer],
   );
 
-  // Auto-trigger on first photo / art-style change.
+  // Auto-trigger on hero info / art-style / photo change.
   useEffect(() => {
-    if (!firstPhoto) return;
-    if (!String(firstPhoto).startsWith("data:image/")) return;
     if (!sourceHash) return;
     if (portrait.sourceHash === sourceHash && portrait.status !== "idle") return;
     if (inflightHashRef.current === sourceHash) return;
     void run(sourceHash);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sourceHash, firstPhoto]);
+  }, [sourceHash]);
 
   const regenerate = useCallback(() => {
     const latest = latestAnswersRef.current;
     const latestProto = (latest.protagonist as any) || {};
     const latestPhotos: string[] = Array.isArray(latestProto.photos) ? latestProto.photos : [];
     const latestFirstPhoto = latestPhotos[0];
-    const latestSourceHash = computeSourceHash(latestFirstPhoto, latest.artStyle);
-    if (!latestFirstPhoto || !String(latestFirstPhoto).startsWith("data:image/")) return;
+    const latestSourceHash = computeSourceHash(latestFirstPhoto, latest.artStyle, latestProto);
     if (!latestSourceHash) return;
-    // Force a fresh call even if sourceHash matches.
     void run(latestSourceHash + "|r" + Date.now());
   }, [run]);
 
