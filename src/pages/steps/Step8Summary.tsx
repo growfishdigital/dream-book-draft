@@ -9,6 +9,7 @@ import { summaryMessages, portraitMessages, useRotatingMessage } from "@/lib/loa
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
+import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
 
 type StoryConcept = {
   title?: string;
