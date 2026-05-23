@@ -76,13 +76,13 @@ export function useCharacterPortrait() {
         ? protoNowAtStart.photos
         : [];
       const firstPhotoAtStart = photosNowAtStart[0];
+      const hasPhotoAtStart =
+        !!firstPhotoAtStart && String(firstPhotoAtStart).startsWith("data:image/");
 
-      // Do not generate a placeholder/generic portrait. If the latest wizard
-      // state does not include a real uploaded photo yet, wait for state to
-      // settle and let the auto-trigger run again.
-      if (!firstPhotoAtStart || !String(firstPhotoAtStart).startsWith("data:image/")) {
-        return;
-      }
+      // We allow firing without a photo (imagined hero), but we still need
+      // at least a name to anchor the portrait. If the wizard is still empty,
+      // bail and let the auto-trigger re-fire once state arrives.
+      if (!hasPhotoAtStart && !protoNowAtStart?.name) return;
 
       // Cancel any in-flight call.
       abortRef.current?.abort();
@@ -105,10 +105,17 @@ export function useCharacterPortrait() {
         // ---- Step 1: vision pre-pass to extract appearance traits ----
         // Only fills blanks; never overwrites traits the user manually set.
         // Cached per source hash so we don't re-call on portrait regenerate.
+        // Skipped entirely when no photo was uploaded.
         const protoNow = (currentAnswers.protagonist as any) || {};
         const photosNow: string[] = Array.isArray(protoNow.photos) ? protoNow.photos : [];
         const firstPhotoNow = photosNow[0];
-        if (!firstPhotoNow || !String(firstPhotoNow).startsWith("data:image/")) return;
+        const hasPhotoNow =
+          !!firstPhotoNow && String(firstPhotoNow).startsWith("data:image/");
+
+        let mergedAppearance: Record<string, any> =
+          (protoNow.appearance as Record<string, any>) || {};
+
+        if (hasPhotoNow) {
 
         let mergedAppearance: Record<string, any> =
           (protoNow.appearance as Record<string, any>) || {};
