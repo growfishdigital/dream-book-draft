@@ -63,7 +63,7 @@ export function useCharacterPortrait() {
   const photos: string[] = Array.isArray(proto.photos) ? proto.photos : [];
   const firstPhoto = photos[0];
   const artStyle: string | undefined = answers.artStyle;
-  const sourceHash = computeSourceHash(firstPhoto, artStyle);
+  const sourceHash = computeSourceHash(firstPhoto, artStyle, proto);
 
   const abortRef = useRef<AbortController | null>(null);
   const inflightHashRef = useRef<string | null>(null);
