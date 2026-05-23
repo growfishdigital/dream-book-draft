@@ -193,54 +193,87 @@ export default function Step10Summary() {
 
       <main className="flex-1 flex justify-center px-4 pt-8 pb-32">
         <div className="w-full" style={{ maxWidth: "700px" }}>
-          {portrait.hasPhoto && portrait.status !== "idle" && (
-            <div className="mb-6 flex flex-col items-center">
-              <div
-                className="rounded-2xl overflow-hidden border bg-white shadow-sm"
-                style={{
-                  borderColor: "hsl(var(--wizard-primary) / 0.18)",
-                  width: 160,
-                  aspectRatio: "2 / 3",
-                }}
-              >
-                {portrait.status === "ready" && portrait.dataUrl ? (
-                  <img
-                    src={portrait.dataUrl}
-                    alt={`Portrait of ${name}`}
-                    className="w-full h-full object-cover"
-                  />
-                ) : portrait.status === "error" ? (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center gap-2">
-                    <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
-                      Portrait hit a snag.
-                    </p>
-                    <button
-                      type="button"
-                      onClick={portrait.regenerate}
-                      className="text-xs underline text-[hsl(var(--wizard-primary))]"
+          {(() => {
+            const cast: Array<{
+              key: string;
+              label: string;
+              state: { status: string; dataUrl?: string; error?: string };
+              onRetry: () => void;
+            }> = [
+              {
+                key: "hero",
+                label: name,
+                state: portrait,
+                onRetry: portrait.regenerate,
+              },
+              ...supportingChars
+                .filter((c) => c?.id && c?.name)
+                .map((c) => ({
+                  key: c.id as string,
+                  label: c.name as string,
+                  state:
+                    (supportingPortraits[c.id] as any) ?? { status: "loading" },
+                  onRetry: () => regenerateSupporting(c.id),
+                })),
+            ];
+
+            return (
+              <div className="mb-6 flex flex-wrap items-start justify-center gap-4">
+                {cast.map((m) => (
+                  <div key={m.key} className="flex flex-col items-center">
+                    <div
+                      className="rounded-2xl overflow-hidden border bg-white shadow-sm"
+                      style={{
+                        borderColor: "hsl(var(--wizard-primary) / 0.18)",
+                        width: 140,
+                        aspectRatio: "2 / 3",
+                      }}
                     >
-                      Try again
-                    </button>
-                  </div>
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-3 gap-2 animate-pulse bg-black/5">
-                    <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
-                      {portraitMsg}
+                      {m.state.status === "ready" && m.state.dataUrl ? (
+                        <img
+                          src={m.state.dataUrl}
+                          alt={`Portrait of ${m.label}`}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : m.state.status === "error" ? (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center gap-2">
+                          <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
+                            Portrait hit a snag.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={m.onRetry}
+                            className="text-xs underline text-[hsl(var(--wizard-primary))]"
+                          >
+                            Try again
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-3 gap-2 animate-pulse bg-black/5">
+                          <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
+                            {portraitMsg}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                    <p className="mt-2 text-xs font-medium text-[hsl(var(--wizard-primary))]/80">
+                      {m.label}
                     </p>
+                    {m.state.status === "ready" && (
+                      <button
+                        type="button"
+                        onClick={m.onRetry}
+                        className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-[hsl(var(--wizard-primary))]/60 hover:text-[hsl(var(--wizard-primary))]"
+                      >
+                        <RefreshCw className="w-3 h-3" /> Refresh
+                      </button>
+                    )}
                   </div>
-                )}
+                ))}
               </div>
-              {portrait.status === "ready" && (
-                <button
-                  type="button"
-                  onClick={portrait.regenerate}
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs text-[hsl(var(--wizard-primary))]/70 hover:text-[hsl(var(--wizard-primary))]"
-                >
-                  <RefreshCw className="w-3 h-3" /> Refresh portrait
-                </button>
-              )}
-            </div>
-          )}
+            );
+          })()}
+
 
           <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[hsl(var(--wizard-primary))]">
             Here's {name}'s story
