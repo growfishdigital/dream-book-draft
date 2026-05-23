@@ -116,56 +116,55 @@ export function useCharacterPortrait() {
           (protoNow.appearance as Record<string, any>) || {};
 
         if (hasPhotoNow) {
+          const cachedHash: string | undefined = currentAnswers.appearanceAutofillHash;
+          const baseHash = forceHash.split("|r")[0];
 
-        let mergedAppearance: Record<string, any> =
-          (protoNow.appearance as Record<string, any>) || {};
-        const cachedHash: string | undefined = currentAnswers.appearanceAutofillHash;
-        const baseHash = forceHash.split("|r")[0];
-
-        if (cachedHash !== baseHash) {
-          try {
-            const { data: traitData } = await supabase.functions.invoke(
-              "extract-appearance-traits",
-              { body: { photoDataUrl: firstPhotoNow } },
-            );
-            if (ctrl.signal.aborted) return;
-            const t = (traitData?.traits ?? {}) as Record<string, any>;
-            const current = mergedAppearance;
-            const onlyIfBlank = (cur: any, val: any) =>
-              cur && String(cur).trim() ? cur : val || "";
-            const featuresExtra = [
-              t.distinguishing,
-              t.eye_color ? `${t.eye_color} eyes` : "",
-            ].filter(Boolean).join(", ");
-            const next = {
-              hairColor: onlyIfBlank(current.hairColor, t.hair_color),
-              hairStyle: onlyIfBlank(
-                current.hairStyle,
-                t.hair_length || t.hair_style,
-              ),
-              skinTone: onlyIfBlank(current.skinTone, t.skin_tone),
-              glasses:
-                typeof current.glasses === "boolean" && current.glasses
-                  ? true
-                  : !!t.glasses,
-              features:
-                current.features && String(current.features).trim()
-                  ? current.features
-                  : featuresExtra,
-            };
-            mergedAppearance = next;
-            const nextAnswers = latestAnswersRef.current;
-            latestAnswersRef.current = {
-              ...nextAnswers,
-              protagonist: { ...protoNow, appearance: next },
-              appearanceAutofillHash: baseHash,
-            };
-            setAnswer("protagonist", { ...protoNow, appearance: next });
-            setAnswer("appearanceAutofillHash", baseHash);
-          } catch (traitErr) {
-            console.warn("appearance trait extraction failed", traitErr);
+          if (cachedHash !== baseHash) {
+            try {
+              const { data: traitData } = await supabase.functions.invoke(
+                "extract-appearance-traits",
+                { body: { photoDataUrl: firstPhotoNow } },
+              );
+              if (ctrl.signal.aborted) return;
+              const t = (traitData?.traits ?? {}) as Record<string, any>;
+              const current = mergedAppearance;
+              const onlyIfBlank = (cur: any, val: any) =>
+                cur && String(cur).trim() ? cur : val || "";
+              const featuresExtra = [
+                t.distinguishing,
+                t.eye_color ? `${t.eye_color} eyes` : "",
+              ].filter(Boolean).join(", ");
+              const next = {
+                hairColor: onlyIfBlank(current.hairColor, t.hair_color),
+                hairStyle: onlyIfBlank(
+                  current.hairStyle,
+                  t.hair_length || t.hair_style,
+                ),
+                skinTone: onlyIfBlank(current.skinTone, t.skin_tone),
+                glasses:
+                  typeof current.glasses === "boolean" && current.glasses
+                    ? true
+                    : !!t.glasses,
+                features:
+                  current.features && String(current.features).trim()
+                    ? current.features
+                    : featuresExtra,
+              };
+              mergedAppearance = next;
+              const nextAnswers = latestAnswersRef.current;
+              latestAnswersRef.current = {
+                ...nextAnswers,
+                protagonist: { ...protoNow, appearance: next },
+                appearanceAutofillHash: baseHash,
+              };
+              setAnswer("protagonist", { ...protoNow, appearance: next });
+              setAnswer("appearanceAutofillHash", baseHash);
+            } catch (traitErr) {
+              console.warn("appearance trait extraction failed", traitErr);
+            }
           }
         }
+
 
         // ---- Step 2: portrait generation ----
         // Build brief from a snapshot that includes the freshest answers and
