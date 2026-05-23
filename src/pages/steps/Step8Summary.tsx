@@ -43,10 +43,14 @@ export default function Step10Summary() {
   const previousSummaryRef = useRef<string>("");
   const loadingMsg = useRotatingMessage(summaryMessages(name), 2000);
 
-  // Portrait of the protagonist (kicked off in Step 6). Idempotent — won't
-  // refire if the user uploaded a photo earlier; will lazily trigger here if
-  // they arrived with a photo but no portrait yet.
+  // Portraits of the full cast (kicked off in Step 7). Idempotent and now
+  // always generates — even when no reference photo was uploaded.
   const portrait = useCharacterPortrait();
+  const { portraits: supportingPortraits, regenerate: regenerateSupporting } =
+    useSupportingPortraits();
+  const supportingChars: any[] = Array.isArray(answers.supportingCharacters)
+    ? answers.supportingCharacters
+    : [];
   const portraitMsg = useRotatingMessage(portraitMessages(name), 2200);
 
   const fetchSummary = async () => {
