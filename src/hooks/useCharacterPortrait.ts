@@ -24,13 +24,28 @@ export interface CharacterPortraitState {
   sourceHash?: string;
 }
 
-function computeSourceHash(firstPhoto: string | undefined, artStyle: string | undefined): string {
-  if (!firstPhoto) return "";
-  // Cheap, stable-enough fingerprint. Photo data URLs are huge; the head +
-  // length is plenty for change detection within a session.
-  const head = firstPhoto.slice(0, 96);
-  const tail = firstPhoto.slice(-32);
-  return `${head.length}|${firstPhoto.length}|${tail}|${artStyle || ""}`;
+function computeSourceHash(
+  firstPhoto: string | undefined,
+  artStyle: string | undefined,
+  proto?: any,
+): string {
+  if (firstPhoto) {
+    const head = firstPhoto.slice(0, 96);
+    const tail = firstPhoto.slice(-32);
+    return `p:${head.length}|${firstPhoto.length}|${tail}|${artStyle || ""}`;
+  }
+  // No photo: hash based on the descriptive fields we'll send to the model.
+  if (!proto?.name) return "";
+  const app = proto?.appearance || {};
+  const traits = Array.isArray(proto?.traits)
+    ? proto.traits.map((t: any) => t?.word).filter(Boolean).join(",")
+    : "";
+  const sig = [
+    proto?.name, proto?.age, proto?.gender, proto?.special,
+    app.hairColor, app.hairStyle, app.skinTone, app.glasses ? "g" : "",
+    app.features, traits, artStyle || "",
+  ].join("|");
+  return `i:${sig}`;
 }
 
 export function useCharacterPortrait() {
