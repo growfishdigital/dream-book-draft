@@ -263,6 +263,57 @@ export default function Step10Summary() {
 
       <main className="flex-1 flex justify-center px-4 pt-8 pb-32">
         <div className="w-full" style={{ maxWidth: "700px" }}>
+          {/* Cover preview */}
+          <div className="mb-6 flex flex-col items-center">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2">
+              Cover preview
+            </p>
+            <div
+              className="rounded-2xl overflow-hidden border bg-white shadow-md"
+              style={{
+                borderColor: "hsl(var(--wizard-primary) / 0.18)",
+                width: 220,
+                aspectRatio: "2 / 3",
+              }}
+            >
+              {cover.status === "ready" ? (
+                <img
+                  src={cover.dataUrl}
+                  alt={`Cover of ${title || `${name}'s book`}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : cover.status === "error" ? (
+                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center gap-2">
+                  <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
+                    Couldn't draw the cover.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={generateCover}
+                    className="text-xs underline text-[hsl(var(--wizard-primary))]"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4 animate-pulse bg-black/5">
+                  <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
+                    {coverMsg}
+                  </p>
+                </div>
+              )}
+            </div>
+            {cover.status === "ready" && (
+              <button
+                type="button"
+                onClick={generateCover}
+                className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-[hsl(var(--wizard-primary))]/60 hover:text-[hsl(var(--wizard-primary))]"
+              >
+                <RefreshCw className="w-3 h-3" /> Redraw cover
+              </button>
+            )}
+          </div>
+
           {(() => {
             const cast: Array<{
               key: string;
