@@ -328,7 +328,7 @@ export default function Step9Preview() {
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={11} />
+      <WizardHeader currentStep={9} />
 
       <div className="flex flex-col items-center px-4 py-8">
       {/* Heading */}
@@ -662,14 +662,14 @@ export default function Step9Preview() {
             </div>
 
             <button
-              onClick={() => canOrder && startPipeline()}
+              onClick={() => canOrder && handlePay()}
               disabled={!canOrder}
               className="w-full h-12 rounded-full text-base font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed mt-2"
               style={{ backgroundColor: "#2B4E18", color: "#fff" }}
             >
               Pay {price} & start crafting
             </button>
-            {!canOrder && !pipeline.running && (
+            {!canOrder && (
               <p className="text-xs text-center" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
                 Confirm your cover layout above to continue.
               </p>
