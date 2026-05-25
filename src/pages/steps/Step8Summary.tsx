@@ -605,6 +605,14 @@ export default function Step10Summary() {
           </button>
         </div>
       </div>
+
+      {lightbox && (
+        <ImageLightbox
+          src={lightbox.src}
+          alt={lightbox.alt}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }
