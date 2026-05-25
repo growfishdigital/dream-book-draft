@@ -151,7 +151,24 @@ Deno.serve(async (req) => {
       });
     }
 
-    const data = await aiResp.json();
+    const rawText = await aiResp.text();
+    if (!rawText) {
+      console.error("Empty body from AI gateway (cover)");
+      return new Response(
+        JSON.stringify({ error: "Image model returned an empty response. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch (parseErr) {
+      console.error("Failed to parse AI response (cover)", parseErr, rawText.slice(0, 500));
+      return new Response(
+        JSON.stringify({ error: "Image model returned a malformed response. Please try again." }),
+        { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
     const imageDataUrl: string | undefined =
       data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
 
