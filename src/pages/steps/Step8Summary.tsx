@@ -522,13 +522,18 @@ export default function Step10Summary() {
             </div>
           )}
 
+          <div className="mt-8">
+            <StoryDetailsRecap answers={answers} />
+          </div>
+
           <p
             className="text-center text-xs italic mt-6"
             style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}
           >
             Refresh as many times as you like. Once it's just right, approve
-            and we'll bring the cover to life.
+            and we'll move on to checkout.
           </p>
+
         </div>
       </main>
 
