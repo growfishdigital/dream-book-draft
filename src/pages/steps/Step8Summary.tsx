@@ -4,12 +4,24 @@ import { useNavigate } from "react-router-dom";
 import { Pencil, RefreshCw, Check, X } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
+import StoryDetailsRecap from "@/components/StoryDetailsRecap";
 import { buildBrief } from "@/lib/buildBrief";
-import { summaryMessages, portraitMessages, useRotatingMessage } from "@/lib/loadingMessages";
+import {
+  summaryMessages,
+  portraitMessages,
+  coverMessages,
+  useRotatingMessage,
+} from "@/lib/loadingMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
+
+type CoverState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; dataUrl: string }
+  | { status: "error"; error: string };
 
 type StoryConcept = {
   title?: string;
@@ -42,6 +54,14 @@ export default function Step10Summary() {
 
   const previousSummaryRef = useRef<string>("");
   const loadingMsg = useRotatingMessage(summaryMessages(name), 2000);
+  const coverMsg = useRotatingMessage(coverMessages(name), 2400);
+
+  const [cover, setCover] = useState<CoverState>(
+    answers.selectedConcept?.coverImage
+      ? { status: "ready", dataUrl: answers.selectedConcept.coverImage }
+      : { status: "idle" },
+  );
+  const coverGenSig = useRef<string>("");
 
   // Portraits of the full cast (kicked off in Step 7). Idempotent and now
   // always generates — even when no reference photo was uploaded.
@@ -84,6 +104,8 @@ export default function Step10Summary() {
       setTitle(newTitle);
       setSummary(newSummary);
       previousSummaryRef.current = newSummary;
+      setCover({ status: "idle" }); // re-draw cover for the new summary
+
     } catch (e: any) {
       const msg = e?.message || "Something went wrong.";
       setError(msg);
@@ -100,6 +122,50 @@ export default function Step10Summary() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const generateCover = async () => {
+    if (!summary.trim() || !title.trim()) return;
+    const sig = `${title}::${summary}::${portrait.dataUrl ? "p" : "np"}`;
+    coverGenSig.current = sig;
+    setCover({ status: "loading" });
+    try {
+      const brief = buildBrief(answers);
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "generate-cover",
+        {
+          body: {
+            brief,
+            title,
+            summary,
+            characterPortraitDataUrl: portrait.dataUrl,
+          },
+        },
+      );
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
+      const url: string | undefined = data?.imageDataUrl;
+      if (!url) throw new Error("No cover image returned.");
+      setCover({ status: "ready", dataUrl: url });
+    } catch (e: any) {
+      const msg = e?.message || "Couldn't draw the cover.";
+      setCover({ status: "error", error: msg });
+      toast({ title: "Cover hit a snag", description: msg });
+    }
+  };
+
+  // Auto-kick the cover when summary + hero portrait are ready.
+  useEffect(() => {
+    if (
+      cover.status === "idle" &&
+      summary.trim() &&
+      title.trim() &&
+      portrait.status === "ready"
+    ) {
+      generateCover();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cover.status, summary, title, portrait.status]);
+
 
   const startEdit = () => {
     setDraft(summary);
@@ -128,6 +194,8 @@ export default function Step10Summary() {
   const buildApprovedConcept = (): StoryConcept => {
     const visibleTitle = title.trim() || `${name}'s Adventure`;
     const visibleSummary = summary.trim();
+    const coverImage =
+      cover.status === "ready" ? cover.dataUrl : (concept as any)?.coverImage;
 
     if (concept?.user_edited) {
       return {
@@ -135,7 +203,8 @@ export default function Step10Summary() {
         summary: visibleSummary,
         user_visible_summary: visibleSummary,
         user_edited: true,
-      };
+        ...(coverImage ? { coverImage } : {}),
+      } as StoryConcept;
     }
 
     return {
@@ -143,7 +212,8 @@ export default function Step10Summary() {
       title: visibleTitle,
       summary: visibleSummary,
       user_visible_summary: visibleSummary,
-    };
+      ...(coverImage ? { coverImage } : {}),
+    } as StoryConcept;
   };
 
   const approve = async () => {
@@ -193,6 +263,57 @@ export default function Step10Summary() {
 
       <main className="flex-1 flex justify-center px-4 pt-8 pb-32">
         <div className="w-full" style={{ maxWidth: "700px" }}>
+          {/* Cover preview */}
+          <div className="mb-6 flex flex-col items-center">
+            <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2">
+              Cover preview
+            </p>
+            <div
+              className="rounded-2xl overflow-hidden border bg-white shadow-md"
+              style={{
+                borderColor: "hsl(var(--wizard-primary) / 0.18)",
+                width: 220,
+                aspectRatio: "2 / 3",
+              }}
+            >
+              {cover.status === "ready" ? (
+                <img
+                  src={cover.dataUrl}
+                  alt={`Cover of ${title || `${name}'s book`}`}
+                  className="w-full h-full object-cover"
+                />
+              ) : cover.status === "error" ? (
+                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center gap-2">
+                  <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
+                    Couldn't draw the cover.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={generateCover}
+                    className="text-xs underline text-[hsl(var(--wizard-primary))]"
+                  >
+                    Try again
+                  </button>
+                </div>
+              ) : (
+                <div className="w-full h-full flex items-center justify-center p-4 animate-pulse bg-black/5">
+                  <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
+                    {coverMsg}
+                  </p>
+                </div>
+              )}
+            </div>
+            {cover.status === "ready" && (
+              <button
+                type="button"
+                onClick={generateCover}
+                className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-[hsl(var(--wizard-primary))]/60 hover:text-[hsl(var(--wizard-primary))]"
+              >
+                <RefreshCw className="w-3 h-3" /> Redraw cover
+              </button>
+            )}
+          </div>
+
           {(() => {
             const cast: Array<{
               key: string;
@@ -401,13 +522,18 @@ export default function Step10Summary() {
             </div>
           )}
 
+          <div className="mt-8">
+            <StoryDetailsRecap answers={answers} />
+          </div>
+
           <p
             className="text-center text-xs italic mt-6"
             style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}
           >
             Refresh as many times as you like. Once it's just right, approve
-            and we'll bring the cover to life.
+            and we'll move on to checkout.
           </p>
+
         </div>
       </main>
 
@@ -439,7 +565,7 @@ export default function Step10Summary() {
               color: "#fff",
             }}
           >
-            Approve & illustrate →
+            Approve & continue →
           </button>
         </div>
       </div>
