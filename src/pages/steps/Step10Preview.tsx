@@ -122,8 +122,7 @@ export default function Step9Preview() {
   const coverImage: string | undefined = concept.coverImage;
   const initialLayout = answers.coverLayout || "full-illustration";
   const [layout, setLayout] = useState<string>(initialLayout);
-  const artStyle = answers.artStyle || "watercolor";
-  const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
+  const artHsl = "100 52% 20%";
 
   const [selected, setSelected] = useState<Plan>("hardcover");
   const [layoutConfirmed, setLayoutConfirmed] = useState(false);
