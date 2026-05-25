@@ -423,16 +423,28 @@ export default function Step10Summary() {
                 className="rounded-2xl overflow-hidden border bg-white shadow-md"
                 style={{
                   borderColor: "hsl(var(--wizard-primary) / 0.18)",
-                  width: 220,
-                  aspectRatio: "2 / 3",
+                  width: 260,
+                  aspectRatio: "1 / 1",
                 }}
               >
                 {cover.status === "ready" ? (
-                  <img
-                    src={cover.dataUrl}
-                    alt={`Cover of ${title || `${name}'s book`}`}
-                    className="w-full h-full object-cover"
-                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setLightbox({
+                        src: cover.dataUrl,
+                        alt: `Cover of ${title || `${name}'s book`}`,
+                      })
+                    }
+                    className="w-full h-full block cursor-zoom-in"
+                    aria-label="Enlarge cover"
+                  >
+                    <img
+                      src={cover.dataUrl}
+                      alt={`Cover of ${title || `${name}'s book`}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
                 ) : cover.status === "error" ? (
                   <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center gap-2">
                     <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
@@ -502,11 +514,23 @@ export default function Step10Summary() {
                         }}
                       >
                         {m.state.status === "ready" && m.state.dataUrl ? (
-                          <img
-                            src={m.state.dataUrl}
-                            alt={`Portrait of ${m.label}`}
-                            className="w-full h-full object-cover"
-                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setLightbox({
+                                src: m.state.dataUrl!,
+                                alt: `Portrait of ${m.label}`,
+                              })
+                            }
+                            className="w-full h-full block cursor-zoom-in"
+                            aria-label={`Enlarge portrait of ${m.label}`}
+                          >
+                            <img
+                              src={m.state.dataUrl}
+                              alt={`Portrait of ${m.label}`}
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
                         ) : m.state.status === "error" ? (
                           <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center gap-2">
                             <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
