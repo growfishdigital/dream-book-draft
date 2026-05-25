@@ -77,8 +77,6 @@ export default function Step4b() {
   const age = (answers.ageRange as AgeRange) || "3-5";
   const gender = (answers.gender as string) || "";
   const list: Entry[] = (answers.interestsList as Entry[]) || [];
-  const thingsAlreadyGoodAt = (answers.thingsAlreadyGoodAt as string) || "";
-  const thingsCurrentlyTricky = (answers.thingsCurrentlyTricky as string) || "";
   const focusIdxRef = useRef<number | null>(null);
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
