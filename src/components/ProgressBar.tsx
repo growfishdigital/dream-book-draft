@@ -17,8 +17,8 @@ const STEP_LABELS: Record<number, string> = {
   5: "Interests",
   6: "Art Style",
   7: "Characters",
-  8: "Story Summary",
-  9: "Preview & Buy",
+  8: "Preview",
+  9: "Checkout",
   10: "Generating",
 };
 
