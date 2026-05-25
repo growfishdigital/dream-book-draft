@@ -32,8 +32,8 @@ const PROGRESS_MESSAGES: Record<number, string> = {
   5: "Their favorite things, woven in ✨",
   6: "Picking the perfect look 🎨",
   7: "Gathering their cast of friends 🧸",
-  8: "Your story is taking shape 📖",
-  9: "Tada — meet your storybook 🎉",
+  8: "Tada — meet your storybook 🎉",
+  9: "Almost ready to print 💌",
   10: "Stitching every page together ✨",
 };
 
