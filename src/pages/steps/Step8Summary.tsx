@@ -4,12 +4,24 @@ import { useNavigate } from "react-router-dom";
 import { Pencil, RefreshCw, Check, X } from "lucide-react";
 import { useWizard } from "@/contexts/WizardContext";
 import WizardHeader from "@/components/WizardHeader";
+import StoryDetailsRecap from "@/components/StoryDetailsRecap";
 import { buildBrief } from "@/lib/buildBrief";
-import { summaryMessages, portraitMessages, useRotatingMessage } from "@/lib/loadingMessages";
+import {
+  summaryMessages,
+  portraitMessages,
+  coverMessages,
+  useRotatingMessage,
+} from "@/lib/loadingMessages";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
+
+type CoverState =
+  | { status: "idle" }
+  | { status: "loading" }
+  | { status: "ready"; dataUrl: string }
+  | { status: "error"; error: string };
 
 type StoryConcept = {
   title?: string;
