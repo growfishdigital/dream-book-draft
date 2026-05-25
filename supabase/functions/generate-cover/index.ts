@@ -102,9 +102,8 @@ Deno.serve(async (req) => {
       userContent.push({ type: "image_url", image_url: { url } });
     }
 
-    const aiResp = await fetch(
-      "https://ai.gateway.lovable.dev/v1/chat/completions",
-      {
+    const callGateway = () =>
+      fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
@@ -114,10 +113,15 @@ Deno.serve(async (req) => {
           model: MODELS.cover,
           messages: [{ role: "user", content: userContent }],
           modalities: ["image", "text"],
-          image_config: { aspect_ratio: "1:1", image_size: "2K" },
+          image_config: { aspect_ratio: "1:1", image_size: "1K" },
         }),
-      },
-    );
+      });
+
+    let aiResp = await callGateway();
+    // Retry once on empty/5xx — gateway occasionally drops the body.
+    if (!aiResp.ok && aiResp.status >= 500 && aiResp.status !== 502) {
+      aiResp = await callGateway();
+    }
 
     if (!aiResp.ok) {
       if (aiResp.status === 429) {
