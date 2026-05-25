@@ -121,6 +121,50 @@ export default function Step10Summary() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const generateCover = async () => {
+    if (!summary.trim() || !title.trim()) return;
+    const sig = `${title}::${summary}::${portrait.dataUrl ? "p" : "np"}`;
+    coverGenSig.current = sig;
+    setCover({ status: "loading" });
+    try {
+      const brief = buildBrief(answers);
+      const { data, error: fnError } = await supabase.functions.invoke(
+        "generate-cover",
+        {
+          body: {
+            brief,
+            title,
+            summary,
+            characterPortraitDataUrl: portrait.dataUrl,
+          },
+        },
+      );
+      if (fnError) throw fnError;
+      if (data?.error) throw new Error(data.error);
+      const url: string | undefined = data?.imageDataUrl;
+      if (!url) throw new Error("No cover image returned.");
+      setCover({ status: "ready", dataUrl: url });
+    } catch (e: any) {
+      const msg = e?.message || "Couldn't draw the cover.";
+      setCover({ status: "error", error: msg });
+      toast({ title: "Cover hit a snag", description: msg });
+    }
+  };
+
+  // Auto-kick the cover when summary + hero portrait are ready.
+  useEffect(() => {
+    if (
+      cover.status === "idle" &&
+      summary.trim() &&
+      title.trim() &&
+      portrait.status === "ready"
+    ) {
+      generateCover();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cover.status, summary, title, portrait.status]);
+
+
   const startEdit = () => {
     setDraft(summary);
     setDraftTitle(title);
