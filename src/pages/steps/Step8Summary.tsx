@@ -565,7 +565,7 @@ export default function Step10Summary() {
               color: "#fff",
             }}
           >
-            Approve & illustrate →
+            Approve & continue →
           </button>
         </div>
       </div>
