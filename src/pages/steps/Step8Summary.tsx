@@ -192,6 +192,8 @@ export default function Step10Summary() {
   const buildApprovedConcept = (): StoryConcept => {
     const visibleTitle = title.trim() || `${name}'s Adventure`;
     const visibleSummary = summary.trim();
+    const coverImage =
+      cover.status === "ready" ? cover.dataUrl : (concept as any)?.coverImage;
 
     if (concept?.user_edited) {
       return {
@@ -199,7 +201,8 @@ export default function Step10Summary() {
         summary: visibleSummary,
         user_visible_summary: visibleSummary,
         user_edited: true,
-      };
+        ...(coverImage ? { coverImage } : {}),
+      } as StoryConcept;
     }
 
     return {
@@ -207,7 +210,8 @@ export default function Step10Summary() {
       title: visibleTitle,
       summary: visibleSummary,
       user_visible_summary: visibleSummary,
-    };
+      ...(coverImage ? { coverImage } : {}),
+    } as StoryConcept;
   };
 
   const approve = async () => {
