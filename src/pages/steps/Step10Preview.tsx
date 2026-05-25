@@ -3,12 +3,8 @@ import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
 
-
-
-import { Check, Image as ImageIcon, Columns2 } from "lucide-react";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Check } from "lucide-react";
 import WizardHeader from "@/components/WizardHeader";
-
 
 type Plan = "digital" | "hardcover";
 
@@ -25,76 +21,6 @@ const HARDCOVER_FEATURES = [
   "Ships in 5–7 business days",
   "Free digital copy included",
 ];
-
-
-function CoverPage({
-  layout,
-  title,
-  name,
-  artHsl,
-  coverImage,
-}: {
-  layout: string;
-  title: string;
-  name: string;
-  artHsl: string;
-  coverImage?: string;
-}) {
-  const bg = `hsl(${artHsl} / 0.2)`;
-  const accent = `hsl(${artHsl})`;
-
-  // Bold title split: image on the left, title block on the right.
-  if (layout === "bold-title") {
-    return (
-      <div className="flex h-full">
-        <div className="w-1/2 relative" style={{ backgroundColor: bg }}>
-          {coverImage ? (
-            <img
-              src={coverImage}
-              alt={`Cover of ${title}`}
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="w-16 h-20 rounded-lg" style={{ backgroundColor: accent, opacity: 0.5 }} />
-            </div>
-          )}
-        </div>
-        <div className="w-1/2 flex flex-col items-center justify-center p-4 gap-2 bg-white">
-          <p className="text-lg font-bold text-center font-serif leading-tight" style={{ color: accent }}>{title}</p>
-          <p className="text-[10px] uppercase tracking-wider mt-1" style={{ color: `hsl(${artHsl} / 0.55)` }}>Written for</p>
-          <p className="text-sm font-serif italic" style={{ color: `hsl(${artHsl} / 0.85)` }}>{name}</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Full illustration: image full-bleed (or wireframe placeholder).
-  if (coverImage) {
-    return (
-      <div className="relative h-full w-full">
-        <img
-          src={coverImage}
-          alt={`Cover of ${title}`}
-          className="absolute inset-0 h-full w-full object-cover"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 flex items-center justify-center" style={{ backgroundColor: bg }}>
-        <div className="w-20 h-24 rounded-lg" style={{ backgroundColor: accent, opacity: 0.5 }} />
-      </div>
-      <div className="p-4 text-center">
-        <p className="text-base font-bold font-serif" style={{ color: accent }}>{title}</p>
-        <p className="text-[10px] uppercase tracking-wider mt-2" style={{ color: `hsl(${artHsl} / 0.55)` }}>Written for</p>
-        <p className="text-sm font-serif italic" style={{ color: `hsl(${artHsl} / 0.85)` }}>{name}</p>
-      </div>
-    </div>
-  );
-}
 
 
 
