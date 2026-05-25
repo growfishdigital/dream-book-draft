@@ -538,6 +538,7 @@ export default function Step10Summary() {
             and we'll move on to checkout.
           </p>
 
+          </div>
         </div>
       </main>
 
