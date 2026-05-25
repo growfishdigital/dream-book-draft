@@ -104,6 +104,8 @@ export default function Step10Summary() {
       setTitle(newTitle);
       setSummary(newSummary);
       previousSummaryRef.current = newSummary;
+      setCover({ status: "idle" }); // re-draw cover for the new summary
+
     } catch (e: any) {
       const msg = e?.message || "Something went wrong.";
       setError(msg);
