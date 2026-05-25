@@ -261,288 +261,287 @@ export default function Step10Summary() {
     >
       <WizardHeader currentStep={9} />
 
-      <main className="flex-1 flex justify-center px-4 pt-8 pb-32">
+      <main className="flex-1 flex flex-col items-center px-4 pt-8 pb-32">
+        <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[hsl(var(--wizard-primary))]">
+          Here's {name}'s story
+        </h1>
+        <p
+          className="text-sm text-center mb-8"
+          style={{ color: "hsl(var(--wizard-primary) / 0.65)" }}
+        >
+          Read it, refresh it, or tweak it before we draw the pictures.
+        </p>
+
         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start" style={{ maxWidth: "1100px" }}>
-          {/* LEFT column: cover + cast */}
-          <div className="flex flex-col items-center">
-          {/* Cover preview */}
-          <div className="mb-6 flex flex-col items-center">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2">
-              Cover preview
-            </p>
+          {/* LEFT column: story content */}
+          <div className="flex flex-col">
+            {/* Book title */}
+            {!editing && (
+              <div className="flex items-center justify-center gap-2 mb-4">
+                <h2 className="font-heading text-2xl font-semibold text-center text-[hsl(var(--wizard-primary))]">
+                  {title || `${name}'s Adventure`}
+                </h2>
+                <button
+                  type="button"
+                  onClick={fetchSummary}
+                  disabled={loading}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-black/10 text-[hsl(var(--wizard-primary))]/70 bg-white hover:text-[hsl(var(--wizard-primary))] disabled:opacity-50"
+                  aria-label="Regenerate title and summary"
+                >
+                  <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+                  Regenerate
+                </button>
+              </div>
+            )}
+
+            {/* Summary card */}
             <div
-              className="rounded-2xl overflow-hidden border bg-white shadow-md"
-              style={{
-                borderColor: "hsl(var(--wizard-primary) / 0.18)",
-                width: 220,
-                aspectRatio: "2 / 3",
-              }}
+              className="rounded-2xl border bg-white p-6 shadow-sm"
+              style={{ borderColor: "hsl(var(--wizard-primary) / 0.18)" }}
             >
-              {cover.status === "ready" ? (
-                <img
-                  src={cover.dataUrl}
-                  alt={`Cover of ${title || `${name}'s book`}`}
-                  className="w-full h-full object-cover"
-                />
-              ) : cover.status === "error" ? (
-                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center gap-2">
-                  <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
-                    Couldn't draw the cover.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={generateCover}
-                    className="text-xs underline text-[hsl(var(--wizard-primary))]"
+              {loading && !summary ? (
+                <div className="space-y-3">
+                  <div className="h-6 w-2/3 mx-auto rounded animate-pulse bg-black/5" />
+                  <div className="h-3 w-full rounded animate-pulse bg-black/5" />
+                  <div className="h-3 w-full rounded animate-pulse bg-black/5" />
+                  <div className="h-3 w-5/6 rounded animate-pulse bg-black/5" />
+                  <div className="h-3 w-full rounded animate-pulse bg-black/5" />
+                  <div className="h-3 w-4/5 rounded animate-pulse bg-black/5" />
+                  <p
+                    className="text-center text-sm italic pt-3"
+                    style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}
                   >
-                    Try again
-                  </button>
+                    {loadingMsg}
+                  </p>
+                </div>
+              ) : editing ? (
+                <div className="flex flex-col gap-3">
+                  <input
+                    value={draftTitle}
+                    onChange={(e) => setDraftTitle(e.target.value)}
+                    maxLength={80}
+                    placeholder="Working title"
+                    className="font-heading text-2xl font-semibold text-[hsl(var(--wizard-primary))] bg-transparent border-b border-black/10 focus:outline-none focus:border-[hsl(var(--wizard-primary))] px-1 py-1"
+                  />
+                  <textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    rows={10}
+                    className="w-full text-base font-serif leading-relaxed text-[hsl(var(--wizard-primary))]/90 bg-transparent border border-black/10 rounded-xl p-3 focus:outline-none focus:border-[hsl(var(--wizard-primary))]"
+                  />
+                  <div className="flex items-center justify-between text-xs text-[hsl(var(--wizard-primary))]/60">
+                    <span>{wordCount(draft)} words</span>
+                    <span className="italic">
+                      Tip: aim for ~100 words for the best book length.
+                    </span>
+                  </div>
+                  <div className="flex gap-2 justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={cancelEdit}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))]"
+                    >
+                      <X className="w-4 h-4" /> Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={saveEdit}
+                      className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
+                      style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
+                    >
+                      <Check className="w-4 h-4" /> Save changes
+                    </button>
+                  </div>
                 </div>
               ) : (
-                <div className="w-full h-full flex items-center justify-center p-4 animate-pulse bg-black/5">
-                  <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
-                    {coverMsg}
+                <div className="relative">
+                  {loading && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-sm">
+                      <p
+                        className="text-sm italic"
+                        style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}
+                      >
+                        {loadingMsg}
+                      </p>
+                    </div>
+                  )}
+                  <p className="text-base font-serif leading-relaxed whitespace-pre-wrap text-[hsl(var(--wizard-primary))]/90">
+                    {summary}
+                  </p>
+                  <p className="text-xs text-[hsl(var(--wizard-primary))]/45 text-right mt-3">
+                    {wordCount(summary)} words
                   </p>
                 </div>
               )}
+
+              {error && !loading && !editing && (
+                <p className="text-sm text-red-600 mt-3 text-center">{error}</p>
+              )}
             </div>
-            {cover.status === "ready" && (
-              <button
-                type="button"
-                onClick={generateCover}
-                className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-[hsl(var(--wizard-primary))]/60 hover:text-[hsl(var(--wizard-primary))]"
-              >
-                <RefreshCw className="w-3 h-3" /> Redraw cover
-              </button>
+
+            {/* Edit controls (Refresh already lives next to the title) */}
+            {!editing && (
+              <div className="flex items-center justify-center gap-3 mt-5">
+                {summary && !loading && (
+                  <button
+                    type="button"
+                    onClick={startEdit}
+                    aria-label="Edit summary"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))] bg-white"
+                  >
+                    <Pencil className="w-4 h-4" />
+                    Edit
+                  </button>
+                )}
+              </div>
             )}
-          </div>
 
-          {(() => {
-            const cast: Array<{
-              key: string;
-              label: string;
-              state: { status: string; dataUrl?: string; error?: string };
-              onRetry: () => void;
-            }> = [
-              {
-                key: "hero",
-                label: name,
-                state: portrait,
-                onRetry: portrait.regenerate,
-              },
-              ...supportingChars
-                .filter((c) => c?.id && c?.name)
-                .map((c) => ({
-                  key: c.id as string,
-                  label: c.name as string,
-                  state:
-                    (supportingPortraits[c.id] as any) ?? { status: "loading" },
-                  onRetry: () => regenerateSupporting(c.id),
-                })),
-            ];
-
-            return (
-              <div className="mb-6 flex flex-wrap items-start justify-center gap-4">
-                {cast.map((m) => (
-                  <div key={m.key} className="flex flex-col items-center">
-                    <div
-                      className="rounded-2xl overflow-hidden border bg-white shadow-sm"
-                      style={{
-                        borderColor: "hsl(var(--wizard-primary) / 0.18)",
-                        width: 140,
-                        aspectRatio: "2 / 3",
-                      }}
-                    >
-                      {m.state.status === "ready" && m.state.dataUrl ? (
-                        <img
-                          src={m.state.dataUrl}
-                          alt={`Portrait of ${m.label}`}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : m.state.status === "error" ? (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center gap-2">
-                          <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
-                            Portrait hit a snag.
-                          </p>
-                          <button
-                            type="button"
-                            onClick={m.onRetry}
-                            className="text-xs underline text-[hsl(var(--wizard-primary))]"
-                          >
-                            Try again
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center p-3 gap-2 animate-pulse bg-black/5">
-                          <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
-                            {portraitMsg}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                    <p className="mt-2 text-xs font-medium text-[hsl(var(--wizard-primary))]/80">
-                      {m.label}
-                    </p>
-                    {m.state.status === "ready" && (
-                      <button
-                        type="button"
-                        onClick={m.onRetry}
-                        className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-[hsl(var(--wizard-primary))]/60 hover:text-[hsl(var(--wizard-primary))]"
-                      >
-                        <RefreshCw className="w-3 h-3" /> Refresh
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
-          })()}
-          </div>
-
-          {/* RIGHT column: story content */}
-          <div className="flex flex-col">
-          <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[hsl(var(--wizard-primary))]">
-            Here's {name}'s story
-          </h1>
-          <p
-            className="text-sm text-center mb-6"
-            style={{ color: "hsl(var(--wizard-primary) / 0.65)" }}
-          >
-            Read it, refresh it, or tweak it before we draw the pictures.
-          </p>
-
-          {/* Book title */}
-          {!editing && (
-            <div className="flex items-center justify-center gap-2 mb-4">
-              <h2 className="font-heading text-2xl font-semibold text-center text-[hsl(var(--wizard-primary))]">
-                {title || `${name}'s Adventure`}
-              </h2>
-              <button
-                type="button"
-                onClick={fetchSummary}
-                disabled={loading}
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-black/10 text-[hsl(var(--wizard-primary))]/70 bg-white hover:text-[hsl(var(--wizard-primary))] disabled:opacity-50"
-                aria-label="Regenerate title and summary"
-              >
-                <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
-                Regenerate
-              </button>
+            <div className="mt-8">
+              <StoryDetailsRecap answers={answers} />
             </div>
-          )}
 
-          {/* Summary card */}
-          <div
-            className="rounded-2xl border bg-white p-6 shadow-sm"
-            style={{ borderColor: "hsl(var(--wizard-primary) / 0.18)" }}
-          >
-            {loading && !summary ? (
-              <div className="space-y-3">
-                <div className="h-6 w-2/3 mx-auto rounded animate-pulse bg-black/5" />
-                <div className="h-3 w-full rounded animate-pulse bg-black/5" />
-                <div className="h-3 w-full rounded animate-pulse bg-black/5" />
-                <div className="h-3 w-5/6 rounded animate-pulse bg-black/5" />
-                <div className="h-3 w-full rounded animate-pulse bg-black/5" />
-                <div className="h-3 w-4/5 rounded animate-pulse bg-black/5" />
-                <p
-                  className="text-center text-sm italic pt-3"
-                  style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}
-                >
-                  {loadingMsg}
-                </p>
-              </div>
-            ) : editing ? (
-              <div className="flex flex-col gap-3">
-                <input
-                  value={draftTitle}
-                  onChange={(e) => setDraftTitle(e.target.value)}
-                  maxLength={80}
-                  placeholder="Working title"
-                  className="font-heading text-2xl font-semibold text-[hsl(var(--wizard-primary))] bg-transparent border-b border-black/10 focus:outline-none focus:border-[hsl(var(--wizard-primary))] px-1 py-1"
-                />
-                <textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  rows={10}
-                  className="w-full text-base font-serif leading-relaxed text-[hsl(var(--wizard-primary))]/90 bg-transparent border border-black/10 rounded-xl p-3 focus:outline-none focus:border-[hsl(var(--wizard-primary))]"
-                />
-                <div className="flex items-center justify-between text-xs text-[hsl(var(--wizard-primary))]/60">
-                  <span>{wordCount(draft)} words</span>
-                  <span className="italic">
-                    Tip: aim for ~100 words for the best book length.
-                  </span>
-                </div>
-                <div className="flex gap-2 justify-end pt-1">
-                  <button
-                    type="button"
-                    onClick={cancelEdit}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))]"
-                  >
-                    <X className="w-4 h-4" /> Cancel
-                  </button>
-                  <button
-                    type="button"
-                    onClick={saveEdit}
-                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-semibold text-white"
-                    style={{ backgroundColor: "hsl(var(--wizard-primary))" }}
-                  >
-                    <Check className="w-4 h-4" /> Save changes
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="relative">
-                {loading && (
-                  <div className="absolute inset-0 z-10 flex items-center justify-center rounded-2xl bg-white/70 backdrop-blur-sm">
-                    <p
-                      className="text-sm italic"
-                      style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}
+            <p
+              className="text-center text-xs italic mt-6"
+              style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}
+            >
+              Refresh as many times as you like. Once it's just right, approve
+              and we'll move on to checkout.
+            </p>
+          </div>
+
+          {/* RIGHT column: cover + cast */}
+          <div className="flex flex-col items-center">
+            {/* Cover preview */}
+            <div className="mb-6 flex flex-col items-center">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2">
+                Cover preview
+              </p>
+              <div
+                className="rounded-2xl overflow-hidden border bg-white shadow-md"
+                style={{
+                  borderColor: "hsl(var(--wizard-primary) / 0.18)",
+                  width: 220,
+                  aspectRatio: "2 / 3",
+                }}
+              >
+                {cover.status === "ready" ? (
+                  <img
+                    src={cover.dataUrl}
+                    alt={`Cover of ${title || `${name}'s book`}`}
+                    className="w-full h-full object-cover"
+                  />
+                ) : cover.status === "error" ? (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-4 text-center gap-2">
+                    <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
+                      Couldn't draw the cover.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={generateCover}
+                      className="text-xs underline text-[hsl(var(--wizard-primary))]"
                     >
-                      {loadingMsg}
+                      Try again
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center p-4 animate-pulse bg-black/5">
+                    <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
+                      {coverMsg}
                     </p>
                   </div>
                 )}
-                <p className="text-base font-serif leading-relaxed whitespace-pre-wrap text-[hsl(var(--wizard-primary))]/90">
-                  {summary}
-                </p>
-                <p className="text-xs text-[hsl(var(--wizard-primary))]/45 text-right mt-3">
-                  {wordCount(summary)} words
-                </p>
               </div>
-            )}
-
-            {error && !loading && !editing && (
-              <p className="text-sm text-red-600 mt-3 text-center">{error}</p>
-            )}
-          </div>
-
-          {/* Edit controls (Refresh already lives next to the title) */}
-          {!editing && (
-            <div className="flex items-center justify-center gap-3 mt-5">
-              {summary && !loading && (
+              {cover.status === "ready" && (
                 <button
                   type="button"
-                  onClick={startEdit}
-                  aria-label="Edit summary"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))] bg-white"
+                  onClick={generateCover}
+                  className="mt-2 inline-flex items-center gap-1.5 text-[11px] text-[hsl(var(--wizard-primary))]/60 hover:text-[hsl(var(--wizard-primary))]"
                 >
-                  <Pencil className="w-4 h-4" />
-                  Edit
+                  <RefreshCw className="w-3 h-3" /> Redraw cover
                 </button>
               )}
             </div>
-          )}
 
-          <div className="mt-8">
-            <StoryDetailsRecap answers={answers} />
-          </div>
+            {(() => {
+              const cast: Array<{
+                key: string;
+                label: string;
+                state: { status: string; dataUrl?: string; error?: string };
+                onRetry: () => void;
+              }> = [
+                {
+                  key: "hero",
+                  label: name,
+                  state: portrait,
+                  onRetry: portrait.regenerate,
+                },
+                ...supportingChars
+                  .filter((c) => c?.id && c?.name)
+                  .map((c) => ({
+                    key: c.id as string,
+                    label: c.name as string,
+                    state:
+                      (supportingPortraits[c.id] as any) ?? { status: "loading" },
+                    onRetry: () => regenerateSupporting(c.id),
+                  })),
+              ];
 
-          <p
-            className="text-center text-xs italic mt-6"
-            style={{ color: "hsl(var(--wizard-primary) / 0.5)" }}
-          >
-            Refresh as many times as you like. Once it's just right, approve
-            and we'll move on to checkout.
-          </p>
-
+              return (
+                <div className="mb-6 flex flex-wrap items-start justify-center gap-4">
+                  {cast.map((m) => (
+                    <div key={m.key} className="flex flex-col items-center">
+                      <div
+                        className="rounded-2xl overflow-hidden border bg-white shadow-sm"
+                        style={{
+                          borderColor: "hsl(var(--wizard-primary) / 0.18)",
+                          width: 140,
+                          aspectRatio: "2 / 3",
+                        }}
+                      >
+                        {m.state.status === "ready" && m.state.dataUrl ? (
+                          <img
+                            src={m.state.dataUrl}
+                            alt={`Portrait of ${m.label}`}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : m.state.status === "error" ? (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-3 text-center gap-2">
+                            <p className="text-xs text-[hsl(var(--wizard-primary))]/70">
+                              Portrait hit a snag.
+                            </p>
+                            <button
+                              type="button"
+                              onClick={m.onRetry}
+                              className="text-xs underline text-[hsl(var(--wizard-primary))]"
+                            >
+                              Try again
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-3 gap-2 animate-pulse bg-black/5">
+                            <p className="text-xs italic text-center text-[hsl(var(--wizard-primary))]/70">
+                              {portraitMsg}
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                      <p className="mt-2 text-xs font-medium text-[hsl(var(--wizard-primary))]/80">
+                        {m.label}
+                      </p>
+                      {m.state.status === "ready" && (
+                        <button
+                          type="button"
+                          onClick={m.onRetry}
+                          className="mt-1 inline-flex items-center gap-1.5 text-[10px] text-[hsl(var(--wizard-primary))]/60 hover:text-[hsl(var(--wizard-primary))]"
+                        >
+                          <RefreshCw className="w-3 h-3" /> Refresh
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         </div>
       </main>
