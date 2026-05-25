@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useCharacterPortrait } from "@/hooks/useCharacterPortrait";
 import { useSupportingPortraits } from "@/hooks/useSupportingPortraits";
+import ImageLightbox from "@/components/ImageLightbox";
 
 type CoverState =
   | { status: "idle" }
@@ -72,6 +73,8 @@ export default function Step10Summary() {
     ? answers.supportingCharacters
     : [];
   const portraitMsg = useRotatingMessage(portraitMessages(name), 2200);
+
+  const [lightbox, setLightbox] = useState<{ src: string; alt: string } | null>(null);
 
   const fetchSummary = async () => {
     setLoading(true);
