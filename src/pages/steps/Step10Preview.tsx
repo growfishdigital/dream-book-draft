@@ -157,8 +157,8 @@ export default function Step9Preview() {
         Preview the book and choose how you'd like it delivered.
       </p>
 
-      {/* Two-column layout */}
-      <div className="w-full max-w-[1100px] grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
+      {/* Single-column layout */}
+      <div className="w-full max-w-[560px] flex flex-col gap-8 items-stretch">
         {/* Preview column */}
         <div className="flex flex-col items-center gap-5">
           {/* Cover + first page side-by-side */}
