@@ -122,8 +122,11 @@ export function useSupportingPortraits() {
       const h = hashChar(c, artStyle);
       if (!h) continue;
       const cur = portraits[c.id];
-      if (cur?.sourceHash === h && cur.status !== "idle") continue;
       if (inflightRef.current[c.id] === h) continue;
+      // Skip only when we have a finished result for this exact hash.
+      // (Previously "loading" without an inflight ref would block retries
+      // after a page reload — leaving supporting portraits stuck.)
+      if (cur?.sourceHash === h && (cur.status === "ready" || cur.status === "error")) continue;
       void runOne(c.id, h);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

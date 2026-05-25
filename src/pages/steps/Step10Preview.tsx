@@ -82,7 +82,7 @@ export default function Step9Preview() {
             </p>
             <div
               className="rounded-2xl overflow-hidden shadow-lg bg-white"
-              style={{ aspectRatio: "2/3", width: 180 }}
+              style={{ aspectRatio: "1/1", width: 220 }}
             >
               {coverImage ? (
                 <img
