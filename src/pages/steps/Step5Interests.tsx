@@ -145,9 +145,6 @@ export default function Step4b() {
     color: "hsl(var(--wizard-primary))",
   } as const;
 
-  const textareaClass =
-    "min-h-[92px] w-full rounded-2xl border bg-background px-4 py-3 text-base outline-none transition focus:ring-2 focus:ring-[hsl(var(--wizard-primary)/0.25)]";
-
   return (
     <WizardShell showSkip>
       <div className="space-y-8">
