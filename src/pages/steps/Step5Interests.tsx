@@ -242,35 +242,6 @@ export default function Step4b() {
           </p>
         )}
 
-        <div className="space-y-4 rounded-3xl border bg-card/60 p-5">
-          <div className="space-y-1">
-            <h2 className="font-heading text-xl font-semibold">A little more about {name}</h2>
-            <p className="text-sm text-muted-foreground">
-              Optional, but helpful. These keep the story from making the wrong thing feel hard or easy.
-            </p>
-          </div>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium">What is {name} already good at?</span>
-            <textarea
-              value={thingsAlreadyGoodAt}
-              onChange={(e) => setAnswer("thingsAlreadyGoodAt", e.target.value)}
-              placeholder="Example: climbing, reading chapter books, being brave with animals"
-              className={textareaClass}
-            />
-          </label>
-
-          <label className="block space-y-2">
-            <span className="text-sm font-medium">What feels tricky for {name} right now?</span>
-            <textarea
-              value={thingsCurrentlyTricky}
-              onChange={(e) => setAnswer("thingsCurrentlyTricky", e.target.value)}
-              placeholder="Example: asking for help, trying again after a mistake, speaking up"
-              className={textareaClass}
-            />
-          </label>
-        </div>
-
         <p className="text-sm text-muted-foreground">
           <span className="font-semibold">Why we ask:</span> {name}'s interests become woven into the story — making it uniquely theirs.
         </p>
