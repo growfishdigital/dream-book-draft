@@ -18,8 +18,8 @@ const STEP_LABELS: Record<number, string> = {
   6: "Art Style",
   7: "Characters",
   8: "Story Summary",
-  9: "Generating",
-  10: "Preview & Buy",
+  9: "Preview & Buy",
+  10: "Generating",
 };
 
 // Warm, child-focused encouragement that swaps as the user advances.
@@ -33,8 +33,8 @@ const PROGRESS_MESSAGES: Record<number, string> = {
   6: "Picking the perfect look 🎨",
   7: "Gathering their cast of friends 🧸",
   8: "Your story is taking shape 📖",
-  9: "Stitching every page together ✨",
-  10: "Tada — meet your storybook 🎉",
+  9: "Tada — meet your storybook 🎉",
+  10: "Stitching every page together ✨",
 };
 
 export default function ProgressBar({ currentStep }: { currentStep: number }) {

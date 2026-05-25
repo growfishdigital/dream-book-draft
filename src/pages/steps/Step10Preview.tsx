@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { pathForStep } from "@/lib/wizardSteps";
 import { useNavigate } from "react-router-dom";
 import { useWizard } from "@/contexts/WizardContext";
-import { supabase } from "@/integrations/supabase/client";
-import { buildBrief } from "@/lib/buildBrief";
-import { pipelineMessage } from "@/lib/loadingMessages";
+
 
 
 import { Check, Image as ImageIcon, Columns2 } from "lucide-react";
@@ -281,7 +279,7 @@ function StoryPage({ name, artHsl }: { name: string; artHsl: string }) {
 }
 
 
-export default function Step11() {
+export default function Step9Preview() {
   const { answers, setAnswer } = useWizard();
   const navigate = useNavigate();
   const name = answers.childName || "your little one";
@@ -295,7 +293,6 @@ export default function Step11() {
   const artHsl = ART_COLORS[artStyle] || ART_COLORS.watercolor;
 
   const [selected, setSelected] = useState<Plan>("hardcover");
-  const [orderPlaced, setOrderPlaced] = useState(false);
   const [layoutConfirmed, setLayoutConfirmed] = useState(false);
 
   // Buyer form state
@@ -303,75 +300,12 @@ export default function Step11() {
   const [buyerEmail, setBuyerEmail] = useState<string>(answers.buyer_email || "");
   const [buyerErrors, setBuyerErrors] = useState<{ name?: string; email?: string }>({});
 
-  // Pipeline state
-  const [pipeline, setPipeline] = useState<{
-    running: boolean;
-    status: string;
-    progress: { stage: string; current: number; total: number; message?: string } | null;
-    bookId: string | null;
-    error: string | null;
-  }>({ running: false, status: "idle", progress: null, bookId: null, error: null });
-  const pollRef = useRef<number | null>(null);
-
-  const canOrder = (!!coverImage || layoutConfirmed) && !pipeline.running;
+  const canOrder = !!coverImage || layoutConfirmed;
 
   const price = selected === "digital" ? "$9.99" : "$44.99";
   const planLabel = selected === "digital" ? "Digital Book" : "Printed Hardcover + Digital";
 
-  // Poll pipeline_progress while a run is in flight.
-  // Also watchdogs a stalled chain by re-invoking generate-book-images
-  // if progress hasn't advanced in 60s.
-  useEffect(() => {
-    if (!pipeline.bookId || !pipeline.running) return;
-    const bookId = pipeline.bookId;
-    let lastProgressKey = "";
-    let lastProgressAt = Date.now();
-    const tick = async () => {
-      const { data } = await supabase
-        .from("generated_books")
-        .select("pipeline_status,pipeline_progress,pipeline_error")
-        .eq("id", bookId)
-        .maybeSingle();
-      if (!data) return;
-      const status = (data.pipeline_status as string) || "idle";
-      const progress = (data.pipeline_progress as any) || null;
-      const error = (data.pipeline_error as string) || null;
-      setPipeline((p) => ({ ...p, status, progress, error }));
-
-      const key = `${status}:${progress?.stage}:${progress?.current}/${progress?.total}`;
-      if (key !== lastProgressKey) {
-        lastProgressKey = key;
-        lastProgressAt = Date.now();
-      } else if (
-        status !== "done" &&
-        status !== "failed" &&
-        status !== "story" && // story stage = generate-book is doing AI work; kicking images here just breaks the row
-        Date.now() - lastProgressAt > 90_000
-      ) {
-        // Stalled — nudge the chain.
-        lastProgressAt = Date.now();
-        console.warn("Pipeline stalled, re-invoking generate-book-images");
-        void supabase.functions.invoke("generate-book-images", {
-          body: { book_id: bookId },
-        });
-      }
-
-      if (status === "done") {
-        setPipeline((p) => ({ ...p, running: false }));
-        setOrderPlaced(true);
-      } else if (status === "failed") {
-        setPipeline((p) => ({ ...p, running: false }));
-      }
-    };
-    pollRef.current = window.setInterval(tick, 3000);
-    tick();
-    return () => {
-      if (pollRef.current) window.clearInterval(pollRef.current);
-    };
-  }, [pipeline.bookId, pipeline.running]);
-
-
-  const startPipeline = async () => {
+  const handlePay = () => {
     const errs: { name?: string; email?: string } = {};
     if (!buyerName.trim()) errs.name = "Required";
     if (!/^\S+@\S+\.\S+$/.test(buyerEmail.trim())) errs.email = "Enter a valid email";
@@ -380,142 +314,19 @@ export default function Step11() {
 
     setAnswer("buyer_name", buyerName.trim());
     setAnswer("buyer_email", buyerEmail.trim());
+    setAnswer("coverLayout", layout);
+    setAnswer("selectedPlan", selected);
 
-    setPipeline({
-      running: true,
-      status: "story",
-      progress: { stage: "story", current: 0, total: 1, message: `Writing ${name}'s story…` },
-      bookId: null,
-      error: null,
-    });
-
-    try {
-      const brief = buildBrief({
-        ...answers,
-        buyer_name: buyerName.trim(),
-        buyer_email: buyerEmail.trim(),
-      });
-
-      // 1. Story. generate-book inserts a stub row, returns the id immediately,
-      //    runs the AI call in the background, and chains generate-book-images
-      //    (which itself self-chains slices) when the story is ready.
-      //    The DB poller above is the source of truth for progress.
-      const seed = (answers.characterPortrait as any)?.dataUrl || null;
-      const { data: bookResp, error: bookErr } = await supabase.functions.invoke(
-        "generate-book",
-        {
-          body: {
-            brief,
-            buyer_name: buyerName.trim(),
-            buyer_email: buyerEmail.trim(),
-            seed_portrait_data_url: seed,
-          },
-        },
-      );
-      if (bookErr) throw bookErr;
-      if (bookResp?.error) throw new Error(bookResp.error);
-      const bookId: string | undefined = bookResp?.id;
-      if (!bookId) throw new Error("Book id missing from generate-book response.");
-
-      setPipeline((p) => ({ ...p, bookId, status: "story" }));
-
-    } catch (e: any) {
-      setPipeline({
-        running: false,
-        status: "failed",
-        progress: null,
-        bookId: null,
-        error: e?.message || "Couldn't start the pipeline.",
-      });
-    }
+    navigate(pathForStep(10));
   };
 
-  if (pipeline.running || pipeline.status === "failed") {
-    const stage = pipeline.progress?.stage || pipeline.status;
-    const current = pipeline.progress?.current ?? 0;
-    const total = pipeline.progress?.total ?? 1;
-    const msg = pipelineMessage(stage, current, total, name);
-    const pct = total > 0 ? Math.min(100, Math.round((current / total) * 100)) : 0;
-
-    return (
-      <div
-        className="flex flex-col items-center justify-center min-h-[100dvh] px-4 text-center"
-        style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
-      >
-        <div className="text-5xl mb-4">📖</div>
-        <h1 className="text-2xl font-bold mb-2" style={{ color: "hsl(var(--wizard-primary))" }}>
-          Crafting {name}'s book…
-        </h1>
-        <p className="text-sm text-muted-foreground mb-6 font-serif italic">
-          {msg}
-        </p>
-        <div className="w-full max-w-sm h-2 rounded-full overflow-hidden mb-2"
-             style={{ backgroundColor: "hsl(var(--wizard-primary) / 0.15)" }}>
-          <div
-            className="h-full transition-all duration-500"
-            style={{ width: `${pct}%`, backgroundColor: "hsl(var(--wizard-primary))" }}
-          />
-        </div>
-        <p className="text-xs text-muted-foreground mb-8">
-          {stage === "pages"
-            ? `Page ${current} of ${total}`
-            : stage === "portraits"
-              ? `Portrait ${current} of ${total}`
-              : stage === "done"
-                ? "Done"
-                : "Getting started…"}
-        </p>
-        {pipeline.status === "failed" && (
-          <>
-            <p className="text-sm text-destructive max-w-sm mb-4">
-              {pipeline.error || "Something went wrong while building the book."}
-            </p>
-            <button
-              onClick={() => setPipeline({ running: false, status: "idle", progress: null, bookId: null, error: null })}
-              className="text-sm font-medium underline"
-              style={{ color: "hsl(var(--wizard-primary))" }}
-            >
-              ← Back to checkout
-            </button>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  if (orderPlaced) {
-    return (
-      <div
-        className="flex flex-col items-center justify-center min-h-[100dvh] px-4 text-center"
-        style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
-      >
-        <div className="text-6xl mb-6">🎉</div>
-        <h1 className="text-2xl font-bold mb-2" style={{ color: "hsl(var(--wizard-primary))" }}>
-          Your book is on its way!
-        </h1>
-        <p className="text-muted-foreground mb-1">
-          {planLabel} — {price}
-        </p>
-        <p className="text-sm text-muted-foreground mb-8">
-          We'll send everything to your inbox shortly.
-        </p>
-        <button
-          onClick={() => navigate(pathForStep(1))}
-          className="text-sm font-medium underline"
-          style={{ color: "hsl(var(--wizard-primary))" }}
-        >
-          ← Back to start
-        </button>
-      </div>
-    );
-  }
 
   return (
     <div
       className="flex flex-col min-h-[100dvh]"
       style={{ backgroundColor: "hsl(var(--wizard-bg))" }}
     >
-      <WizardHeader currentStep={11} />
+      <WizardHeader currentStep={9} />
 
       <div className="flex flex-col items-center px-4 py-8">
       {/* Heading */}
@@ -849,14 +660,14 @@ export default function Step11() {
             </div>
 
             <button
-              onClick={() => canOrder && startPipeline()}
+              onClick={() => canOrder && handlePay()}
               disabled={!canOrder}
               className="w-full h-12 rounded-full text-base font-semibold transition-opacity disabled:opacity-40 disabled:cursor-not-allowed mt-2"
               style={{ backgroundColor: "#2B4E18", color: "#fff" }}
             >
               Pay {price} & start crafting
             </button>
-            {!canOrder && !pipeline.running && (
+            {!canOrder && (
               <p className="text-xs text-center" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
                 Confirm your cover layout above to continue.
               </p>
