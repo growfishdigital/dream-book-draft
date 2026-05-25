@@ -262,7 +262,9 @@ export default function Step10Summary() {
       <WizardHeader currentStep={9} />
 
       <main className="flex-1 flex justify-center px-4 pt-8 pb-32">
-        <div className="w-full" style={{ maxWidth: "700px" }}>
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start" style={{ maxWidth: "1100px" }}>
+          {/* LEFT column: cover + cast */}
+          <div className="flex flex-col items-center">
           {/* Cover preview */}
           <div className="mb-6 flex flex-col items-center">
             <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2">
