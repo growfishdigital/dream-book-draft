@@ -332,7 +332,7 @@ export default function Step10Summary() {
                   <div className="flex items-center justify-between text-xs text-[hsl(var(--wizard-primary))]/60">
                     <span>{wordCount(draft)} words</span>
                     <span className="italic">
-                      Tip: aim for ~100 words for the best book length.
+                      Tip: aim for ~150 words for the best book length.
                     </span>
                   </div>
                   <div className="flex gap-2 justify-end pt-1">

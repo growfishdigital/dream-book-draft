@@ -16,7 +16,7 @@ export const MODELS = {
 } as const;
 
 // ---- Summary length knobs ---------------------------------------------------
-export const STORY_LENGTH = { min: 65, target: 75, max: 90 } as const;
+export const STORY_LENGTH = { min: 130, target: 150, max: 170 } as const;
 
 // ---- Art style fragments ----------------------------------------------------
 // Mirror of `src/lib/artStyles.ts` ART_STYLES[].prompt. Keep in sync — frontend
