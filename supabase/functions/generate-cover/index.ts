@@ -155,9 +155,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const rawText = await aiResp.text();
+    let rawText = await aiResp.text();
+    // Retry once if body came back empty or unparseable — the gateway occasionally truncates.
+    const looksBad = (t: string) => {
+      if (!t) return true;
+      try { JSON.parse(t); return false; } catch { return true; }
+    };
+    if (looksBad(rawText)) {
+      console.warn("Empty/malformed body from AI gateway (cover); retrying once. len=", rawText.length);
+      const retry = await callGateway();
+      if (retry.ok) rawText = await retry.text();
+    }
     if (!rawText) {
-      console.error("Empty body from AI gateway (cover)");
+      console.error("Empty body from AI gateway (cover) after retry");
       return new Response(
         JSON.stringify({ error: "Image model returned an empty response. Please try again." }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
@@ -167,7 +177,7 @@ Deno.serve(async (req) => {
     try {
       data = JSON.parse(rawText);
     } catch (parseErr) {
-      console.error("Failed to parse AI response (cover)", parseErr, rawText.slice(0, 500));
+      console.error("Failed to parse AI response (cover) after retry", parseErr, rawText.slice(0, 500));
       return new Response(
         JSON.stringify({ error: "Image model returned a malformed response. Please try again." }),
         { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } },
