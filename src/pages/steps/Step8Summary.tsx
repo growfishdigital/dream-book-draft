@@ -54,6 +54,14 @@ export default function Step10Summary() {
 
   const previousSummaryRef = useRef<string>("");
   const loadingMsg = useRotatingMessage(summaryMessages(name), 2000);
+  const coverMsg = useRotatingMessage(coverMessages(name), 2400);
+
+  const [cover, setCover] = useState<CoverState>(
+    answers.selectedConcept?.coverImage
+      ? { status: "ready", dataUrl: answers.selectedConcept.coverImage }
+      : { status: "idle" },
+  );
+  const coverGenSig = useRef<string>("");
 
   // Portraits of the full cast (kicked off in Step 7). Idempotent and now
   // always generates — even when no reference photo was uploaded.
