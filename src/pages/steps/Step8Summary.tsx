@@ -396,8 +396,10 @@ export default function Step10Summary() {
               </div>
             );
           })()}
+          </div>
 
-
+          {/* RIGHT column: story content */}
+          <div className="flex flex-col">
           <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[hsl(var(--wizard-primary))]">
             Here's {name}'s story
           </h1>
