@@ -96,20 +96,8 @@ function CoverPage({
   );
 }
 
-function StoryPage({ name, artHsl }: { name: string; artHsl: string }) {
-  return (
-    <div className="flex flex-col h-full p-5 gap-3">
-      <div className="h-2/5 rounded-lg flex items-center justify-center" style={{ backgroundColor: `hsl(${artHsl} / 0.15)` }}>
-        <div className="w-16 h-12 rounded" style={{ backgroundColor: `hsl(${artHsl} / 0.35)` }} />
-      </div>
-      <div className="flex-1 flex flex-col gap-2 pt-2">
-        <p className="text-[11px] font-serif leading-relaxed" style={{ color: `hsl(${artHsl} / 0.85)` }}>
-          {name} stepped softly into the clearing, eyes wide with wonder. The trees seemed to whisper a secret meant just for them — and somewhere deep in the woods, a tiny light began to glow…
-        </p>
-      </div>
-    </div>
-  );
-}
+
+
 
 
 export default function Step9Preview() {
