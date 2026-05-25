@@ -410,6 +410,25 @@ export default function Step10Summary() {
             Read it, refresh it, or tweak it before we draw the pictures.
           </p>
 
+          {/* Book title */}
+          {!editing && (
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <h2 className="font-heading text-2xl font-semibold text-center text-[hsl(var(--wizard-primary))]">
+                {title || `${name}'s Adventure`}
+              </h2>
+              <button
+                type="button"
+                onClick={fetchSummary}
+                disabled={loading}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-black/10 text-[hsl(var(--wizard-primary))]/70 bg-white hover:text-[hsl(var(--wizard-primary))] disabled:opacity-50"
+                aria-label="Regenerate title and summary"
+              >
+                <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
+                Regenerate
+              </button>
+            </div>
+          )}
+
           {/* Summary card */}
           <div
             className="rounded-2xl border bg-white p-6 shadow-sm"
@@ -481,9 +500,6 @@ export default function Step10Summary() {
                     </p>
                   </div>
                 )}
-                <h2 className="font-heading text-2xl font-semibold text-center text-[hsl(var(--wizard-primary))] mb-3">
-                  {title || `${name}'s Adventure`}
-                </h2>
                 <p className="text-base font-serif leading-relaxed whitespace-pre-wrap text-[hsl(var(--wizard-primary))]/90">
                   {summary}
                 </p>
@@ -498,20 +514,9 @@ export default function Step10Summary() {
             )}
           </div>
 
-          {/* Refresh + Edit controls */}
+          {/* Edit controls (Refresh already lives next to the title) */}
           {!editing && (
             <div className="flex items-center justify-center gap-3 mt-5">
-              <button
-                type="button"
-                onClick={fetchSummary}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium border border-black/15 text-[hsl(var(--wizard-primary))] bg-white disabled:opacity-50"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                />
-                {loading ? "Crafting…" : summary ? "Refresh" : "Try again"}
-              </button>
               {summary && !loading && (
                 <button
                   type="button"
