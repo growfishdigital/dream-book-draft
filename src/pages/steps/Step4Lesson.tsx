@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
+import { SelectableTile } from "@/components/SelectableTile";
 
 const LESSONS = [
   { value: "courage", emoji: "💪", label: "Courage", desc: "Being brave even when scared" },
