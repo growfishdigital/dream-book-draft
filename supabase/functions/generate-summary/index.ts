@@ -93,11 +93,7 @@ const EXTRA_BANNED_DESCRIPTORS = [
 ];
 
 const GENERIC_SUMMARY_TERMS = [
-  "the only way out",
-  "final unexpected choice",
-  "twist or reversal",
   "bigger, stranger, or funnier",
-  "emotional arc",
   "invisible structure",
   "works for about three seconds",
 ];
