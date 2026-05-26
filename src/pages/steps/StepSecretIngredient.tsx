@@ -191,14 +191,14 @@ export default function Step5() {
         {activeCategoryDef && (
           <div ref={followUpRef} className="space-y-4 animate-fade-in">
             <h2
-              className="text-lg font-semibold text-center"
+              className="font-heading text-xl sm:text-2xl font-semibold text-left"
               style={{ color: "hsl(var(--wizard-primary))" }}
             >
               Tell us about the {activeCategoryDef.label.toLowerCase()}
             </h2>
             {activeCategoryDef.fields.map((field) => (
               <div key={field.key} className="space-y-1.5">
-                <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+                <label className="block text-base font-semibold text-[hsl(var(--wizard-primary))]">
                   {field.label}
                 </label>
                 {field.type === "dropdown" ? (
