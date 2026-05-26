@@ -217,7 +217,7 @@ function summaryIssues(summary: string, forbiddenTraits: string[], childName: st
     if (directDescriptor.test(summary)) issues.push("direct hero descriptor pattern");
   }
   if (/\b(PAUSE|HYPER|DO NOT|MORE|STOP|START|ON|OFF|MESS)\b/.test(summary)) issues.push("contains likely in-illustration label/button text");
-  if (lower.includes("learns that") || lower.includes("learns how") || lower.includes("discovers that") || lower.includes("discovers what")) issues.push("explains moral instead of implying growth");
+  
   return Array.from(new Set(issues));
 }
 
