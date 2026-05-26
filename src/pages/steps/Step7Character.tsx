@@ -12,6 +12,9 @@ import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { SelectableTile } from "@/components/SelectableTile";
 import {
   PILL_SELECTED,
@@ -106,6 +109,23 @@ function PillSelector({ options, value, onChange }: {
         </SelectableTile>
       ))}
     </div>
+  );
+}
+
+function GenderSelect({
+  options, value, onChange, placeholder = "Select gender",
+}: { options: readonly string[]; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className="rounded-xl bg-white h-10">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }
 
@@ -266,15 +286,17 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
           onChange={(e) => upd({ name: e.target.value })} />
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Age</FieldLabel>
-        <Input className="rounded-xl w-24" placeholder="e.g. 5" value={data.age}
-          onChange={(e) => upd({ age: e.target.value })} />
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel>Gender</FieldLabel>
-        <PillSelector options={GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Age</FieldLabel>
+          <Input className="rounded-xl" placeholder="e.g. 5" value={data.age}
+            onChange={(e) => upd({ age: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Gender</FieldLabel>
+          <GenderSelect options={GENDERS_PROTO} value={data.gender}
+            onChange={(v) => upd({ gender: v })} />
+        </div>
       </div>
 
       <MiniPersonality
@@ -463,7 +485,8 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
 
       <div className="space-y-1.5">
         <FieldLabel>Gender</FieldLabel>
-        <PillSelector options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
+        <GenderSelect options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO}
+          value={data.gender} onChange={(v) => upd({ gender: v })} />
       </div>
 
       <div className="space-y-1.5">
@@ -542,15 +565,33 @@ function AddPill({ label, icon, onClick, disabled, tooltip }: {
 export default function Step6() {
   const { answers, setAnswer, setCanContinue } = useWizard();
 
-  // Pull data from context (or defaults)
+  // Auto-fill protagonist from Step 1 answers (name, age range, gender).
+  // Step 1 gender values are lowercase (girl / boy / non-binary); map to the
+  // Title-cased options the protagonist form uses.
+  const step1Name = (answers.childName as string) || "";
+  const step1AgeRange = (answers.ageRange as string) || "";
+  const step1GenderRaw = (answers.gender as string) || "";
+  const step1Gender =
+    step1GenderRaw === "girl" ? "Girl"
+    : step1GenderRaw === "boy" ? "Boy"
+    : step1GenderRaw === "non-binary" ? "Gender neutral"
+    : "";
+
+  // Pull data from context (or defaults), backfilling empty fields from Step 1.
   const storedProtagonist = answers.protagonist as Protagonist | undefined;
   const protagonist: Protagonist = storedProtagonist
-    ? { traits: [], ...storedProtagonist }
+    ? {
+        traits: [],
+        ...storedProtagonist,
+        name: storedProtagonist.name || step1Name,
+        age: storedProtagonist.age || step1AgeRange,
+        gender: storedProtagonist.gender || step1Gender,
+      }
     : {
         photos: [],
-        name: (answers.childName as string) || "",
-        age: (answers.childAge as string) || "",
-        gender: (answers.childGender as string) || "",
+        name: step1Name,
+        age: step1AgeRange,
+        gender: step1Gender,
         special: "",
         appearance: emptyAppearance(),
         traits: (answers.personalityList as Array<{ word: string; emoji?: string }>) || [],
@@ -566,6 +607,20 @@ export default function Step6() {
   const [showUpsell, setShowUpsell] = useState(false);
   const [showNoCharsDialog, setShowNoCharsDialog] = useState(false);
   const noCharsResolver = useRef<((ok: boolean) => void) | null>(null);
+
+  // Persist auto-filled values so downstream steps see them even if the user
+  // never edits the protagonist form.
+  useEffect(() => {
+    if (
+      !storedProtagonist ||
+      storedProtagonist.name !== protagonist.name ||
+      storedProtagonist.age !== protagonist.age ||
+      storedProtagonist.gender !== protagonist.gender
+    ) {
+      setAnswer("protagonist", protagonist);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step1Name, step1AgeRange, step1Gender]);
 
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
