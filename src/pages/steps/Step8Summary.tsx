@@ -236,12 +236,14 @@ export default function Step10Summary() {
       <main className="flex-1 flex justify-center px-4 pt-12 pb-20">
         <div className="w-full" style={{ maxWidth: "700px" }}>
           <div className="space-y-10">
-            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
-              Here's {name}'s story
-            </h1>
-            <p className="text-muted-foreground text-lg text-left">
-              Read it, refresh it, or tweak it before we draw the pictures.
-            </p>
+            <div>
+              <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+                Here's {name}'s story
+              </h1>
+              <p className="text-muted-foreground text-lg text-left">
+                Read it, refresh it, or tweak it before we draw the pictures.
+              </p>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start">
               {/* LEFT column: story content */}
