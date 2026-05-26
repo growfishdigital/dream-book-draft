@@ -63,7 +63,7 @@ export default function StepWhoIsItFor() {
               className="font-heading text-xl sm:text-2xl font-semibold text-left"
               style={{ color: "hsl(var(--wizard-primary))" }}
             >
-              You are their…
+              What is your relationship to {childName}?
             </h2>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
