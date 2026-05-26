@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SelectableTile } from "@/components/SelectableTile";
 import bookBoard from "@/assets/book-board.jpg";
