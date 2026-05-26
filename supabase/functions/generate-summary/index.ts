@@ -93,11 +93,7 @@ const EXTRA_BANNED_DESCRIPTORS = [
 ];
 
 const GENERIC_SUMMARY_TERMS = [
-  "the only way out",
-  "final unexpected choice",
-  "twist or reversal",
   "bigger, stranger, or funnier",
-  "emotional arc",
   "invisible structure",
   "works for about three seconds",
 ];
@@ -221,7 +217,7 @@ function summaryIssues(summary: string, forbiddenTraits: string[], childName: st
     if (directDescriptor.test(summary)) issues.push("direct hero descriptor pattern");
   }
   if (/\b(PAUSE|HYPER|DO NOT|MORE|STOP|START|ON|OFF|MESS)\b/.test(summary)) issues.push("contains likely in-illustration label/button text");
-  if (lower.includes("learns that") || lower.includes("learns how") || lower.includes("discovers that") || lower.includes("discovers what")) issues.push("explains moral instead of implying growth");
+  
   return Array.from(new Set(issues));
 }
 
@@ -235,7 +231,7 @@ function lightConceptToolSchema(firstName: string) {
       },
       user_visible_summary: {
         type: "string",
-        description: `One paragraph, ${STORY_LENGTH.min}-${STORY_LENGTH.max} words. Polished customer-facing book concept, not a plot outline.`,
+        description: `Full beginning-to-end synopsis of the picture book, one flowing paragraph, ${STORY_LENGTH.min}-${STORY_LENGTH.max} words (target ~${STORY_LENGTH.target}). Cover setup, inciting moment, escalations, climactic choice, and resolution. Include the ending — this is NOT a teaser.`,
       },
       framework_id: {
         type: "string",
