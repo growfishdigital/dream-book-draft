@@ -182,13 +182,12 @@ export default function Step9Preview() {
                        style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
                   Your name
                 </label>
-                <input
+                <Input
                   type="text"
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
                   placeholder="e.g. Sarah Johnson"
-                  className="w-full h-11 rounded-xl border px-3 text-sm bg-white"
-                  style={{ borderColor: buyerErrors.name ? "hsl(var(--destructive))" : "hsl(var(--wizard-primary) / 0.25)" }}
+                  style={buyerErrors.name ? { borderColor: "hsl(var(--destructive))" } : undefined}
                 />
                 {buyerErrors.name && (
                   <p className="text-xs text-destructive">{buyerErrors.name}</p>
@@ -197,13 +196,12 @@ export default function Step9Preview() {
                        style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
                   Email
                 </label>
-                <input
+                <Input
                   type="email"
                   value={buyerEmail}
                   onChange={(e) => setBuyerEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full h-11 rounded-xl border px-3 text-sm bg-white"
-                  style={{ borderColor: buyerErrors.email ? "hsl(var(--destructive))" : "hsl(var(--wizard-primary) / 0.25)" }}
+                  style={buyerErrors.email ? { borderColor: "hsl(var(--destructive))" } : undefined}
                 />
                 {buyerErrors.email && (
                   <p className="text-xs text-destructive">{buyerErrors.email}</p>
