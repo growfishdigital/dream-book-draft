@@ -27,13 +27,6 @@ export default function Step3() {
 
   const selectedLesson = LESSONS.find((l) => l.value === lesson);
 
-  const cardClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl p-4 text-left transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
-
   return (
     <WizardShell>
       <div className="space-y-8">
@@ -51,11 +44,11 @@ export default function Step3() {
 
         <div className="grid grid-cols-2 gap-3">
           {LESSONS.map((l) => (
-            <button
+            <SelectableTile
               key={l.value}
-              type="button"
+              selected={lesson === l.value}
               onClick={() => setAnswer("lesson", l.value)}
-              className={cardClass(lesson === l.value)}
+              className="p-4 text-left"
             >
               <span className="text-2xl">{l.emoji}</span>
               <span
@@ -67,7 +60,7 @@ export default function Step3() {
               <span className="block text-xs text-muted-foreground mt-0.5">
                 {l.desc}
               </span>
-            </button>
+            </SelectableTile>
           ))}
         </div>
 
