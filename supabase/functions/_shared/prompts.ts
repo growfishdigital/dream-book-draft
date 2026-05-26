@@ -446,6 +446,7 @@ export function buildBookUserMessageV2({ age_band, include_belongs_to_page, buye
     "Return the complete book JSON using the tool schema.",
     `Child name: ${child_name}. Age band: ${age_band}.`,
     `Dedication/keepsake context: from ${buyer_relationship_label}; occasion ${occasion_label}.`,
+    "Buyer relationship and occasion are for the dedication only — they must not influence story pages 3–32 in any way.",
     include_belongs_to_page ? "Include a gentle belongs-to style dedication on page 2." : "Use page 2 as a short dedication/intro page.",
     "Layout registry for story pages:",
     serializeLayoutRegistryForPrompt(),
