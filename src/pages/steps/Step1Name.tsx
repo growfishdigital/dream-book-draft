@@ -33,7 +33,10 @@ export default function Step1() {
   const age = (answers.ageRange as string) || "";
   const gender = (answers.gender as string) || "";
   const language = (answers.language as string) || "english";
-  const bookBelongsTo = answers.bookBelongsTo !== false;
+
+  useEffect(() => {
+    setAnswer("bookBelongsTo", true);
+  }, []);
 
   const [headingVisible, setHeadingVisible] = useState(true);
   const [headingText, setHeadingText] = useState("Who is this book for?");
