@@ -94,14 +94,6 @@ export default function Step1() {
               placeholder="e.g. Emma, John, etc."
               className="text-base font-medium h-10 w-full rounded-xl border-input bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
             />
-            <label className="flex items-center gap-2 cursor-pointer select-none">
-              <Checkbox
-                checked={bookBelongsTo}
-                onCheckedChange={(checked) => setAnswer("bookBelongsTo", !!checked)}
-                className="border-[hsl(var(--wizard-primary))] data-[state=checked]:bg-[hsl(var(--wizard-primary))]"
-              />
-              <span className="text-sm text-muted-foreground">Add "This book belongs to" page</span>
-            </label>
           </div>
 
           {/* Gender */}
