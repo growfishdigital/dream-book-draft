@@ -143,12 +143,8 @@ export default function Step4b() {
 
   const atCap = list.length >= MAX_INTERESTS;
 
-  const pillBase =
-    "inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium transition-all";
-  const pillFilledStyle = {
-    backgroundColor: "hsl(var(--wizard-primary) / 0.10)",
-    color: "hsl(var(--wizard-primary))",
-  } as const;
+  // Pill styles now live in @/components/pillStyles (shared with MiniPersonality).
+
 
   return (
     <WizardShell showSkip>
