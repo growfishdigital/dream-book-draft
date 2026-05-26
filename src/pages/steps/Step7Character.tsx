@@ -91,14 +91,14 @@ function PillSelector({ options, value, onChange }: {
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((opt) => (
-        <button key={opt} type="button" onClick={() => onChange(value === opt ? "" : opt)}
-          className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
-            value === opt
-              ? "border-transparent shadow-sm text-white"
-              : "border-border bg-background text-muted-foreground hover:border-primary/40"
-          }`}
-          style={value === opt ? { backgroundColor: "hsl(var(--wizard-primary))" } : undefined}
-        >{opt}</button>
+        <SelectableTile
+          key={opt}
+          shape="pill"
+          selected={value === opt}
+          onClick={() => onChange(value === opt ? "" : opt)}
+        >
+          <span style={{ color: "hsl(var(--wizard-primary))" }}>{opt}</span>
+        </SelectableTile>
       ))}
     </div>
   );
@@ -108,14 +108,12 @@ function SkinTonePicker({ value, onChange }: { value: string; onChange: (v: stri
   return (
     <div className="flex gap-2">
       {SKIN_TONES.map((tone) => (
-        <button key={tone} type="button" onClick={() => onChange(value === tone ? "" : tone)}
-          className={`w-8 h-8 rounded-full border-2 transition-all ${
-            value === tone ? "scale-110 shadow-md" : "border-transparent hover:scale-105"
-          }`}
-          style={{
-            backgroundColor: tone,
-            borderColor: value === tone ? "hsl(var(--wizard-primary))" : undefined,
-          }}
+        <SelectableTile
+          key={tone}
+          shape="swatch"
+          selected={value === tone}
+          onClick={() => onChange(value === tone ? "" : tone)}
+          style={{ backgroundColor: tone }}
           aria-label={`Skin tone ${tone}`}
         />
       ))}
