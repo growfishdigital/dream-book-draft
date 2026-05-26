@@ -286,15 +286,17 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
           onChange={(e) => upd({ name: e.target.value })} />
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Age</FieldLabel>
-        <Input className="rounded-xl w-24" placeholder="e.g. 5" value={data.age}
-          onChange={(e) => upd({ age: e.target.value })} />
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel>Gender</FieldLabel>
-        <PillSelector options={GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Age</FieldLabel>
+          <Input className="rounded-xl" placeholder="e.g. 5" value={data.age}
+            onChange={(e) => upd({ age: e.target.value })} />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Gender</FieldLabel>
+          <GenderSelect options={GENDERS_PROTO} value={data.gender}
+            onChange={(v) => upd({ gender: v })} />
+        </div>
       </div>
 
       <MiniPersonality
