@@ -385,12 +385,10 @@ function MiniPersonality({
 
   return (
     <div className="space-y-2">
-      <FieldLabel>
-        Personality{" "}
-        <span className="font-normal text-muted-foreground">
-          — pick up to {MAX_SUPPORT_TRAITS} traits for {name || "this character"}
-        </span>
-      </FieldLabel>
+      <FieldLabel>Personality</FieldLabel>
+      <p className="text-sm text-muted-foreground">
+        Pick up to {MAX_SUPPORT_TRAITS} traits for {name || "this character"}
+      </p>
 
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
