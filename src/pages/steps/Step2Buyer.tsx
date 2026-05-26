@@ -104,11 +104,11 @@ export default function StepWhoIsItFor() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
             {OCCASIONS.map((o) => (
-              <button
+              <SelectableTile
                 key={o.value}
-                type="button"
+                selected={occasion === o.value}
                 onClick={() => setAnswer("occasion", o.value)}
-                className={tileClass(occasion === o.value)}
+                className={tileExtras}
               >
                 <div className="text-2xl mb-1">{o.emoji}</div>
                 <div
@@ -117,7 +117,7 @@ export default function StepWhoIsItFor() {
                 >
                   {o.label}
                 </div>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </section>
