@@ -236,9 +236,6 @@ function AppearanceAccordion({ appearance, onChange, name, defaultExpanded, feat
       </button>
       {open && (
         <div className="px-4 pb-4 space-y-4 animate-fade-in">
-          <p className="text-xs text-muted-foreground">
-            These details help the AI illustrate {name} — especially useful if you didn't upload a photo.
-          </p>
           <div className="space-y-1.5">
             <FieldLabel>Hair color</FieldLabel>
             <PillSelector options={HAIR_COLORS} value={appearance.hairColor} onChange={(v) => upd({ hairColor: v })} />

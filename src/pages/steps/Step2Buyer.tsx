@@ -65,9 +65,6 @@ export default function StepWhoIsItFor() {
             >
               You are their…
             </h2>
-            <p className="text-sm text-muted-foreground text-left">
-              This shapes the voice of the dedication.
-            </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
             {RELATIONSHIPS.map((r) => (
@@ -98,9 +95,6 @@ export default function StepWhoIsItFor() {
             >
               What's the occasion?
             </h2>
-            <p className="text-sm text-muted-foreground text-left">
-              A little flavor — never the central plot.
-            </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 w-full">
             {OCCASIONS.map((o) => (
@@ -122,9 +116,6 @@ export default function StepWhoIsItFor() {
           </div>
         </section>
 
-        <p className="text-center text-xs text-muted-foreground italic w-full">
-          You're already making something they'll keep forever ✨
-        </p>
       </div>
     </WizardShell>
   );
