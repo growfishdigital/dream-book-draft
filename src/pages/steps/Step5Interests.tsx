@@ -203,10 +203,6 @@ export default function Step4b() {
           )}
         </div>
 
-        <p className="text-xs text-muted-foreground">
-          ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
-        </p>
-
         {!atCap && visibleChips.length > 0 && (
           <div className="space-y-3">
             <h2 className="font-medium text-muted-foreground text-base">Click to add:</h2>
@@ -232,8 +228,8 @@ export default function Step4b() {
           </p>
         )}
 
-        <p className="text-sm text-muted-foreground">
-          <span className="font-semibold">Why we ask:</span> {name}'s interests become woven into the story — making it uniquely theirs.
+        <p className="text-xs text-muted-foreground">
+          ⚠️ Please don't reference copyrighted material (movies, TV shows, singers, brands, etc.) — we can't include them in your book.
         </p>
       </div>
     </WizardShell>
