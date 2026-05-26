@@ -79,21 +79,20 @@ export default function Step1() {
           </p>
         </div>
 
-        {/* Name input */}
         {/* Name + Gender side by side */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 w-full">
           {/* Name */}
           <div className="space-y-2">
-            <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
               Name
-            </label>
+            </h2>
             <Input
               value={name}
               onChange={(e) => setAnswer("childName", e.target.value)}
               placeholder="e.g. Emma, John, etc."
-              className="text-center text-base font-medium h-10 w-full rounded-xl border-input bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
+              className="text-base font-medium h-10 w-full rounded-xl border-input bg-white shadow-sm focus-visible:ring-[hsl(var(--wizard-primary))]"
             />
-            <label className="flex items-center justify-center gap-2 cursor-pointer select-none">
+            <label className="flex items-center gap-2 cursor-pointer select-none">
               <Checkbox
                 checked={bookBelongsTo}
                 onCheckedChange={(checked) => setAnswer("bookBelongsTo", !!checked)}
@@ -105,9 +104,9 @@ export default function Step1() {
 
           {/* Gender */}
           <div className="space-y-2">
-            <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+            <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
               Gender
-            </label>
+            </h2>
             <Select value={gender} onValueChange={(v) => setAnswer("gender", v)}>
               <SelectTrigger className="rounded-xl bg-white">
                 <SelectValue placeholder="Select gender" />
@@ -125,10 +124,10 @@ export default function Step1() {
 
         {/* Book language — own row */}
         <div className="space-y-2 w-full">
-          <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
             What language do they speak?
-          </label>
-          <div className="flex flex-wrap justify-center gap-3">
+          </h2>
+          <div className="flex flex-wrap gap-3">
             {LANGUAGES.map((l) => (
               <SelectableTile
                 key={l.value}
@@ -149,17 +148,9 @@ export default function Step1() {
 
         {/* Book type tiles (drives age range) */}
         <div className="space-y-4 pt-4">
-          <div className="text-center space-y-1">
-            <h2
-              className="font-heading text-2xl sm:text-3xl font-semibold"
-              style={{ color: "hsl(var(--wizard-primary))" }}
-            >
-              Pick a book type
-            </h2>
-            <p className="text-sm sm:text-base text-muted-foreground">
-              Choose the format that fits them best.
-            </p>
-          </div>
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            Pick a book type
+          </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 w-full">
             {AGE_RANGES.map((a) => (
               <SelectableTile
@@ -178,10 +169,10 @@ export default function Step1() {
                     className="w-full h-full object-cover transition-transform group-hover:scale-105"
                   />
                 </div>
-                <span className="block text-base sm:text-lg font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
+                <span className="block text-base sm:text-lg font-semibold leading-tight text-center" style={{ color: "hsl(var(--wizard-primary))" }}>
                   {a.label}
                 </span>
-                <span className="block text-sm text-muted-foreground -mt-2">
+                <span className="block text-sm text-muted-foreground -mt-2 text-center">
                   {a.sub}
                 </span>
               </SelectableTile>

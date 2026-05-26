@@ -67,9 +67,9 @@ export default function Step9Preview() {
 
       <div className="flex flex-col items-center px-4 py-8">
         {/* Heading */}
-        <div className="w-full max-w-[560px] space-y-2 mb-8">
+        <div className="w-full max-w-[700px] space-y-2 mb-8">
           <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
-            {name}'s book is ready. ✨
+            {name}'s book is ready.
           </h1>
           <p className="text-muted-foreground text-lg text-left">
             Preview the book and choose how you'd like it delivered.
@@ -78,15 +78,15 @@ export default function Step9Preview() {
 
 
         {/* Single-column layout */}
-        <div className="w-full max-w-[560px] flex flex-col gap-8 items-stretch">
+        <div className="w-full max-w-[700px] flex flex-col gap-8 items-stretch">
           {/* Cover preview */}
-          <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-col items-start gap-2">
             <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
               Cover
             </p>
             <div
               className="rounded-2xl overflow-hidden shadow-lg bg-white"
-              style={{ aspectRatio: "1/1", width: 220 }}
+              style={{ aspectRatio: "1/1", width: 260 }}
             >
               {coverImage ? (
                 <img

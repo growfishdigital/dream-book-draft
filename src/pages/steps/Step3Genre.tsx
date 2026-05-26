@@ -82,9 +82,9 @@ export default function Step2() {
 
         {/* Mood grid */}
         <div className="space-y-3">
-          <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
             Mood
-          </label>
+          </h2>
           <div className="grid grid-cols-3 gap-3">
             {MOODS.map((m) => (
               <SelectableTile

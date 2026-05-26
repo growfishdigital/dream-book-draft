@@ -60,12 +60,12 @@ export default function StepWhoIsItFor() {
         <section className="space-y-3">
           <div className="space-y-1">
             <h2
-              className="font-heading text-xl sm:text-2xl font-semibold"
+              className="font-heading text-xl sm:text-2xl font-semibold text-left"
               style={{ color: "hsl(var(--wizard-primary))" }}
             >
-              You are {childName}'s…
+              You are their…
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-left">
               This shapes the voice of the dedication.
             </p>
           </div>
@@ -93,12 +93,12 @@ export default function StepWhoIsItFor() {
         <section className="space-y-3">
           <div className="space-y-1">
             <h2
-              className="font-heading text-xl sm:text-2xl font-semibold"
+              className="font-heading text-xl sm:text-2xl font-semibold text-left"
               style={{ color: "hsl(var(--wizard-primary))" }}
             >
               What's the occasion?
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground text-left">
               A little flavor — never the central plot.
             </p>
           </div>
