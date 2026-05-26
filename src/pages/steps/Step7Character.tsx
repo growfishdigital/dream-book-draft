@@ -458,39 +458,50 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
         <PhotoUploadZone photos={data.photos} onChange={(p) => upd({ photos: p })} />
       )}
 
-      <div className="space-y-1.5">
-        <FieldLabel>Name</FieldLabel>
-        {data.mode === "ai" && (
-          <div className="flex items-center gap-2 mb-2">
-            <Checkbox checked={data.surpriseName} onCheckedChange={(v) => upd({ surpriseName: !!v })} id={`surprise-${data.id}`} />
-            <label htmlFor={`surprise-${data.id}`} className="text-xs text-muted-foreground cursor-pointer">Surprise me with a name</label>
-          </div>
-        )}
-        {!data.surpriseName && (
-          <Input className="rounded-xl" placeholder="e.g. Uncle James" value={data.name}
-            onChange={(e) => upd({ name: e.target.value })} />
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Name</FieldLabel>
+          {data.mode === "ai" && (
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox checked={data.surpriseName} onCheckedChange={(v) => upd({ surpriseName: !!v })} id={`surprise-${data.id}`} />
+              <label htmlFor={`surprise-${data.id}`} className="text-xs text-muted-foreground cursor-pointer">Surprise me with a name</label>
+            </div>
+          )}
+          {!data.surpriseName ? (
+            <Input className="rounded-xl" placeholder="e.g. Uncle James" value={data.name}
+              onChange={(e) => upd({ name: e.target.value })} />
+          ) : (
+            <div className="h-10 rounded-xl border border-dashed border-border flex items-center px-3 text-xs text-muted-foreground italic">
+              We'll pick a name
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <FieldLabel>Relationship to main character</FieldLabel>
+          <GenderSelect options={RELATIONSHIPS} value={data.relationship}
+            onChange={(v) => upd({ relationship: v })} placeholder="Select relationship" />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Relationship to {protagonistName || "the hero"}</FieldLabel>
-        <PillSelector options={RELATIONSHIPS} value={data.relationship} onChange={(v) => upd({ relationship: v })} />
-        {data.relationship === "Other" && (
-          <Input className="rounded-xl mt-2" placeholder="Describe relationship…" value={data.relationshipOther}
-            onChange={(e) => upd({ relationshipOther: e.target.value })} />
-        )}
+      {data.relationship === "Other" && (
+        <Input className="rounded-xl" placeholder="Describe relationship…" value={data.relationshipOther}
+          onChange={(e) => upd({ relationshipOther: e.target.value })} />
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Age range</FieldLabel>
+          <GenderSelect options={AGE_RANGES} value={data.ageRange}
+            onChange={(v) => upd({ ageRange: v })} placeholder="Select age range" />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Gender</FieldLabel>
+          <GenderSelect options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO}
+            value={data.gender} onChange={(v) => upd({ gender: v })} />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Gender</FieldLabel>
-        <GenderSelect options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO}
-          value={data.gender} onChange={(v) => upd({ gender: v })} />
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel>Age range</FieldLabel>
-        <PillSelector options={AGE_RANGES} value={data.ageRange} onChange={(v) => upd({ ageRange: v })} />
-      </div>
 
       <MiniPersonality
         value={data.traits || []}
