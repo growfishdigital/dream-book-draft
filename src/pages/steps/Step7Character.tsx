@@ -574,11 +574,11 @@ function AddPill({ label, icon, onClick, disabled, tooltip }: {
 export default function Step6() {
   const { answers, setAnswer, setCanContinue } = useWizard();
 
-  // Auto-fill protagonist from Step 1 answers (name, age range, gender).
+  // Auto-fill protagonist name and gender from Step 1 answers.
+  // Age is NOT auto-filled — Step 1 stores an age range, not a specific age.
   // Step 1 gender values are lowercase (girl / boy / non-binary); map to the
   // Title-cased options the protagonist form uses.
   const step1Name = (answers.childName as string) || "";
-  const step1AgeRange = (answers.ageRange as string) || "";
   const step1GenderRaw = (answers.gender as string) || "";
   const step1Gender =
     step1GenderRaw === "girl" ? "Girl"
@@ -593,13 +593,12 @@ export default function Step6() {
         traits: [],
         ...storedProtagonist,
         name: storedProtagonist.name || step1Name,
-        age: storedProtagonist.age || step1AgeRange,
         gender: storedProtagonist.gender || step1Gender,
       }
     : {
         photos: [],
         name: step1Name,
-        age: step1AgeRange,
+        age: "",
         gender: step1Gender,
         special: "",
         appearance: emptyAppearance(),
@@ -623,13 +622,13 @@ export default function Step6() {
     if (
       !storedProtagonist ||
       storedProtagonist.name !== protagonist.name ||
-      storedProtagonist.age !== protagonist.age ||
       storedProtagonist.gender !== protagonist.gender
     ) {
       setAnswer("protagonist", protagonist);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step1Name, step1AgeRange, step1Gender]);
+  }, [step1Name, step1Gender]);
+
 
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
