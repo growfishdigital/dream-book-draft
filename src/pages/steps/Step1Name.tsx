@@ -161,38 +161,31 @@ export default function Step1() {
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 w-full">
-            {AGE_RANGES.map((a) => {
-              const selected = age === a.value;
-              return (
-                <button
-                  key={a.value}
-                  type="button"
-                  onClick={() => setAnswer("ageRange", a.value)}
-                  className={`group flex flex-col items-center gap-3 rounded-2xl p-4 sm:p-5 transition-all border-2 ${
-                    selected
-                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)] shadow-lg scale-[1.02]"
-                      : "border-transparent bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5"
-                  }`}
-                >
-                  <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
-                    <img
-                      src={a.image}
-                      alt={`${a.label} example`}
-                      width={512}
-                      height={512}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                  </div>
-                  <span className="block text-base sm:text-lg font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
-                    {a.label}
-                  </span>
-                  <span className="block text-sm text-muted-foreground -mt-2">
-                    {a.sub}
-                  </span>
-                </button>
-              );
-            })}
+            {AGE_RANGES.map((a) => (
+              <SelectableTile
+                key={a.value}
+                selected={age === a.value}
+                onClick={() => setAnswer("ageRange", a.value)}
+                className="group flex flex-col items-center gap-3 p-4 sm:p-5"
+              >
+                <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
+                  <img
+                    src={a.image}
+                    alt={`${a.label} example`}
+                    width={512}
+                    height={512}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                </div>
+                <span className="block text-base sm:text-lg font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
+                  {a.label}
+                </span>
+                <span className="block text-sm text-muted-foreground -mt-2">
+                  {a.sub}
+                </span>
+              </SelectableTile>
+            ))}
           </div>
         </div>
 
