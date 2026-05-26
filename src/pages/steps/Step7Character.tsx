@@ -274,7 +274,8 @@ function ProtagonistForm({ data, onChange }: { data: Protagonist; onChange: (d: 
   const displayName = data.name || "your character";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
+
       <PhotoUploadZone photos={data.photos} onChange={(p) => upd({ photos: p })} heroName={data.name} />
 
       <div className="space-y-1.5">
@@ -445,7 +446,7 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
   const switchLabel = data.mode === "ai" ? "Switch to real person" : "Switch to AI-created";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <button type="button" onClick={() => upd({ mode: data.mode === "ai" ? "real" : "ai", photos: [], appearance: emptyAppearance() })}
         className="text-xs font-medium underline" style={{ color: "hsl(var(--wizard-primary))" }}>
         {switchLabel}

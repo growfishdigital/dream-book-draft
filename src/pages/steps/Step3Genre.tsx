@@ -41,7 +41,7 @@ export default function Step2() {
 
   return (
     <WizardShell>
-      <div className="space-y-8">
+      <div className="space-y-10">
         {/* Heading */}
         <div className="space-y-2">
           <h1
