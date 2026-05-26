@@ -57,6 +57,9 @@ export default function Step2() {
 
         {/* Genre grid */}
         <div className="space-y-3">
+          <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            Genre
+          </h2>
           <div className="grid grid-cols-2 gap-3">
             {GENRES.map((g) => (
               <SelectableTile
