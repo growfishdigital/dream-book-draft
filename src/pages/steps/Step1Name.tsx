@@ -130,16 +130,16 @@ export default function Step1() {
           </label>
           <div className="flex flex-wrap justify-center gap-3">
             {LANGUAGES.map((l) => (
-              <button
+              <SelectableTile
                 key={l.value}
-                type="button"
+                selected={language === l.value}
                 onClick={() => setAnswer("language", l.value)}
-                className={pillClass(language === l.value)}
+                className="px-5 py-3 text-center"
               >
                 <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
                   {l.label}
                 </span>
-              </button>
+              </SelectableTile>
             ))}
             <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
               <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
