@@ -2,6 +2,11 @@ import { useEffect, useMemo, useRef } from "react";
 import { Plus, X } from "lucide-react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
+import {
+  PILL_SELECTED,
+  PILL_SUGGESTION,
+  PILL_REMOVE_BTN,
+} from "@/components/pillStyles";
 
 type AgeRange = "0-2" | "3-5" | "6-8" | "9-12";
 type Gender = "girl" | "boy" | "non-binary" | "surprise";
