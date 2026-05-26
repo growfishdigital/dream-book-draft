@@ -280,15 +280,15 @@ export default function Step10Summary() {
           <div className="flex flex-col">
             {/* Book title */}
             {!editing && (
-              <div className="flex items-center justify-center gap-2 mb-4">
-                <h2 className="font-heading text-2xl font-semibold text-center text-[hsl(var(--wizard-primary))]">
+              <div className="flex items-center justify-between gap-2 mb-4">
+                <h2 className="font-heading text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
                   {title || `${name}'s Adventure`}
                 </h2>
                 <button
                   type="button"
                   onClick={fetchSummary}
                   disabled={loading}
-                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-black/10 text-[hsl(var(--wizard-primary))]/70 bg-white hover:text-[hsl(var(--wizard-primary))] disabled:opacity-50"
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full text-xs font-medium border border-black/10 text-[hsl(var(--wizard-primary))]/70 bg-white hover:text-[hsl(var(--wizard-primary))] disabled:opacity-50 shrink-0"
                   aria-label="Regenerate title and summary"
                 >
                   <RefreshCw className={`w-3 h-3 ${loading ? "animate-spin" : ""}`} />
