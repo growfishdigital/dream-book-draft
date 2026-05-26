@@ -413,10 +413,10 @@ export default function Step10Summary() {
           </div>
 
           {/* RIGHT column: cover + cast */}
-          <div className="flex flex-col items-center">
+          <div className="flex flex-col items-start">
             {/* Cover preview */}
-            <div className="mb-6 flex flex-col items-center">
-              <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2">
+            <div className="mb-6 flex flex-col items-start">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-[hsl(var(--wizard-primary))]/55 mb-2 text-left">
                 Cover preview
               </p>
               <div
