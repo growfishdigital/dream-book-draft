@@ -361,11 +361,6 @@ function MiniPersonality({
   };
   const remove = (idx: number) => onChange(value.filter((_, i) => i !== idx));
 
-  const filledStyle = {
-    backgroundColor: "hsl(var(--wizard-primary) / 0.10)",
-    color: "hsl(var(--wizard-primary))",
-  } as const;
-
   return (
     <div className="space-y-2">
       <FieldLabel>
@@ -376,22 +371,18 @@ function MiniPersonality({
       </FieldLabel>
 
       {value.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {value.map((t, idx) => (
-            <span
-              key={`${t.word}-${idx}`}
-              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium"
-              style={filledStyle}
-            >
+            <span key={`${t.word}-${idx}`} className={PILL_SELECTED}>
               {t.emoji && <span aria-hidden>{t.emoji}</span>}
               <span>{t.word}</span>
               <button
                 type="button"
                 onClick={() => remove(idx)}
                 aria-label={`Remove ${t.word}`}
-                className="ml-0.5 opacity-50 hover:opacity-100"
+                className={PILL_REMOVE_BTN}
               >
-                <X className="w-3 h-3" />
+                <X className="w-4 h-4" />
               </button>
             </span>
           ))}
@@ -399,17 +390,13 @@ function MiniPersonality({
       )}
 
       {!atCap && (
-        <div className="flex flex-wrap gap-1.5">
+        <div className="flex flex-wrap gap-2">
           {visible.map((t) => (
             <button
               key={t.word}
               type="button"
               onClick={() => add(t.word, t.emoji)}
-              className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium border border-dashed transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)]"
-              style={{
-                borderColor: "hsl(var(--wizard-primary) / 0.35)",
-                color: "hsl(var(--wizard-primary))",
-              }}
+              className={PILL_SUGGESTION}
             >
               <span aria-hidden>{t.emoji}</span>
               <span>{t.word}</span>
