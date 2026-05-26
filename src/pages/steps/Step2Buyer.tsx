@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
+import { SelectableTile } from "@/components/SelectableTile";
 
 // Buyer relationships — matches engine's BookEngineInput["buyer_relationship"].
 const RELATIONSHIPS = [
