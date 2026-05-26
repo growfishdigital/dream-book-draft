@@ -71,11 +71,11 @@ export default function StepWhoIsItFor() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 w-full">
             {RELATIONSHIPS.map((r) => (
-              <button
+              <SelectableTile
                 key={r.value}
-                type="button"
+                selected={buyerRelationship === r.value}
                 onClick={() => setAnswer("buyer_relationship", r.value)}
-                className={tileClass(buyerRelationship === r.value)}
+                className={tileExtras}
               >
                 <div className="text-2xl mb-1">{r.emoji}</div>
                 <div
@@ -84,7 +84,7 @@ export default function StepWhoIsItFor() {
                 >
                   {r.label}
                 </div>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </section>
