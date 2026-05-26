@@ -64,15 +64,6 @@ export default function Step3() {
           ))}
         </div>
 
-        {selectedLesson && (
-          <p className="text-center text-muted-foreground text-sm animate-fade-in">
-            {name}'s story will be about{" "}
-            <span className="font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
-              {selectedLesson.label.toLowerCase()}
-            </span>
-            .
-          </p>
-        )}
       </div>
     </WizardShell>
   );

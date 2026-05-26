@@ -63,9 +63,6 @@ export default function Step7() {
             </SelectableTile>
           ))}
         </div>
-        <p className="text-xs text-muted-foreground text-center italic">
-          We pre-selected the best style for your story — feel free to change it.
-        </p>
       </div>
     </WizardShell>
   );
