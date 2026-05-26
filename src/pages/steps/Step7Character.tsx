@@ -485,7 +485,8 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
 
       <div className="space-y-1.5">
         <FieldLabel>Gender</FieldLabel>
-        <PillSelector options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO} value={data.gender} onChange={(v) => upd({ gender: v })} />
+        <GenderSelect options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO}
+          value={data.gender} onChange={(v) => upd({ gender: v })} />
       </div>
 
       <div className="space-y-1.5">
