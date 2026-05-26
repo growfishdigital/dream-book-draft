@@ -446,7 +446,7 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
   const switchLabel = data.mode === "ai" ? "Switch to real person" : "Switch to AI-created";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-8">
       <button type="button" onClick={() => upd({ mode: data.mode === "ai" ? "real" : "ai", photos: [], appearance: emptyAppearance() })}
         className="text-xs font-medium underline" style={{ color: "hsl(var(--wizard-primary))" }}>
         {switchLabel}
