@@ -112,6 +112,23 @@ function PillSelector({ options, value, onChange }: {
   );
 }
 
+function GenderSelect({
+  options, value, onChange, placeholder = "Select gender",
+}: { options: readonly string[]; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <Select value={value || undefined} onValueChange={onChange}>
+      <SelectTrigger className="rounded-xl bg-white h-10">
+        <SelectValue placeholder={placeholder} />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((opt) => (
+          <SelectItem key={opt} value={opt}>{opt}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
 function SkinTonePicker({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   return (
     <div className="flex gap-2">
