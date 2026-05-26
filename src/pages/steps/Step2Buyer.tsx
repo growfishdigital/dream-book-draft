@@ -36,12 +36,8 @@ export default function StepWhoIsItFor() {
     setCanContinue(buyerRelationship !== "" && occasion !== "");
   }, [buyerRelationship, occasion, setCanContinue]);
 
-  const tileClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl px-4 py-4 text-center transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)] scale-[1.02]"
-        : "border-transparent bg-white hover:shadow-md hover:-translate-y-0.5"
-    }`;
+  const tileExtras = "px-4 py-4 text-center";
+
 
   return (
     <WizardShell>
