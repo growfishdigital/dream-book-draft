@@ -43,7 +43,7 @@ export default function StepWhoIsItFor() {
     <WizardShell>
       <div className="space-y-10">
         {/* Heading — warm, encouraging */}
-        <div className="text-center space-y-2">
+        <div className="space-y-2">
           <h1
             className="font-heading text-3xl sm:text-4xl font-semibold"
             style={{ color: "hsl(var(--wizard-primary))" }}
@@ -58,7 +58,7 @@ export default function StepWhoIsItFor() {
 
         {/* Buyer relationship */}
         <section className="space-y-3">
-          <div className="text-center space-y-1">
+          <div className="space-y-1">
             <h2
               className="font-heading text-xl sm:text-2xl font-semibold"
               style={{ color: "hsl(var(--wizard-primary))" }}
@@ -91,7 +91,7 @@ export default function StepWhoIsItFor() {
 
         {/* Occasion */}
         <section className="space-y-3">
-          <div className="text-center space-y-1">
+          <div className="space-y-1">
             <h2
               className="font-heading text-xl sm:text-2xl font-semibold"
               style={{ color: "hsl(var(--wizard-primary))" }}

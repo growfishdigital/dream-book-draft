@@ -5,6 +5,7 @@ import { useWizard } from "@/contexts/WizardContext";
 
 import { Check } from "lucide-react";
 import WizardHeader from "@/components/WizardHeader";
+import { Input } from "@/components/ui/input";
 
 type Plan = "digital" | "hardcover";
 
@@ -66,12 +67,15 @@ export default function Step9Preview() {
 
       <div className="flex flex-col items-center px-4 py-8">
         {/* Heading */}
-        <h1 className="font-heading md:text-3xl font-semibold text-center mb-1 text-4xl text-[hsl(var(--wizard-primary))]">
-          {name}'s book is ready. ✨
-        </h1>
-        <p className="text-sm text-center mb-8" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
-          Preview the book and choose how you'd like it delivered.
-        </p>
+        <div className="w-full max-w-[560px] space-y-2 mb-8">
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            {name}'s book is ready. ✨
+          </h1>
+          <p className="text-muted-foreground text-lg text-left">
+            Preview the book and choose how you'd like it delivered.
+          </p>
+        </div>
+
 
         {/* Single-column layout */}
         <div className="w-full max-w-[560px] flex flex-col gap-8 items-stretch">
@@ -178,13 +182,12 @@ export default function Step9Preview() {
                        style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
                   Your name
                 </label>
-                <input
+                <Input
                   type="text"
                   value={buyerName}
                   onChange={(e) => setBuyerName(e.target.value)}
                   placeholder="e.g. Sarah Johnson"
-                  className="w-full h-11 rounded-xl border px-3 text-sm bg-white"
-                  style={{ borderColor: buyerErrors.name ? "hsl(var(--destructive))" : "hsl(var(--wizard-primary) / 0.25)" }}
+                  style={buyerErrors.name ? { borderColor: "hsl(var(--destructive))" } : undefined}
                 />
                 {buyerErrors.name && (
                   <p className="text-xs text-destructive">{buyerErrors.name}</p>
@@ -193,13 +196,12 @@ export default function Step9Preview() {
                        style={{ color: "hsl(var(--wizard-primary) / 0.7)" }}>
                   Email
                 </label>
-                <input
+                <Input
                   type="email"
                   value={buyerEmail}
                   onChange={(e) => setBuyerEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full h-11 rounded-xl border px-3 text-sm bg-white"
-                  style={{ borderColor: buyerErrors.email ? "hsl(var(--destructive))" : "hsl(var(--wizard-primary) / 0.25)" }}
+                  style={buyerErrors.email ? { borderColor: "hsl(var(--destructive))" } : undefined}
                 />
                 {buyerErrors.email && (
                   <p className="text-xs text-destructive">{buyerErrors.email}</p>
