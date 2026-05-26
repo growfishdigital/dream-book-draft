@@ -117,7 +117,7 @@ export default function Step1() {
         </div>
 
         {/* Book language — own row */}
-        <div className="space-y-2 w-full">
+        <div className="space-y-2 w-full pt-4">
           <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
             What language do they speak?
           </h2>

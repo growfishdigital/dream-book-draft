@@ -65,45 +65,46 @@ export default function Step9Preview() {
     >
       <WizardHeader currentStep={9} />
 
-      <div className="flex flex-col items-center px-4 py-8">
-        {/* Heading */}
-        <div className="w-full max-w-[700px] space-y-2 mb-8">
-          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
-            {name}'s book is ready.
-          </h1>
-          <p className="text-muted-foreground text-lg text-left">
-            Preview the book and choose how you'd like it delivered.
-          </p>
-        </div>
-
-
-        {/* Single-column layout */}
-        <div className="w-full max-w-[700px] flex flex-col gap-8 items-stretch">
-          {/* Cover preview */}
-          <div className="flex flex-col items-start gap-2">
-            <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-              Cover
+      <main className="flex-1 flex justify-center px-4 pt-12 pb-8">
+        <div className="w-full" style={{ maxWidth: "700px" }}>
+          {/* Heading */}
+          <div className="space-y-2 mb-8">
+            <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+              {name}'s book is ready.
+            </h1>
+            <p className="text-muted-foreground text-lg text-left">
+              Preview the book and choose how you'd like it delivered.
             </p>
-            <div
-              className="rounded-2xl overflow-hidden shadow-lg bg-white"
-              style={{ aspectRatio: "1/1", width: 260 }}
-            >
-              {coverImage ? (
-                <img
-                  src={coverImage}
-                  alt={`Cover of ${title}`}
-                  className="h-full w-full object-cover"
-                />
-              ) : (
-                <div className="h-full w-full flex items-center justify-center bg-muted">
-                  <span className="text-xs text-muted-foreground">Cover loading…</span>
-                </div>
-              )}
+          </div>
+
+          {/* Illustrations row (cover + other illustrations side by side) */}
+          <div className="flex flex-wrap gap-4 mb-8">
+            <div className="flex flex-col items-start gap-2">
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                Cover
+              </p>
+              <div
+                className="rounded-2xl overflow-hidden shadow-lg bg-white"
+                style={{ aspectRatio: "1/1", width: 260 }}
+              >
+                {coverImage ? (
+                  <img
+                    src={coverImage}
+                    alt={`Cover of ${title}`}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-muted">
+                    <span className="text-xs text-muted-foreground">Cover loading…</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Checkout column */}
+          {/* Stacked content */}
           <div className="flex flex-col">
+
             <div className="flex flex-col gap-4 mb-6">
               {/* Digital */}
               <button
@@ -262,7 +263,8 @@ export default function Step9Preview() {
             </figure>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
+
 }
