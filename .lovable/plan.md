@@ -1,61 +1,60 @@
 ## Goal
 
-Standardize the look, hover, and selected state of every selectable "box" in the wizard (excluding the Interests and Personality pickers, which keep their custom chip styling).
+Unify the two "type-or-pick chip" pickers — Interests (Step 5) and Personality (Step 7 `MiniPersonality`, used for both protagonist and supporting characters) — so they share one visual language. Everything else about their behavior (editable interest inputs, FIFO cap, trait toggles) stays exactly as-is.
 
 ## What changes visually
 
-All selectable tiles get:
-- **Same shadow** — resting `shadow-sm`, hover `shadow-md` with a subtle `-translate-y-0.5` lift, selected `shadow-md` (no lift, no scale jump).
-- **Same border treatment** — 2px transparent border at rest, `hsl(var(--wizard-primary))` border + `hsl(var(--wizard-primary)/0.08)` tint when selected.
-- **Checkmark badge** when selected — a small filled green circle (`hsl(var(--wizard-primary))`) with a white check icon, absolutely positioned in the top-right corner of the tile (≈ `top-2 right-2`, ~20px circle, `lucide-react`'s `Check` at 12px stroke-2).
+Both pickers will use the same pill specs:
 
-Pills (gender, hair color, hair style) keep their pill shape but get the same checkmark badge in the top-right corner and a unified hover (border tint + subtle shadow). Skin-tone swatches keep their circle shape but, when selected, show the same checkmark badge overlaid in the corner (in addition to the existing ring).
+**Selected pills (chosen items)**
+- 2px solid border in `hsl(var(--wizard-primary))` (same green outline used on all other standardized selection boxes from the previous pass).
+- Light tint background: `hsl(var(--wizard-primary) / 0.08)`.
+- Text in `hsl(var(--wizard-primary))`.
+- `X` remove icon in the same green (currently faded gray at 50% opacity → change to `hsl(var(--wizard-primary))` at ~70% opacity, full opacity on hover).
+- No checkmark badge (explicit per your ask).
+
+**Suggestion pills (clickable to add)**
+- Keep dashed border (unchanged behavior).
+- Same green dashed border color, same green text — already the case.
+- Same hover: subtle tint background + `-translate-y-0.5` lift (same as Step 5 today; bring Step 7 in line).
+
+**Size — all pills, both pickers, ~40px tall**
+- Single shared spec: `px-4 py-2 text-sm` with `border-2`, `rounded-full`, `gap-1.5`. With `text-sm` (line-height ~20px) + 8px top/bottom padding + 2px borders this lands at ~40px. No fixed `h-*` class.
+- Today Step 5 pills are bigger (`px-5 py-2.5 text-base`, ~44px) and Step 7 `MiniPersonality` pills are much smaller (`px-3 py-1 text-xs`, ~24px). Both get normalized to the same ~40px spec.
+- The dashed "+ Add interest" button in Step 5 uses the same shared spec so it visually matches.
+- Inline `<input>` inside an interest pill keeps `text-sm` so the row height stays consistent whether the chip is a suggestion or a filled entry.
 
 ## Where it applies
 
-| Step | Component(s) |
-|------|--------------|
-| Step 1 — Name | Language pills, Book type tiles |
-| Step 2 — Buyer | "You are…" tiles, Occasion tiles |
-| Step 3 — Genre | Genre tiles, Mood tiles |
-| Step 4 — Lesson | Heart-of-story tiles |
-| Step 6 — Art Style | Illustration style tiles |
-| Step 7 — Character | Gender pills, Hair color pills, Hair style pills, Skin-tone swatches |
+| File | Component | What's normalized |
+|------|-----------|-------------------|
+| `src/pages/steps/Step5Interests.tsx` | filled interest pills, suggestion pills, "+ Add interest" button | size, selected border (was tinted background only — now also gets the 2px green border), X icon color |
+| `src/pages/steps/Step7Character.tsx` | `MiniPersonality` (used for protagonist + each supporting character) | size (was much smaller), green border on selected, X icon color, hover treatment on suggestions |
 
-Explicitly **out of scope** (per your ask): Interests picker (Step 5) and Personality trait picker (Step 7 MiniPersonality + main personality step).
+Out of scope (unchanged): Interests copy/warning, max-3 cap behavior, FIFO replacement, trait pool itself, the `SelectableTile` boxes from the previous pass, gender/hair pills.
 
-## Also recommended (flag for your decision)
+## Implementation approach
 
-- **Step 1 — "Gender" Select dropdown**: currently a native shadcn `<Select>`, not tiles. Consider converting to the same tile/pill row so it matches Step 7's gender selector and the rest of Step 1. Small UX win, removes the only dropdown in the early flow. *(Will only do this if you say yes.)*
-- **Step 1 — "This book belongs to" checkbox**: stays as-is (it's a toggle, not a selection tile).
-- **Supporting-character path choice in Step 7** ("Let AI create" / "Based on a real person"): two big tile buttons that today use a different border/hover style. Worth folding into the same standard since they are selectable boxes. *(Will include unless you say otherwise.)*
-- **"Glasses" checkbox in Step 7**: leave alone (toggle, not a tile).
+1. **New tiny shared module** `src/components/pillStyles.ts` exporting three constants used by both pickers:
+   - `PILL_BASE = "inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium border-2 transition-all"`
+   - `PILL_SELECTED` → solid green border + tint bg + green text.
+   - `PILL_SUGGESTION` → dashed green border + green text + hover lift + hover tint.
+   - Plus a `PILL_REMOVE_BTN` class for the `X` button (green at ~70% opacity, hover 100%).
 
-## Implementation approach (technical)
+   Keeping it as flat constants (not a wrapper component) so the two pickers — which differ in internals (Step 5 has an inline editable `<input>`, Step 7 is pure buttons) — can each keep their own JSX.
 
-1. **New shared component** `src/components/SelectableTile.tsx`:
-   - Props: `selected: boolean`, `onClick`, `as?: "tile" | "pill" | "swatch"`, `className?`, `children`, plus an optional `style` passthrough for the skin-tone swatch background.
-   - Renders the button with the unified base classes and, when `selected`, renders a `<CheckBadge />` absolutely positioned top-right.
-   - `CheckBadge` is a small internal component: filled circle in `--wizard-primary`, white `Check` icon, `w-5 h-5`, `shadow-sm`, `ring-2 ring-white` so it reads cleanly over any tile background or photo.
+2. **`Step5Interests.tsx`** — swap `pillBase` + `pillFilledStyle` + the dashed-suggestion classNames for the shared constants. The `<input>` inside the filled pill becomes `text-sm` to match the new pill height. The X button uses `PILL_REMOVE_BTN`. "+ Add interest" button uses the shared suggestion classes (with `border-dashed` already in `PILL_SUGGESTION`, no extra work).
 
-2. **Refactor each step** to replace the local `cardClass`/`pillClass`/`tileClass`/`PillSelector`/`SkinTonePicker` selected-state logic with `SelectableTile`. Tile contents (emoji, label, image, etc.) stay exactly as they are — only the wrapper changes.
+3. **`Step7Character.tsx > MiniPersonality`** — replace the local filled-span classes and the suggestion-button classes with `PILL_SELECTED` and `PILL_SUGGESTION`. X icon picks up `PILL_REMOVE_BTN`. Header text + "pick up to N traits" caption stay as-is.
 
-3. **PillSelector** in `Step7Character.tsx` becomes a thin wrapper around `SelectableTile as="pill"` so hair color / hair style / gender all get the badge for free. `SkinTonePicker` likewise uses `as="swatch"`.
-
-4. No changes to wizard state, validation, or any downstream logic. Pure presentation.
+4. No state, validation, prompt, or schema changes. Pure presentation.
 
 ## Files touched
 
-- `src/components/SelectableTile.tsx` (new)
-- `src/pages/steps/Step1Name.tsx`
-- `src/pages/steps/Step2Buyer.tsx`
-- `src/pages/steps/Step3Genre.tsx`
-- `src/pages/steps/Step4Lesson.tsx`
-- `src/pages/steps/Step6ArtStyle.tsx`
+- `src/components/pillStyles.ts` (new)
+- `src/pages/steps/Step5Interests.tsx`
 - `src/pages/steps/Step7Character.tsx`
 
-No prompt, edge-function, or schema changes.
+## One quick check before I build
 
-## One question before I build
-
-Should I also (a) convert the Step 1 "Gender" dropdown to tiles, and (b) standardize the Step 7 "AI vs real person" path-choice tiles? Both are small and consistent with the spirit of the request, but say the word and I'll skip either.
+The personality pills today are noticeably smaller than the interest pills (xs text vs base text). Sizing them up to ~40px will make the "Personality" section in Step 7 take more vertical space — that's the intended outcome of your "make them all the same size" ask, just flagging so it isn't a surprise.
