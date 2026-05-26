@@ -231,7 +231,7 @@ function lightConceptToolSchema(firstName: string) {
       },
       user_visible_summary: {
         type: "string",
-        description: `One paragraph, ${STORY_LENGTH.min}-${STORY_LENGTH.max} words. Polished customer-facing book concept, not a plot outline.`,
+        description: `Full beginning-to-end synopsis of the picture book, one flowing paragraph, ${STORY_LENGTH.min}-${STORY_LENGTH.max} words (target ~${STORY_LENGTH.target}). Cover setup, inciting moment, escalations, climactic choice, and resolution. Include the ending — this is NOT a teaser.`,
       },
       framework_id: {
         type: "string",
