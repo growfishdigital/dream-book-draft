@@ -13,6 +13,11 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from "@/components/ui/dialog";
 import { SelectableTile } from "@/components/SelectableTile";
+import {
+  PILL_SELECTED,
+  PILL_SUGGESTION,
+  PILL_REMOVE_BTN,
+} from "@/components/pillStyles";
 
 
 /* ── constants ───────────────────────────────────────────── */
