@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
+import { SelectableTile } from "@/components/SelectableTile";
 
 const GENRES = [
   { value: "adventure", emoji: "🗺️", label: "Adventure", desc: "Epic quests and daring journeys" },
