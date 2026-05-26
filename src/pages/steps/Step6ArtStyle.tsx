@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { ART_STYLES } from "@/lib/artStyles";
+import { SelectableTile } from "@/components/SelectableTile";
 
 function getDefaultArtStyle(genre: string): string {
   if (["adventure", "superhero", "sports"].includes(genre)) return "geometric-pop";
