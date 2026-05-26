@@ -57,16 +57,13 @@ export default function Step2() {
 
         {/* Genre grid */}
         <div className="space-y-3">
-          <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
-            Genre
-          </label>
           <div className="grid grid-cols-2 gap-3">
             {GENRES.map((g) => (
-              <button
+              <SelectableTile
                 key={g.value}
-                type="button"
+                selected={genre === g.value}
                 onClick={() => setAnswer("genre", g.value)}
-                className={cardClass(genre === g.value)}
+                className={cardExtras}
               >
                 <span className="text-2xl">{g.emoji}</span>
                 <span
@@ -78,7 +75,7 @@ export default function Step2() {
                 <span className="block text-xs text-muted-foreground mt-0.5">
                   {g.desc}
                 </span>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </div>
@@ -90,11 +87,11 @@ export default function Step2() {
           </label>
           <div className="grid grid-cols-3 gap-3">
             {MOODS.map((m) => (
-              <button
+              <SelectableTile
                 key={m.value}
-                type="button"
+                selected={mood === m.value}
                 onClick={() => setAnswer("mood", m.value)}
-                className={cardClass(mood === m.value)}
+                className={cardExtras}
               >
                 <span className="text-2xl">{m.emoji}</span>
                 <span
