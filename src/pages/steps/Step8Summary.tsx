@@ -454,7 +454,7 @@ export default function Step10Summary() {
                 ];
 
                 return (
-                  <div className="flex flex-wrap items-start justify-center gap-4">
+                  <div className="flex flex-wrap items-start justify-start gap-4">
                     {cast.map((m) => (
                       <div key={m.key} className="flex flex-col items-center">
                         <div
