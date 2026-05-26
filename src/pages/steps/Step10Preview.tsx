@@ -263,7 +263,8 @@ export default function Step9Preview() {
             </figure>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   );
+
 }
