@@ -152,7 +152,7 @@ function CharCounter({ current, max }: { current: number; max: number }) {
 
 function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
-    <label className="block text-muted-foreground text-xl font-bold">
+    <label className="block font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
       {children}{optional && <span className="ml-1 text-xs opacity-60">(optional)</span>}
     </label>
   );
