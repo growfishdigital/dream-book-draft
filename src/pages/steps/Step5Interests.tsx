@@ -157,7 +157,7 @@ export default function Step4b() {
             What does {name} love?
           </h1>
           <p className="text-muted-foreground text-lg">
-            Add up to 3 things they're into.
+            Add up to three things they're interested in and we'll weave them into the story.
           </p>
         </div>
 
