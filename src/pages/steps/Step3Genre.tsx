@@ -100,7 +100,7 @@ export default function Step2() {
                 >
                   {m.label}
                 </span>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </div>
