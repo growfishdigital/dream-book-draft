@@ -166,7 +166,7 @@ export default function Step4b() {
           {list.map((entry, idx) => {
             const size = entry.word ? Math.max(entry.word.length, 1) : PLACEHOLDER.length;
             return (
-              <div key={idx} className={pillBase} style={pillFilledStyle}>
+              <div key={idx} className={PILL_SELECTED}>
                 {entry.emoji && <span aria-hidden>{entry.emoji}</span>}
                 <input
                   ref={(el) => (inputRefs.current[idx] = el)}
@@ -174,20 +174,22 @@ export default function Step4b() {
                   onChange={(e) => updateEntry(idx, e.target.value)}
                   placeholder={PLACEHOLDER}
                   size={size}
-                  className="bg-transparent border-0 outline-none p-0 text-base font-medium placeholder:text-[hsl(var(--wizard-primary)/0.5)]"
+                  className="bg-transparent border-0 outline-none p-0 text-sm font-medium placeholder:text-[hsl(var(--wizard-primary)/0.5)]"
                   style={{ color: "hsl(var(--wizard-primary))" }}
                 />
                 <button
                   type="button"
                   onClick={() => removeEntry(idx)}
                   aria-label="Remove interest"
-                  className="-ml-1 opacity-50 hover:opacity-100 transition-opacity"
+                  className={PILL_REMOVE_BTN}
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
             );
           })}
+
+
 
           {!atCap && (
             <button
