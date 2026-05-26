@@ -216,11 +216,7 @@ export default function Step4b() {
                   key={it.word}
                   type="button"
                   onClick={() => addEntry(it.word, it.emoji)}
-                  className="inline-flex items-center gap-1.5 rounded-full px-5 py-2.5 text-base font-medium border-2 border-dashed transition-all hover:bg-[hsl(var(--wizard-primary)/0.05)] hover:-translate-y-0.5"
-                  style={{
-                    borderColor: "hsl(var(--wizard-primary) / 0.4)",
-                    color: "hsl(var(--wizard-primary))",
-                  }}
+                  className={PILL_SUGGESTION}
                 >
                   <span aria-hidden>{it.emoji}</span>
                   <span>{it.word}</span>
