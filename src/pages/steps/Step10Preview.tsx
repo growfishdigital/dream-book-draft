@@ -5,6 +5,7 @@ import { useWizard } from "@/contexts/WizardContext";
 
 import { Check } from "lucide-react";
 import WizardHeader from "@/components/WizardHeader";
+import { Input } from "@/components/ui/input";
 
 type Plan = "digital" | "hardcover";
 
