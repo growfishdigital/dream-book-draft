@@ -385,12 +385,10 @@ function MiniPersonality({
 
   return (
     <div className="space-y-2">
-      <FieldLabel>
-        Personality{" "}
-        <span className="font-normal text-muted-foreground">
-          — pick up to {MAX_SUPPORT_TRAITS} traits for {name || "this character"}
-        </span>
-      </FieldLabel>
+      <FieldLabel>Personality</FieldLabel>
+      <p className="text-sm text-muted-foreground">
+        Pick up to {MAX_SUPPORT_TRAITS} traits for {name || "this character"}
+      </p>
 
       {value.length > 0 && (
         <div className="flex flex-wrap gap-2">
@@ -460,39 +458,50 @@ function SupportingCharacterForm({ data, onChange, protagonistName }: {
         <PhotoUploadZone photos={data.photos} onChange={(p) => upd({ photos: p })} />
       )}
 
-      <div className="space-y-1.5">
-        <FieldLabel>Name</FieldLabel>
-        {data.mode === "ai" && (
-          <div className="flex items-center gap-2 mb-2">
-            <Checkbox checked={data.surpriseName} onCheckedChange={(v) => upd({ surpriseName: !!v })} id={`surprise-${data.id}`} />
-            <label htmlFor={`surprise-${data.id}`} className="text-xs text-muted-foreground cursor-pointer">Surprise me with a name</label>
-          </div>
-        )}
-        {!data.surpriseName && (
-          <Input className="rounded-xl" placeholder="e.g. Uncle James" value={data.name}
-            onChange={(e) => upd({ name: e.target.value })} />
-        )}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Name</FieldLabel>
+          {data.mode === "ai" && (
+            <div className="flex items-center gap-2 mb-2">
+              <Checkbox checked={data.surpriseName} onCheckedChange={(v) => upd({ surpriseName: !!v })} id={`surprise-${data.id}`} />
+              <label htmlFor={`surprise-${data.id}`} className="text-xs text-muted-foreground cursor-pointer">Surprise me with a name</label>
+            </div>
+          )}
+          {!data.surpriseName ? (
+            <Input className="rounded-xl" placeholder="e.g. Uncle James" value={data.name}
+              onChange={(e) => upd({ name: e.target.value })} />
+          ) : (
+            <div className="h-10 rounded-xl border border-dashed border-border flex items-center px-3 text-xs text-muted-foreground italic">
+              We'll pick a name
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-1.5">
+          <FieldLabel>Relationship to main character</FieldLabel>
+          <GenderSelect options={RELATIONSHIPS} value={data.relationship}
+            onChange={(v) => upd({ relationship: v })} placeholder="Select relationship" />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Relationship to {protagonistName || "the hero"}</FieldLabel>
-        <PillSelector options={RELATIONSHIPS} value={data.relationship} onChange={(v) => upd({ relationship: v })} />
-        {data.relationship === "Other" && (
-          <Input className="rounded-xl mt-2" placeholder="Describe relationship…" value={data.relationshipOther}
-            onChange={(e) => upd({ relationshipOther: e.target.value })} />
-        )}
+      {data.relationship === "Other" && (
+        <Input className="rounded-xl" placeholder="Describe relationship…" value={data.relationshipOther}
+          onChange={(e) => upd({ relationshipOther: e.target.value })} />
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <FieldLabel>Age range</FieldLabel>
+          <GenderSelect options={AGE_RANGES} value={data.ageRange}
+            onChange={(v) => upd({ ageRange: v })} placeholder="Select age range" />
+        </div>
+        <div className="space-y-1.5">
+          <FieldLabel>Gender</FieldLabel>
+          <GenderSelect options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO}
+            value={data.gender} onChange={(v) => upd({ gender: v })} />
+        </div>
       </div>
 
-      <div className="space-y-1.5">
-        <FieldLabel>Gender</FieldLabel>
-        <GenderSelect options={data.mode === "ai" ? GENDERS_SUPPORT : GENDERS_PROTO}
-          value={data.gender} onChange={(v) => upd({ gender: v })} />
-      </div>
-
-      <div className="space-y-1.5">
-        <FieldLabel>Age range</FieldLabel>
-        <PillSelector options={AGE_RANGES} value={data.ageRange} onChange={(v) => upd({ ageRange: v })} />
-      </div>
 
       <MiniPersonality
         value={data.traits || []}
@@ -565,11 +574,11 @@ function AddPill({ label, icon, onClick, disabled, tooltip }: {
 export default function Step6() {
   const { answers, setAnswer, setCanContinue } = useWizard();
 
-  // Auto-fill protagonist from Step 1 answers (name, age range, gender).
+  // Auto-fill protagonist name and gender from Step 1 answers.
+  // Age is NOT auto-filled — Step 1 stores an age range, not a specific age.
   // Step 1 gender values are lowercase (girl / boy / non-binary); map to the
   // Title-cased options the protagonist form uses.
   const step1Name = (answers.childName as string) || "";
-  const step1AgeRange = (answers.ageRange as string) || "";
   const step1GenderRaw = (answers.gender as string) || "";
   const step1Gender =
     step1GenderRaw === "girl" ? "Girl"
@@ -584,13 +593,12 @@ export default function Step6() {
         traits: [],
         ...storedProtagonist,
         name: storedProtagonist.name || step1Name,
-        age: storedProtagonist.age || step1AgeRange,
         gender: storedProtagonist.gender || step1Gender,
       }
     : {
         photos: [],
         name: step1Name,
-        age: step1AgeRange,
+        age: "",
         gender: step1Gender,
         special: "",
         appearance: emptyAppearance(),
@@ -614,13 +622,13 @@ export default function Step6() {
     if (
       !storedProtagonist ||
       storedProtagonist.name !== protagonist.name ||
-      storedProtagonist.age !== protagonist.age ||
       storedProtagonist.gender !== protagonist.gender
     ) {
       setAnswer("protagonist", protagonist);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step1Name, step1AgeRange, step1Gender]);
+  }, [step1Name, step1Gender]);
+
 
   // Enable continue always (validation happens on click via WizardShell)
   useEffect(() => { setCanContinue(true); }, [setCanContinue]);
