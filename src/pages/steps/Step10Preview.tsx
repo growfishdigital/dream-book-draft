@@ -65,8 +65,9 @@ export default function Step9Preview() {
     >
       <WizardHeader currentStep={9} />
 
-      <main className="flex-1 flex justify-center px-4 pt-12 pb-8">
-        <div className="w-full" style={{ maxWidth: "700px" }}>
+      <main className="flex-1 flex justify-center px-4 pt-12 pb-20">
+        <div className="w-full mx-auto" style={{ maxWidth: "700px" }}>
+
           {/* Heading */}
           <div className="space-y-2 mb-8">
             <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
