@@ -66,12 +66,15 @@ export default function Step9Preview() {
 
       <div className="flex flex-col items-center px-4 py-8">
         {/* Heading */}
-        <h1 className="font-heading md:text-3xl font-semibold text-center mb-1 text-4xl text-[hsl(var(--wizard-primary))]">
-          {name}'s book is ready. ✨
-        </h1>
-        <p className="text-sm text-center mb-8" style={{ color: "hsl(var(--wizard-primary) / 0.6)" }}>
-          Preview the book and choose how you'd like it delivered.
-        </p>
+        <div className="w-full max-w-[560px] space-y-2 mb-8">
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            {name}'s book is ready. ✨
+          </h1>
+          <p className="text-muted-foreground text-lg text-left">
+            Preview the book and choose how you'd like it delivered.
+          </p>
+        </div>
+
 
         {/* Single-column layout */}
         <div className="w-full max-w-[560px] flex flex-col gap-8 items-stretch">

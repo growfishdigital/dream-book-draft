@@ -265,15 +265,15 @@ export default function Step10Summary() {
 <WizardHeader currentStep={8} />
 
       <main className="flex-1 flex flex-col items-center px-4 pt-8 pb-32">
-        <h1 className="font-heading font-semibold text-center mb-1 text-4xl md:text-3xl text-[hsl(var(--wizard-primary))]">
-          Here's {name}'s story
-        </h1>
-        <p
-          className="text-sm text-center mb-8"
-          style={{ color: "hsl(var(--wizard-primary) / 0.65)" }}
-        >
-          Read it, refresh it, or tweak it before we draw the pictures.
-        </p>
+        <div className="w-full space-y-2 mb-8" style={{ maxWidth: "1100px" }}>
+          <h1 className="font-heading text-3xl sm:text-4xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
+            Here's {name}'s story
+          </h1>
+          <p className="text-muted-foreground text-lg text-left">
+            Read it, refresh it, or tweak it before we draw the pictures.
+          </p>
+        </div>
+
 
         <div className="w-full grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-start" style={{ maxWidth: "1100px" }}>
           {/* LEFT column: story content */}
