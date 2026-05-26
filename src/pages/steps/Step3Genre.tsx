@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
+import { SelectableTile } from "@/components/SelectableTile";
 
 const GENRES = [
   { value: "adventure", emoji: "🗺️", label: "Adventure", desc: "Epic quests and daring journeys" },
@@ -34,12 +35,8 @@ export default function Step2() {
     setCanContinue(genre !== "" && mood !== "");
   }, [genre, mood, setCanContinue]);
 
-  const cardClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl p-4 text-left transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
+  const cardExtras = "p-4 text-left";
+
 
 
   return (
@@ -60,16 +57,13 @@ export default function Step2() {
 
         {/* Genre grid */}
         <div className="space-y-3">
-          <label className="block text-center text-2xl font-sans font-semibold text-[hsl(var(--wizard-primary))]">
-            Genre
-          </label>
           <div className="grid grid-cols-2 gap-3">
             {GENRES.map((g) => (
-              <button
+              <SelectableTile
                 key={g.value}
-                type="button"
+                selected={genre === g.value}
                 onClick={() => setAnswer("genre", g.value)}
-                className={cardClass(genre === g.value)}
+                className={cardExtras}
               >
                 <span className="text-2xl">{g.emoji}</span>
                 <span
@@ -81,7 +75,7 @@ export default function Step2() {
                 <span className="block text-xs text-muted-foreground mt-0.5">
                   {g.desc}
                 </span>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </div>
@@ -93,11 +87,11 @@ export default function Step2() {
           </label>
           <div className="grid grid-cols-3 gap-3">
             {MOODS.map((m) => (
-              <button
+              <SelectableTile
                 key={m.value}
-                type="button"
+                selected={mood === m.value}
                 onClick={() => setAnswer("mood", m.value)}
-                className={cardClass(mood === m.value)}
+                className={cardExtras}
               >
                 <span className="text-2xl">{m.emoji}</span>
                 <span
@@ -106,7 +100,7 @@ export default function Step2() {
                 >
                   {m.label}
                 </span>
-              </button>
+              </SelectableTile>
             ))}
           </div>
         </div>

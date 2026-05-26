@@ -4,6 +4,7 @@ import { useWizard } from "@/contexts/WizardContext";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SelectableTile } from "@/components/SelectableTile";
 import bookBoard from "@/assets/book-board.jpg";
 import bookPicture from "@/assets/book-picture.jpg";
 import bookEarly from "@/assets/book-early.jpg";
@@ -58,19 +59,6 @@ export default function Step1() {
     setCanContinue(name.trim().length > 0 && age !== "" && gender !== "");
   }, [name, age, gender, setCanContinue]);
 
-  const pillClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl px-5 py-3 text-center transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
-
-  const chipClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl px-4 py-3 text-center transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
 
   return (
     <WizardShell>
@@ -142,16 +130,16 @@ export default function Step1() {
           </label>
           <div className="flex flex-wrap justify-center gap-3">
             {LANGUAGES.map((l) => (
-              <button
+              <SelectableTile
                 key={l.value}
-                type="button"
+                selected={language === l.value}
                 onClick={() => setAnswer("language", l.value)}
-                className={pillClass(language === l.value)}
+                className="px-5 py-3 text-center"
               >
                 <span className="block text-sm font-semibold" style={{ color: "hsl(var(--wizard-primary))" }}>
                   {l.label}
                 </span>
-              </button>
+              </SelectableTile>
             ))}
             <div className="rounded-2xl px-5 py-3 text-center border-2 border-transparent bg-muted opacity-50 shadow-sm">
               <span className="block text-sm font-semibold text-muted-foreground">More coming soon</span>
@@ -173,38 +161,31 @@ export default function Step1() {
             </p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 w-full">
-            {AGE_RANGES.map((a) => {
-              const selected = age === a.value;
-              return (
-                <button
-                  key={a.value}
-                  type="button"
-                  onClick={() => setAnswer("ageRange", a.value)}
-                  className={`group flex flex-col items-center gap-3 rounded-2xl p-4 sm:p-5 transition-all border-2 ${
-                    selected
-                      ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)] shadow-lg scale-[1.02]"
-                      : "border-transparent bg-white shadow-sm hover:shadow-md hover:-translate-y-0.5"
-                  }`}
-                >
-                  <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
-                    <img
-                      src={a.image}
-                      alt={`${a.label} example`}
-                      width={512}
-                      height={512}
-                      loading="lazy"
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                    />
-                  </div>
-                  <span className="block text-base sm:text-lg font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
-                    {a.label}
-                  </span>
-                  <span className="block text-sm text-muted-foreground -mt-2">
-                    {a.sub}
-                  </span>
-                </button>
-              );
-            })}
+            {AGE_RANGES.map((a) => (
+              <SelectableTile
+                key={a.value}
+                selected={age === a.value}
+                onClick={() => setAnswer("ageRange", a.value)}
+                className="group flex flex-col items-center gap-3 p-4 sm:p-5"
+              >
+                <div className="w-full overflow-hidden rounded-xl bg-muted" style={{ aspectRatio: "1/1" }}>
+                  <img
+                    src={a.image}
+                    alt={`${a.label} example`}
+                    width={512}
+                    height={512}
+                    loading="lazy"
+                    className="w-full h-full object-cover transition-transform group-hover:scale-105"
+                  />
+                </div>
+                <span className="block text-base sm:text-lg font-semibold leading-tight" style={{ color: "hsl(var(--wizard-primary))" }}>
+                  {a.label}
+                </span>
+                <span className="block text-sm text-muted-foreground -mt-2">
+                  {a.sub}
+                </span>
+              </SelectableTile>
+            ))}
           </div>
         </div>
 

@@ -1,55 +1,61 @@
 ## Goal
 
-Change the pre-purchase story summary from a back-cover-style teaser into a **full beginning-to-end synopsis** of the story.
+Standardize the look, hover, and selected state of every selectable "box" in the wizard (excluding the Interests and Personality pickers, which keep their custom chip styling).
 
-## Why this needs more than a single edit
+## What changes visually
 
-The current behavior is enforced in three coordinated places, all of which actively push the model toward "teaser":
+All selectable tiles get:
+- **Same shadow** — resting `shadow-sm`, hover `shadow-md` with a subtle `-translate-y-0.5` lift, selected `shadow-md` (no lift, no scale jump).
+- **Same border treatment** — 2px transparent border at rest, `hsl(var(--wizard-primary))` border + `hsl(var(--wizard-primary)/0.08)` tint when selected.
+- **Checkmark badge** when selected — a small filled green circle (`hsl(var(--wizard-primary))`) with a white check icon, absolutely positioned in the top-right corner of the tile (≈ `top-2 right-2`, ~20px circle, `lucide-react`'s `Check` at 12px stroke-2).
 
-1. **System prompt** says "be brief and selective."
-2. **User-prompt editorial guide** explicitly says: "not the full story, not a plot outline", "Do not reveal every gag, plot beat, or ending. Save page-level details for the full book", and "Include at most two specific plot/gag beats. Do not summarize the whole book."
-3. **Length cap** (`STORY_LENGTH` = 130/150/170 words) is too short to fit a real arc.
-4. **Validators** in `generate-summary/index.ts` warn when the model exceeds that length or mentions "twist/reversal/the only way out" — which a true synopsis legitimately needs.
-5. **Few-shot examples** in `SUMMARY_EXAMPLES_BY_FRAMEWORK` are all teaser-shaped (open hook, withheld ending), so the model will mimic them.
+Pills (gender, hair color, hair style) keep their pill shape but get the same checkmark badge in the top-right corner and a unified hover (border tint + subtle shadow). Skin-tone swatches keep their circle shape but, when selected, show the same checkmark badge overlaid in the corner (in addition to the existing ring).
 
-## Changes (all in `supabase/functions/_shared/`)
+## Where it applies
 
-### 1. `prompts.ts`
+| Step | Component(s) |
+|------|--------------|
+| Step 1 — Name | Language pills, Book type tiles |
+| Step 2 — Buyer | "You are…" tiles, Occasion tiles |
+| Step 3 — Genre | Genre tiles, Mood tiles |
+| Step 4 — Lesson | Heart-of-story tiles |
+| Step 6 — Art Style | Illustration style tiles |
+| Step 7 — Character | Gender pills, Hair color pills, Hair style pills, Skin-tone swatches |
 
-- **`STORY_LENGTH`**: raise to roughly `{ min: 220, target: 270, max: 320 }` so a full arc (setup → inciting event → 1–2 escalations → climax → resolution) actually fits.
-- **`SUMMARY_SYSTEM_PROMPT`**: drop "be brief and selective"; replace with language framing the output as a **full synopsis from beginning to end, including how the story resolves**, while keeping the existing hard rules (no profanity/nudity/crude humor, age-appropriate, buyer/occasion ignored, interests are seasoning).
+Explicitly **out of scope** (per your ask): Interests picker (Step 5) and Personality trait picker (Step 7 MiniPersonality + main personality step).
 
-### 2. `storyConceptPrompt.ts` — `STORY_CONCEPT_USER_TEMPLATE`
+## Also recommended (flag for your decision)
 
-Rewrite the **Editorial style guide** and **Visible summary rules** sections to flip teaser → synopsis:
+- **Step 1 — "Gender" Select dropdown**: currently a native shadcn `<Select>`, not tiles. Consider converting to the same tile/pill row so it matches Step 7's gender selector and the rest of Step 1. Small UX win, removes the only dropdown in the early flow. *(Will only do this if you say yes.)*
+- **Step 1 — "This book belongs to" checkbox**: stays as-is (it's a toggle, not a selection tile).
+- **Supporting-character path choice in Step 7** ("Let AI create" / "Based on a real person"): two big tile buttons that today use a different border/hover style. Worth folding into the same standard since they are selectable boxes. *(Will include unless you say otherwise.)*
+- **"Glasses" checkbox in Step 7**: leave alone (toggle, not a tile).
 
-- Replace "This is a customer-facing concept blurb, not the full story, not a plot outline" with: "This is a complete plot synopsis of the picture book from beginning to end. It should describe the setup, the inciting moment, the main attempts/escalations, the climactic choice, and how the story resolves."
-- Remove "Do not reveal every gag, plot beat, or ending. Save page-level details for the full book."
-- Remove "Include at most two specific plot/gag beats. Do not summarize the whole book."
-- Replace it with: "Cover the full arc. Include the ending and the emotional resolution. Aim for 4–7 concrete story beats."
-- Keep all existing guardrails that are still valid: no name in title, no trait adjectives in visible text, no formula-leak phrases, no list summary, no in-illustration label text, framework/pattern stay invisible scaffolding, interests as seasoning, etc.
-- Update the wording about examples so the model treats them as **tone references only** and understands the new output is longer and covers the whole arc (the existing few-shots stay in place; we don't need to rewrite them, just relabel their role).
-- Adjust the word-count line to use the new `STORY_LENGTH` values.
+## Implementation approach (technical)
 
-### 3. `generate-summary/index.ts`
+1. **New shared component** `src/components/SelectableTile.tsx`:
+   - Props: `selected: boolean`, `onClick`, `as?: "tile" | "pill" | "swatch"`, `className?`, `children`, plus an optional `style` passthrough for the skin-tone swatch background.
+   - Renders the button with the unified base classes and, when `selected`, renders a `<CheckBadge />` absolutely positioned top-right.
+   - `CheckBadge` is a small internal component: filled circle in `--wizard-primary`, white `Check` icon, `w-5 h-5`, `shadow-sm`, `ring-2 ring-white` so it reads cleanly over any tile background or photo.
 
-- Update the `lightConceptToolSchema` description for `user_visible_summary` to say "full beginning-to-end synopsis, ~`STORY_LENGTH.target` words, includes the ending."
-- In `summaryIssues`:
-  - Length check already uses `STORY_LENGTH.max + 12`, so it auto-follows the new cap — no code change needed there.
-  - Remove `"twist or reversal"`, `"final unexpected choice"`, `"the only way out"`, and `"emotional arc"` from `GENERIC_SUMMARY_TERMS` (a real synopsis is allowed to describe the climax/turn in plain language). Keep the more obviously meta phrases like `"invisible structure"` and `"works for about three seconds"`.
-  - Loosen the "explains moral instead of implying growth" check: a full synopsis legitimately describes what changes for the child by the end. Drop the `learns that / discovers that` flags (or narrow them to only flag the most lecture-y phrasings — happy to keep this minimal and just drop the check).
-- Leave `framework_id` / pattern selection, trait-word bans, in-illustration label check, and title rules untouched.
+2. **Refactor each step** to replace the local `cardClass`/`pillClass`/`tileClass`/`PillSelector`/`SkinTonePicker` selected-state logic with `SelectableTile`. Tile contents (emoji, label, image, etc.) stay exactly as they are — only the wrapper changes.
 
-### Out of scope
+3. **PillSelector** in `Step7Character.tsx` becomes a thin wrapper around `SelectableTile as="pill"` so hair color / hair style / gender all get the badge for free. `SkinTonePicker` likewise uses `as="swatch"`.
 
-- Frontend (`Step8Summary.tsx`): no changes. It already shows a live word count and has no hard cap, so a longer synopsis renders fine.
-- Full-book engine, image prompts, schema, frameworks, title rules.
-- No changes to the few-shot example summaries (they continue to anchor tone/voice).
+4. No changes to wizard state, validation, or any downstream logic. Pure presentation.
 
-## Technical summary
+## Files touched
 
-| File | Change |
-|---|---|
-| `supabase/functions/_shared/prompts.ts` | Bump `STORY_LENGTH` to 220/270/320. Rewrite `SUMMARY_SYSTEM_PROMPT` to ask for a full synopsis. |
-| `supabase/functions/_shared/storyConceptPrompt.ts` | In `STORY_CONCEPT_USER_TEMPLATE`, replace teaser-oriented "Editorial style guide" + "Visible summary rules" lines with synopsis-oriented ones; relabel examples as tone references. |
-| `supabase/functions/generate-summary/index.ts` | Update tool-schema description for `user_visible_summary`; trim `GENERIC_SUMMARY_TERMS` and the moral/`learns that` warning so they don't fight a legitimate full synopsis. |
+- `src/components/SelectableTile.tsx` (new)
+- `src/pages/steps/Step1Name.tsx`
+- `src/pages/steps/Step2Buyer.tsx`
+- `src/pages/steps/Step3Genre.tsx`
+- `src/pages/steps/Step4Lesson.tsx`
+- `src/pages/steps/Step6ArtStyle.tsx`
+- `src/pages/steps/Step7Character.tsx`
+
+No prompt, edge-function, or schema changes.
+
+## One question before I build
+
+Should I also (a) convert the Step 1 "Gender" dropdown to tiles, and (b) standardize the Step 7 "AI vs real person" path-choice tiles? Both are small and consistent with the spirit of the request, but say the word and I'll skip either.

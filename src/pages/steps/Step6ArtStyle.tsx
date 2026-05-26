@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import WizardShell from "@/components/WizardShell";
 import { useWizard } from "@/contexts/WizardContext";
 import { ART_STYLES } from "@/lib/artStyles";
+import { SelectableTile } from "@/components/SelectableTile";
 
 function getDefaultArtStyle(genre: string): string {
   if (["adventure", "superhero", "sports"].includes(genre)) return "geometric-pop";
@@ -22,13 +23,6 @@ export default function Step7() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const cardClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl p-3 text-left transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
-
   return (
     <WizardShell>
       <div className="space-y-8">
@@ -43,11 +37,11 @@ export default function Step7() {
 
         <div className="grid grid-cols-2 gap-3">
           {ART_STYLES.map((s) => (
-            <button
+            <SelectableTile
               key={s.value}
-              type="button"
+              selected={artStyle === s.value}
               onClick={() => setAnswer("artStyle", s.value)}
-              className={cardClass(artStyle === s.value)}
+              className="p-3 text-left"
             >
               <div
                 className="w-full overflow-hidden rounded-xl mb-2 bg-muted"
@@ -66,7 +60,7 @@ export default function Step7() {
                 <span aria-hidden className="mr-1">{s.emoji}</span>{s.label}
               </span>
               <span className="block text-xs text-muted-foreground mt-0.5">{s.desc}</span>
-            </button>
+            </SelectableTile>
           ))}
         </div>
         <p className="text-xs text-muted-foreground text-center italic">
