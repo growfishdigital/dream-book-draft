@@ -360,22 +360,30 @@ export const STORY_FRAMEWORKS: Record<FrameworkId, (vars: KernelVars) => string>
   silly_escalation: () => "Framework: Silly Escalation. Start with one absurd premise and let it escalate through funny cause-and-effect. Keep the pace read-aloud friendly and resolve with a simple reversal or practical choice.",
 };
 
+export const STORY_WRITING_RULES = [
+  "WRITING RULES (apply to every story page):",
+  "1. Content safety: no profanity, no nudity or sexual content of any kind, no crude or bathroom humor, no scary imagery beyond age-appropriate mild tension, no violence beyond gentle cartoon slapstick suitable for the age band.",
+  "2. Age appropriateness: vocabulary, sentence length, themes, emotional intensity, and humor must match the given age band. Romance, death-as-plot, real-world hazards, and complex moral ambiguity are off-limits for under-6 and only allowed for older bands if directly required by the chosen value.",
+  "3. Gifter / occasion neutrality: buyer relationship and occasion are internal metadata only. They must NOT appear in story text, must NOT shape the plot, setting, or characters, and must NOT be referenced in the dedication beyond a single soft mention if a belongs-to page is requested.",
+  "4. Interests = seasoning, present but not dominant: the chosen framework owns the plot arc; interests never drive the main conflict, resolution, or structure. Every listed interest should appear at least once across the 30 story pages as flavor (setting detail, supporting character, prop, sensory beat, background activity). Appearance is natural and uneven — not every page needs an interest, weights don't have to be equal, and an interest should be skipped on any page where it doesn't fit rather than forced in. Interests change the texture of the world, not the shape of the story.",
+].join("\n");
+
 export function STORY_KERNEL(vars: KernelVars): string {
   return [
     "You are writing a personalized children's picture book as structured JSON through the required tool.",
     `Child: ${vars.child_name}. Age band: ${vars.age_band}. Vocabulary: ${vars.vocab_tier}.`,
     `Pronouns: ${vars.hero_pronouns.subject}/${vars.hero_pronouns.object}/${vars.hero_pronouns.possessive}.`,
     `Theme/value: ${vars.value_label}. Genre: ${vars.genre}. Mood: ${vars.mood_label}.`,
-    `Interests are background texture, not a checklist: ${vars.interests}.`,
+    `Interests are seasoning — present somewhere across the 30 pages but never plot drivers. See writing rules. Interests: ${vars.interests}.`,
     vars.special_item ? `Special item/companion: ${vars.special_item}.` : "",
     `Supporting cast: ${vars.cast_summary}.`,
-    `Buyer relationship: ${vars.buyer_relationship}. Occasion: ${vars.occasion}.`,
     vars.things_already_good_at ? `Already good at: ${vars.things_already_good_at}. Do not make this the weakness.` : "",
     vars.things_currently_tricky ? `Currently tricky: ${vars.things_currently_tricky}. This can inform the emotional choice.` : "",
     vars.recent_meaningful_moment ? `Recent meaningful moment: ${vars.recent_meaningful_moment}.` : "",
     `Write exactly ${STORY_LENGTH_BOOK.totalPageCount} pages: page 1 title, page 2 dedication, pages 3-32 story.`,
     `Story text total should be around ${vars.word_count_target} words across the 30 story pages.`,
     "Do not explain the moral. Show growth through action. Do not list wizard inputs. Keep character agency with the child.",
+    STORY_WRITING_RULES,
   ].filter(Boolean).join("\n");
 }
 
