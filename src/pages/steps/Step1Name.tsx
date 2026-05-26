@@ -143,7 +143,7 @@ export default function Step1() {
         {/* Book type tiles (drives age range) */}
         <div className="space-y-4 pt-4">
           <h2 className="font-heading text-xl sm:text-2xl font-semibold text-left text-[hsl(var(--wizard-primary))]">
-            Pick a book type
+            How old are they?
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-5 w-full">
             {AGE_RANGES.map((a) => (
