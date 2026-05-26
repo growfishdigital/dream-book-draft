@@ -35,12 +35,8 @@ export default function Step2() {
     setCanContinue(genre !== "" && mood !== "");
   }, [genre, mood, setCanContinue]);
 
-  const cardClass = (selected: boolean) =>
-    `cursor-pointer rounded-2xl p-4 text-left transition-all border-2 shadow-sm ${
-      selected
-        ? "border-[hsl(var(--wizard-primary))] bg-[hsl(var(--wizard-primary)/0.08)]"
-        : "border-transparent bg-white hover:shadow-md"
-    }`;
+  const cardExtras = "p-4 text-left";
+
 
 
   return (
