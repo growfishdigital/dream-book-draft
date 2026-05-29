@@ -383,8 +383,8 @@ Deno.serve(async (req) => {
     ].filter(Boolean).join("\n\n");
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseAnon = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseAnon);
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Insert stub row immediately so the client has an id to poll.
     const { data: stubRow, error: stubErr } = await supabase
